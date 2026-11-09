@@ -1142,6 +1142,10 @@ html:not([data-pointer]) .sidebar__user:focus-visible {
   flex: 1;
   min-width: 0;
 }
+/* Under Offline: the face and the words faded, as in the members column; the row's options as they are. */
+.member-row--off > :is(:first-child, .list-col) {
+  opacity: 0.45;
+}
 /* Canais arquivados: the rows alone, each a MediaRow (the kit's `.ac-mediarow`): the channel's mark and name on one line
    with Restaurar at its end, when it was archived under them. */
 .archived-channels {

@@ -1408,7 +1408,12 @@ async function sharedList(db: Database, orgId: string, userIds: string[], roleId
 /** The Drive files a run saved, as a message carries them, of those the people of `channelId` see (or everyone does). */
 export function filesOfRun(db: Executor, orgId: string, runId: string, channelId: string) {
   return db
-    .selectDistinct({ id: artifacts.id, version: artifacts.currentVersion, title: artifacts.title })
+    .selectDistinct({
+      id: artifacts.id,
+      version: artifacts.currentVersion,
+      title: artifacts.title,
+      kind: artifacts.kind,
+    })
     .from(artifacts)
     .innerJoin(artifactVersions, eq(artifactVersions.artifactId, artifacts.id))
     .where(

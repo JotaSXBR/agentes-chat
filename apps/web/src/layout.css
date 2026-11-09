@@ -5335,8 +5335,12 @@ html:not([data-pointer]) .mail-rules > summary:focus-visible {
 .tr-search {
   margin-bottom: 12px;
 }
+/* A row's plate stands `--tr-pad` from the card's sides, and from its bottom under the last subject, its corners the
+   card's less that room (concentric). */
 .tr-subjects {
-  border-radius: 18px;
+  --tr-r: 18px;
+  --tr-pad: var(--space-2);
+  border-radius: var(--tr-r);
   background: var(--raised);
   box-shadow: var(--e1), var(--top);
 }
@@ -5398,7 +5402,10 @@ html:not([data-pointer]) .tr-ok:focus-visible {
   transform: rotate(90deg);
 }
 .tr-subj__b {
-  padding: 2px 8px 10px;
+  padding: 2px var(--tr-pad) 10px;
+}
+.tr-subj:last-child > .tr-subj__b {
+  padding-bottom: var(--tr-pad);
 }
 @media (prefers-reduced-motion: no-preference) {
   .tr-subj__b {
@@ -5439,7 +5446,7 @@ html:not([data-pointer]) .tr-ok:focus-visible {
   gap: 12px;
   min-height: 46px;
   padding: 5px 8px;
-  border-radius: 12px;
+  border-radius: calc(var(--tr-r) - var(--tr-pad));
   transition: background 0.12s;
 }
 .tr-row:hover {
@@ -5645,8 +5652,11 @@ html:not([data-pointer]) .tr-ok:focus-visible {
     justify-self: start;
     width: 100%;
   }
+  .tr-subjects {
+    --tr-pad: var(--space-1);
+  }
   .tr-subj__b {
-    padding: 2px 4px 8px;
+    padding: 2px var(--tr-pad) 8px;
   }
   .tr-row {
     flex-wrap: wrap;
@@ -5690,8 +5700,11 @@ html:not([data-pointer]) .tr-ok:focus-visible {
     justify-self: start;
     width: 100%;
   }
+  .tr-subjects {
+    --tr-pad: var(--space-1);
+  }
   .tr-subj__b {
-    padding: 2px 4px 8px;
+    padding: 2px var(--tr-pad) 8px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -6400,6 +6413,8 @@ html:not([data-pointer]) .photo-drop:focus-visible {
   width: 300px;
   max-width: calc(100% - 32px);
   padding: var(--menu-pad);
+  /* A menu's corner (`.ac-menu`): its rows' plus its room, not the glass's own. */
+  border-radius: calc(var(--radius-item) + var(--menu-pad));
   z-index: var(--z-floating);
 }
 /* "Salvar na wiki" */

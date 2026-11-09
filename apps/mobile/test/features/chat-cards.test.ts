@@ -135,7 +135,12 @@ describe("one call is its own line", () => {
     expect(tools).toContain("const one = oneCall(items);");
     expect(tools).toContain("one={one}");
     expect(tools).toContain("const lone = savedOneLine(meta, onCard);");
-    expect(tools).toContain("<Line line={{ ...only.line, detail }} color={color} onToggle={onToggle} />");
+    expect(tools).toContain("<Line one line={{ ...only.line, detail }} color={color} onToggle={onToggle} />");
+    // Its plate concentric with the block it is: the block's 14 and its cut 6, less the 2 around it.
+    expect(tools).toContain("one: { padding: 2 },");
+    expect(tools).toMatch(
+      /oneLine: \{\s+borderTopLeftRadius: 12,\s+borderTopRightRadius: 12,\s+borderBottomRightRadius: 12,\s+borderBottomLeftRadius: 4,/,
+    );
   });
 });
 

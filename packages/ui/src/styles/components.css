@@ -8388,19 +8388,22 @@ html:not([data-pointer]) .ac-tools__head:focus-visible {
 .ac-tools__fold[data-folded] {
   grid-template-rows: 0fr;
 }
+/* A line's plate stands `--tools-pad` from the card's edges, its corners the card's less that room (concentric). */
 .ac-tools__lines {
+  --tools-pad: var(--space-1);
   margin: 0;
-  padding: 4px;
+  padding: var(--tools-pad);
   list-style: none;
   border-top: 1px solid var(--line);
 }
 /* One call: its line is the card, as tall as the head it stands in for. */
 .ac-tools--one > .ac-tools__lines {
-  padding: 2px;
+  --tools-pad: 2px;
   border-top: 0;
 }
 .ac-tools__line {
-  border-radius: var(--radius-item);
+  border-radius: calc(var(--radius-item) - var(--tools-pad)) calc(var(--radius-item) - var(--tools-pad))
+    calc(var(--radius-item) - var(--tools-pad)) var(--radius-cut);
 }
 /* A line's words wrap: the logo, the time and the mark stay on its first 20px line. */
 .ac-tools__row {
@@ -8412,7 +8415,7 @@ html:not([data-pointer]) .ac-tools__head:focus-visible {
   margin: 0;
   padding: 8px;
   border: 0;
-  border-radius: var(--radius-item);
+  border-radius: inherit;
   background: transparent;
   font: inherit;
   font-size: 13px;

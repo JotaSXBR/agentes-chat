@@ -40,8 +40,8 @@ export const SIZES = [
  * - `entries`: layout shifts Chromium reports (sources named by tag, classes and words).
  * - `jumps`: frames in which rows of a `.channel__messages` list on screen before or after moved with no input in the
  *   last 500 ms, scored as CLS scores a shift (moved area over the window's, times the distance over its longest side).
- *   Rows that animate (an entrance, a fade) are motion on purpose and skipped. Positions are relative to the list, so a
- *   panel sliding in moves nothing.
+ *   Rows gliding (an entrance that moves them) are motion on purpose and skipped; a row only fading in still counts.
+ *   Positions are relative to the list, so a panel sliding in moves nothing.
  */
 export const MEASURE = String.raw`(() => {
   if (window.__shift) return;
@@ -65,12 +65,13 @@ export const MEASURE = String.raw`(() => {
       const where = list
         ? 'list ' + Math.round(list.scrollTop) + '/' + list.scrollHeight + ' of ' + list.clientHeight + ', ' + list.children.length + ' rows, first ' + label(list.firstElementChild)
         : 'no list';
-      s.entries.push({ at: Math.round(e.startTime), value: e.value, sources: [...(e.sources || []).map((x) => label(x.node) + ' [' + box(x.previousRect) + ']→[' + box(x.currentRect) + ']'), where] });
+      s.entries.push({ at: Math.round(e.startTime), value: e.value, where, sources: (e.sources || []).map((x) => label(x.node) + ' [' + box(x.previousRect) + ']→[' + box(x.currentRect) + ']') });
     }
   }).observe({ type: 'layout-shift', buffered: true });
   const watch = () => new MutationObserver(() => { s.lastChange = performance.now(); })
     .observe(document, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['class', 'hidden', 'aria-busy', 'data-loading', 'src'] });
   if (document.documentElement) watch(); else addEventListener('DOMContentLoaded', watch);
+  const gliding = (row) => row.getAnimations().some((a) => a.effect && a.effect.getKeyframes().some((k) => 'transform' in k || 'translate' in k || 'top' in k));
   let before = new Map();
   const sample = () => {
     const now = performance.now();
@@ -89,7 +90,7 @@ export const MEASURE = String.raw`(() => {
         const was = before.get(row);
         // A day's divider goes to the top of its day when an older page of that day lands above: the rows it leaves
         // stay where they are (the list keeps its place), so its move is no jump.
-        if (was === undefined || Math.abs(was - top) <= 1 || row.getAnimations().length > 0) continue;
+        if (was === undefined || Math.abs(was - top) <= 1 || gliding(row)) continue;
         if (row.classList.contains('ac-divider')) continue;
         // On screen before or after: a row the app scrolls out of view moved under the reader's eyes too.
         const shown = (at) => Math.max(0, Math.min(box.height, at + r.height) - Math.max(0, at));
@@ -127,6 +128,8 @@ interface Moved {
   at: number;
   value: number;
   sources: string[];
+  /** A layout shift's list, as it stood when the shift was reported. */
+  where?: string;
 }
 export interface Taken {
   entries: Moved[];
@@ -351,7 +354,10 @@ function report(results: Result[]) {
       (r) =>
         `| ${r.size} | ${r.screen} | ${r.score.total.toFixed(4)} | ${r.score.shifts} | ${r.score.jumps} | ${r.score.worst
           .slice(0, 3)
-          .map((w) => `${w.kind} ${w.value.toFixed(4)} at ${w.at} ms: ${w.sources.slice(0, 3).join(", ")}`)
+          .map(
+            (w) =>
+              `${w.kind} ${w.value.toFixed(4)} at ${w.at} ms: ${w.sources.slice(0, 3).join(", ")}${w.where ? ` (${w.where})` : ""}`,
+          )
           .join("<br>")
           .replaceAll("|", "\\|")} |`,
     ),

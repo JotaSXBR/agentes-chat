@@ -33779,6 +33779,9 @@
   "chat.work.step.withdrawingRequest": {
     "value": "Withdrew a request"
   },
+  "chat.work.step.releasingAgent": {
+    "value": "Released a waiting agent"
+  },
   "chat.work.step.schedulingAction": {
     "value": "Prepared an action for later"
   },
@@ -34096,6 +34099,9 @@
   },
   "chat.activity.withdrawingRequest": {
     "value": "withdrawing a request"
+  },
+  "chat.activity.releasingAgent": {
+    "value": "releasing a waiting agent"
   },
   "chat.activity.schedulingAction": {
     "value": "preparing an action for later"

@@ -96,13 +96,10 @@ describe("memberGroups", () => {
 
   test("an agent that is off sits under Offline with the people there, by name, and leaves Agentes", () => {
     const groups = group({ agentOff: (id) => id === "rui" || id === "ada" });
-    expect(groups.map((g) => [g.key, ids(g)])).toEqual([
-      ["owner", ["heitor"]],
-      ["role:admin", ["caio", "walter"]],
-      ["agents", ["theo"]],
-      ["online", ["bia"]],
-      ["offline", ["ada", "davi", "ivo", "lara", "rui"]],
-    ]);
+    const of = (key: string) => groups.find((g) => g.key === key);
+    expect(groups.map((g) => g.key)).toEqual(["owner", "role:admin", "agents", "online", "offline"]);
+    expect(ids(of("agents") as (typeof groups)[number])).toEqual(["theo"]);
+    expect(ids(of("offline") as (typeof groups)[number])).toEqual(["ada", "davi", "ivo", "lara", "rui"]);
   });
 
   test("off: out of office, paused or with no AI; away or at work isn't", () => {

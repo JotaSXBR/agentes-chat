@@ -166,8 +166,17 @@ export function verbIndex(words: string[], known: (w: string) => boolean = isVer
 
 const ruleVerb = (w: string) => READ_VERBS.has(w) || WRITE_VERBS.has(w) || SENSITIVE_VERBS.has(w);
 
-/** Annotations, a preset's read-only list, then the verb. Null = ambiguous (the judge decides). */
-export function classifyByRules(tool: ToolToClassify, readTools: readonly string[] = []): ToolClass | null {
+/**
+ * A preset's tools that always ask, then the annotations, its read-only tools and the verb. Null = ambiguous (the
+ * judge decides).
+ */
+export function classifyByRules(
+  tool: ToolToClassify,
+  readTools: readonly string[] = [],
+  askTools: readonly string[] = [],
+): ToolClass | null {
+  if (askTools.includes(tool.name))
+    return { level: "approval", source: "preset", reason: "deletes_data", sensitive: true };
   if (tool.readOnlyHint === true)
     return { level: "read", source: "annotation", reason: "read_only_hint", sensitive: false };
   if (tool.destructiveHint === true)
@@ -387,6 +396,7 @@ export async function classifyTools(
     server: string;
     judge?: Judge;
     readTools?: readonly string[];
+    askTools?: readonly string[];
     /** Earlier judge answers for this connection, by tool name. */
     cached?: Map<string, ToolClass>;
   },
@@ -394,7 +404,7 @@ export async function classifyTools(
   const out = new Map<string, ToolClass>();
   const ask: ToolToClassify[] = [];
   for (const tool of tools) {
-    const byRules = classifyByRules(tool, options.readTools);
+    const byRules = classifyByRules(tool, options.readTools, options.askTools);
     const hit = options.cached?.get(tool.name);
     if (byRules) out.set(tool.name, byRules);
     else if (hit && hit.source === "judge") out.set(tool.name, hit);

@@ -10190,6 +10190,11 @@
         "1": "查看并查询数据库",
         "2": "创建数据库并更改数据"
       },
+      "planetscale": {
+        "1": "查看数据库、分支和查询性能",
+        "2": "查询和更改数据库",
+        "ask": "更改数据库始终需要你的审批"
+      },
       "netlify": {
         "1": "查看站点和部署",
         "2": "部署并更改设置"
@@ -10506,6 +10511,7 @@
       "gitlab": "GitLab.com 项目、merge request、issue 和流水线。",
       "neon": "Postgres 项目、分支和查询。",
       "prisma": "Prisma Postgres 数据库、备份和查询。",
+      "planetscale": "MySQL 和 Postgres 数据库、分支和查询。",
       "netlify": "站点、部署和设置。",
       "vercel": "项目、部署和日志。",
       "railway": "项目、服务、部署和日志。",

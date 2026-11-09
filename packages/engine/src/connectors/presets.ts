@@ -4,9 +4,9 @@ import { canonicalResource } from "./oauth-mcp";
 /**
  * One-click connectors: vendors' official remote MCP servers that speak MCP
  * OAuth with Dynamic Client Registration (no app of ours to register). Each
- * was checked (2026-10-15, and 2026-10-28 from GitLab on): the server
- * answers 401 with OAuth, its authorization server publishes a
- * `registration_endpoint` and PKCE S256.
+ * was checked (2026-10-15, 2026-10-28 from GitLab on, PlanetScale on
+ * 2026-11-09): the server answers 401 with OAuth, its authorization server
+ * publishes a `registration_endpoint` and PKCE S256.
  * They connect like any custom MCP server; after the OAuth, our suggested
  * classification (read tools free, writes approved, destructive ones need
  * approval) is applied at once, and admins can change it.
@@ -45,6 +45,12 @@ export interface McpPreset {
    * Postgres user). Every other tool keeps our usual suggestion.
    */
   readTools?: readonly string[];
+  /**
+   * Tools that always ask a person whatever their name or annotations say, sensitive like a deletion: they write what
+   * their arguments say (PlanetScale's `planetscale_execute_write_query` runs INSERT, UPDATE, DELETE and DDL, and its
+   * name ends in `query`, which reads as a read).
+   */
+  askTools?: readonly string[];
   /** The vendor hasn't approved agentes.chat yet: listed greyed out ("Em breve"), not connectable in one click. */
   soon?: true;
   /**
@@ -574,6 +580,17 @@ export const MCP_PRESETS: readonly McpPreset[] = [
     description: "Prisma Postgres databases, backups and queries.",
     icon: "prisma",
     serverUrl: "https://mcp.prisma.io/mcp",
+  },
+  {
+    id: "planetscale",
+    category: "dev",
+    label: "PlanetScale",
+    description: "PlanetScale MySQL and Postgres databases, branches and queries.",
+    icon: "planetscale",
+    serverUrl: "https://mcp.pscale.dev/mcp/planetscale",
+    // Each read query runs with a short-lived reader password or Postgres role (planetscale.com/docs/mcp/service-token).
+    readTools: ["planetscale_execute_read_query"],
+    askTools: ["planetscale_execute_write_query"],
   },
   {
     id: "netlify",

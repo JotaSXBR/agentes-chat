@@ -11362,6 +11362,11 @@
         "1": "Podgląd baz danych i zapytania do nich",
         "2": "Tworzenie baz danych i zmiana danych"
       },
+      "planetscale": {
+        "1": "Podgląd baz danych, gałęzi i wydajności zapytań",
+        "2": "Zapytania do bazy danych i zmiany w niej",
+        "ask": "Zmiany w bazie danych zawsze proszą o twoje zatwierdzenie"
+      },
       "netlify": {
         "1": "Podgląd witryn i wdrożeń",
         "2": "Wdrażanie i zmiana ustawień"
@@ -11699,6 +11704,7 @@
       "gitlab": "Projekty, merge requesty, issues i pipeline'y w GitLab.com.",
       "neon": "Projekty Postgres, gałęzie i zapytania.",
       "prisma": "Bazy danych Prisma Postgres, kopie zapasowe i zapytania.",
+      "planetscale": "Bazy danych MySQL i Postgres, gałęzie i zapytania.",
       "netlify": "Witryny, wdrożenia i ustawienia.",
       "vercel": "Projekty, wdrożenia i logi.",
       "railway": "Projekty, usługi, wdrożenia i logi.",

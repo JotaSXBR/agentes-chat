@@ -10623,6 +10623,11 @@
         "1": "Databases bekijken en bevragen",
         "2": "Databases maken en data wijzigen"
       },
+      "planetscale": {
+        "1": "Databases, branches en de prestaties van queries bekijken",
+        "2": "De database bevragen en wijzigen",
+        "ask": "Wijzigingen in de database vragen altijd om jouw goedkeuring"
+      },
       "netlify": {
         "1": "Sites en deploys bekijken",
         "2": "Deployen en instellingen wijzigen"
@@ -10946,6 +10951,7 @@
       "gitlab": "Projecten, merge requests, issues en pipelines op GitLab.com.",
       "neon": "Postgres-projecten, branches en queries.",
       "prisma": "Prisma Postgres-databases, back-ups en queries.",
+      "planetscale": "MySQL- en Postgres-databases, branches en queries.",
       "netlify": "Sites, deploys en instellingen.",
       "vercel": "Projecten, deployments en logs.",
       "railway": "Projecten, services, deploys en logs.",

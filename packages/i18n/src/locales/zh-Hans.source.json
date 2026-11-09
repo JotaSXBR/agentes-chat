@@ -25698,6 +25698,15 @@
   "connectors.can.prisma.2": {
     "value": "Create databases and change data"
   },
+  "connectors.can.planetscale.1": {
+    "value": "See databases, branches and query performance"
+  },
+  "connectors.can.planetscale.2": {
+    "value": "Query and change the database"
+  },
+  "connectors.can.planetscale.ask": {
+    "value": "Changes to the database always ask for your approval"
+  },
   "connectors.can.netlify.1": {
     "value": "See sites and deploys"
   },
@@ -26318,6 +26327,9 @@
   },
   "connectors.descriptions.prisma": {
     "value": "Prisma Postgres databases, backups and queries."
+  },
+  "connectors.descriptions.planetscale": {
+    "value": "MySQL and Postgres databases, branches and queries."
   },
   "connectors.descriptions.netlify": {
     "value": "Sites, deploys and settings."

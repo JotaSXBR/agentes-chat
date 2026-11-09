@@ -1,10 +1,12 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
+import { schema } from "@agenteschat/db";
 import {
   CONNECTOR_BRANDS,
   type ConnectorDeps,
   completeOAuth,
+  connectCustomServer,
   connectorListing,
   createApiKeyConnection,
   MCP_PRESETS,
@@ -175,6 +177,112 @@ describe("one-click MCP connectors", () => {
     // A root naming another authorization server says nothing about this one's scopes.
     docs[rootMetadata] = { ...(docs[rootMetadata] as object), authorization_servers: ["https://other.example.com"] };
     expect(await probeMcpServer(deps, "https://mcp.squareup.com/mcp")).toMatchObject({ scopes: [] });
+  });
+
+  test("PlanetScale: one click, signed in on its own page with no scope asked, registered as a client with a secret (it takes no public ones)", async () => {
+    const server = "https://mcp.pscale.dev/mcp/planetscale";
+    const resourceMetadata = "https://mcp.pscale.dev/.well-known/oauth-protected-resource/mcp/planetscale";
+    const registered: Record<string, unknown>[] = [];
+    // As PlanetScale answered on 2026-11-09, its long `scopes_supported` left out (the protected resource lists none).
+    const http = (async (url: string, init: RequestInit = {}) => {
+      if (url === server) {
+        return Response.json(
+          { jsonrpc: "2.0", id: 1, error: { code: -32001, message: "A PlanetScale OAuth access token is required." } },
+          {
+            status: 401,
+            headers: {
+              "www-authenticate": `Bearer error="invalid_token", error_description="A PlanetScale OAuth access token is required.", resource_metadata="${resourceMetadata}"`,
+            },
+          },
+        );
+      }
+      if (url === resourceMetadata) {
+        return Response.json({
+          resource: server,
+          authorization_servers: ["https://api.planetscale.com"],
+          resource_name: "PlanetScale",
+          resource_documentation: "https://planetscale.com/docs",
+        });
+      }
+      if (url === "https://api.planetscale.com/.well-known/oauth-authorization-server") {
+        return Response.json({
+          issuer: "https://api.planetscale.com",
+          authorization_endpoint: "https://app.planetscale.com/oauth/authorize",
+          token_endpoint: "https://auth.planetscale.com/oauth/token",
+          registration_endpoint: "https://auth.planetscale.com/oauth/registration",
+          response_types_supported: ["code"],
+          grant_types_supported: ["device_code", "authorization_code", "client_credentials", "refresh_token"],
+          token_endpoint_auth_methods_supported: ["client_secret_basic", "client_secret_post"],
+          code_challenge_methods_supported: ["S256"],
+        });
+      }
+      if (url === "https://auth.planetscale.com/oauth/registration") {
+        const body = JSON.parse(String(init.body)) as Record<string, unknown>;
+        registered.push(body);
+        return Response.json(
+          {
+            client_id: "pscale_app_example",
+            client_secret: "ps-secret",
+            client_name: body.client_name,
+            redirect_uris: body.redirect_uris,
+            token_endpoint_auth_method: "client_secret_post",
+            response_types: ["code"],
+            grant_types: ["authorization_code", "refresh_token"],
+            application_type: "web",
+          },
+          { status: 201 },
+        );
+      }
+      return new Response("not found", { status: 404 });
+    }) as unknown as typeof fetch;
+    f = await setup();
+    const deps = {
+      db: f.db,
+      keyWrappers: [f.keyWrapper],
+      publicUrl: "https://chat.example.com",
+      http,
+      resolveHost: async () => ["93.184.216.34"],
+    };
+    expect(connectorListing({ oauthApps: {} }).find((e) => e.id === "planetscale")).toMatchObject({
+      kind: "remote_mcp",
+      category: "dev",
+      serverUrl: server,
+      available: true,
+      soon: false,
+      iconUrl: "/connectors/planetscale.svg",
+      brandColor: null,
+    });
+    expect(await probeMcpServer(deps, server)).toEqual({
+      kind: "oauth",
+      resource: server,
+      issuer: "https://api.planetscale.com",
+      scopes: [],
+    });
+
+    const started = await connectCustomServer(deps, f.owner.id, f.org.id, { serverUrl: server });
+    if (started.status !== "oauth") throw new Error(`expected oauth, got ${started.status}`);
+    const authorize = new URL(started.authorizeUrl);
+    expect(`${authorize.origin}${authorize.pathname}`).toBe("https://app.planetscale.com/oauth/authorize");
+    expect(Object.fromEntries(authorize.searchParams)).toMatchObject({
+      client_id: "pscale_app_example",
+      redirect_uri: "https://chat.example.com/api/app/connectors/oauth/callback",
+      code_challenge_method: "S256",
+      resource: server,
+    });
+    // No scope: PlanetScale's own page asks which organizations and databases, and how much access.
+    expect(authorize.searchParams.has("scope")).toBe(false);
+    expect(registered).toEqual([
+      {
+        client_name: "agentes.chat",
+        redirect_uris: ["https://chat.example.com/api/app/connectors/oauth/callback"],
+        grant_types: ["authorization_code", "refresh_token"],
+        response_types: ["code"],
+        token_endpoint_auth_method: "client_secret_post",
+      },
+    ]);
+    const [client] = await f.db.select().from(schema.oauthClients);
+    expect(client).toMatchObject({ issuer: "https://api.planetscale.com", tokenAuthMethod: "client_secret_post" });
+    expect(client?.secretCiphertext).not.toBeNull();
   });
 });
 

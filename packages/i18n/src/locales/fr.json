@@ -10956,6 +10956,11 @@
         "1": "Voir les bases de données et les interroger",
         "2": "Créer des bases de données et modifier les données"
       },
+      "planetscale": {
+        "1": "Voir les bases de données, les branches et les performances des requêtes",
+        "2": "Interroger et modifier la base de données",
+        "ask": "Les modifications de la base de données demandent toujours votre approbation"
+      },
       "netlify": {
         "1": "Voir les sites et les déploiements",
         "2": "Déployer et modifier les paramètres"
@@ -11286,6 +11291,7 @@
       "gitlab": "Projets, merge requests, issues et pipelines GitLab.com.",
       "neon": "Projets, branches et requêtes Postgres.",
       "prisma": "Bases de données, sauvegardes et requêtes Prisma Postgres.",
+      "planetscale": "Bases de données MySQL et Postgres, branches et requêtes.",
       "netlify": "Sites, déploiements et paramètres.",
       "vercel": "Projets, déploiements et logs.",
       "railway": "Projets, services, déploiements et logs.",

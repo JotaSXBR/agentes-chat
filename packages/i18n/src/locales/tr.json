@@ -10504,6 +10504,11 @@
         "1": "Veritabanlarını görür ve sorgular",
         "2": "Veritabanı oluşturur ve verileri değiştirir"
       },
+      "planetscale": {
+        "1": "Veritabanlarını, dalları ve sorgu performansını görür",
+        "2": "Veritabanını sorgular ve değiştirir",
+        "ask": "Veritabanındaki değişiklikler her zaman onayınızı ister"
+      },
       "netlify": {
         "1": "Siteleri ve dağıtımları görür",
         "2": "Dağıtım yapar ve ayarları değiştirir"
@@ -10827,6 +10832,7 @@
       "gitlab": "GitLab.com projeleri, birleştirme istekleri, sorun kayıtları ve işlem hatları.",
       "neon": "Postgres projeleri, dalları ve sorguları.",
       "prisma": "Prisma Postgres veritabanları, yedekleri ve sorguları.",
+      "planetscale": "MySQL ve Postgres veritabanları, dalları ve sorguları.",
       "netlify": "Siteler, dağıtımlar ve ayarlar.",
       "vercel": "Projeler, dağıtımlar ve günlükler.",
       "railway": "Projeler, hizmetler, dağıtımlar ve günlükler.",

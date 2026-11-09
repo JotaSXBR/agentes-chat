@@ -10187,6 +10187,11 @@
         "1": "Melihat database dan menjalankan query",
         "2": "Membuat database dan mengubah data"
       },
+      "planetscale": {
+        "1": "Melihat database, branch, dan performa query",
+        "2": "Menjalankan query dan mengubah database",
+        "ask": "Perubahan pada database selalu meminta persetujuanmu"
+      },
       "netlify": {
         "1": "Melihat situs dan deploy",
         "2": "Melakukan deploy dan mengubah pengaturan"
@@ -10503,6 +10508,7 @@
       "gitlab": "Proyek, merge request, issue, dan pipeline GitLab.com.",
       "neon": "Proyek, branch, dan query Postgres.",
       "prisma": "Database, backup, dan query Prisma Postgres.",
+      "planetscale": "Database MySQL dan Postgres, branch, dan query.",
       "netlify": "Situs, deploy, dan pengaturan.",
       "vercel": "Proyek, deployment, dan log.",
       "railway": "Proyek, layanan, deploy, dan log.",

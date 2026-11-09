@@ -10891,6 +10891,11 @@
         "1": "Ver bases de datos y consultarlas",
         "2": "Crear bases de datos y cambiar datos"
       },
+      "planetscale": {
+        "1": "Ver bases de datos, ramas y el rendimiento de las consultas",
+        "2": "Consultar y cambiar la base de datos",
+        "ask": "Los cambios en la base de datos siempre piden tu aprobación"
+      },
       "netlify": {
         "1": "Ver sitios y deploys",
         "2": "Hacer deploys y cambiar la configuración"
@@ -11221,6 +11226,7 @@
       "gitlab": "Proyectos, merge requests, issues y pipelines de GitLab.com.",
       "neon": "Proyectos, ramas y consultas de Postgres.",
       "prisma": "Bases de datos, copias de seguridad y consultas de Prisma Postgres.",
+      "planetscale": "Bases de datos MySQL y Postgres, ramas y consultas.",
       "netlify": "Sitios, deploys y configuración.",
       "vercel": "Proyectos, deployments y logs.",
       "railway": "Proyectos, servicios, deploys y logs.",

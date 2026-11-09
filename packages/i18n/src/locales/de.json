@@ -10568,6 +10568,11 @@
         "1": "Datenbanken ansehen und abfragen",
         "2": "Datenbanken erstellen und Daten ändern"
       },
+      "planetscale": {
+        "1": "Datenbanken, Branches und die Leistung der Abfragen ansehen",
+        "2": "Datenbank abfragen und ändern",
+        "ask": "Änderungen an der Datenbank fragen immer nach deiner Freigabe"
+      },
       "netlify": {
         "1": "Sites und Deploys ansehen",
         "2": "Deployen und Einstellungen ändern"
@@ -10891,6 +10896,7 @@
       "gitlab": "Projekte, Merge Requests, Issues und Pipelines auf GitLab.com.",
       "neon": "Postgres-Projekte, Branches und Abfragen.",
       "prisma": "Prisma-Postgres-Datenbanken, Backups und Abfragen.",
+      "planetscale": "MySQL- und Postgres-Datenbanken, Branches und Abfragen.",
       "netlify": "Websites, Deploys und Einstellungen.",
       "vercel": "Projekte, Deployments und Logs.",
       "railway": "Projekte, Dienste, Deploys und Logs.",

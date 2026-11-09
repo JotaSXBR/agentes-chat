@@ -2064,6 +2064,17 @@ html:not([data-pointer]) .ac-select__trigger:focus-visible,
   width: 16px;
   height: 16px;
 }
+/* A maker's mark is its bare logo there, as beside text anywhere (`.ac-brand--xs`): the list keeps its tile. */
+.ac-select__lead > .ac-brand {
+  width: 16px;
+  height: 16px;
+  background: none;
+  box-shadow: none;
+}
+.ac-select__lead > .ac-brand svg {
+  width: 16px;
+  height: 16px;
+}
 .ac-select__trigger:has(.ac-select__lead > .ac-avatar) {
   padding-inline-start: var(--space-2);
 }

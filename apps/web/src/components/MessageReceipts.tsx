@@ -298,16 +298,17 @@ export function MessageReceipts({ message, part }: { message: Message; part: "ch
     </Popover>
   );
 
+  // A span: on a grouped message the mark ends a paragraph, which holds phrasing content only.
   if (part === "check") {
     return (
-      <div className="ac-receipt">
+      <span className="ac-receipt">
         {check}
         {steered && (
           <span id={steerId} className="ac-visually-hidden" aria-live="polite">
             {steered.text}
           </span>
         )}
-      </div>
+      </span>
     );
   }
   const words = (

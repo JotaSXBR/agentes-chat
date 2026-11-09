@@ -131,6 +131,8 @@ describe("a receipt never changes a message's height", () => {
     expect(read?.getAttribute("data-steer")).toBe("read");
     expect(read?.querySelector(".ac-avatar")).not.toBeNull();
     expect(row("s2").querySelector(".ac-msg__aside--floating")).toBeNull();
+    // Phrasing content only, as a paragraph holds: a block in it would close the paragraph wherever HTML is parsed.
+    expect(row("s2").querySelector(".ac-msg__aside--end :is(div, p, ul, ol, section)")).toBeNull();
     // Words that end in a list: its last item's line. Words that end in code: the first line's end, as before.
     expect(row("s3").querySelector("li:last-child > .ac-msg__aside--end .ac-receipt__check")).not.toBeNull();
     expect(row("s4").querySelector(".ac-msg__aside--end")).toBeNull();

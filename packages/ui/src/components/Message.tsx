@@ -91,7 +91,8 @@ export interface MessageProps extends Omit<HTMLAttributes<HTMLElement>, "childre
   stacked?: boolean;
   /**
    * A small muted mark (e.g. the receipt's check): right after the time on the name's line, or on a grouped message at
-   * the end of its words' last line, as chat apps put a message's ticks.
+   * the end of its words' last line, as chat apps put a message's ticks. Phrasing content (spans, buttons): there it
+   * ends a paragraph.
    */
   aside?: ReactNode;
   /** A line under the message, the same on a first and a grouped one (e.g. a receipt with words). */
@@ -229,8 +230,8 @@ export function Message({
     const b = bar.getBoundingClientRect();
     for (const mark of el.querySelectorAll<HTMLElement>(".ac-msg__aside:not(:empty)")) {
       const m = mark.getBoundingClientRect();
-      // Shown, the bar has its middle on the row's top edge.
-      if (m.top < r.top + b.height / 2 && m.right > b.left - 8 && m.left < b.right)
+      // Shown, the bar has its middle on the row's top edge. A mark it would touch puts it 8px to the mark's left.
+      if (m.top < r.top + b.height / 2 && m.right + 4 > b.left && m.left < b.right)
         bar.style.right = `${r.right - m.left + 8}px`;
     }
   };

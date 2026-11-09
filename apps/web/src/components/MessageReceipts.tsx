@@ -123,9 +123,9 @@ function SteerMark({ steer, name, size }: { steer: SteerState; name: string; siz
 
 /**
  * A person's message's receipt (and an agent's that mentions agents: whom it handed work to, and "Só mencionado"
- * with "Chamar um agente" for one it only mentioned, ADR 0089): a small muted mark at the end of its first line, or of
- * the time's line under my own turn (`part="check"`), never a line of its own, so it never changes the message's
- * height or the room before the next one. Clicking or focusing it opens a popover with each agent and its status, and
+ * with "Chamar um agente" for one it only mentioned, ADR 0089): a small muted mark next to the message, right after
+ * the time on its name's line, at the end of a grouped message's last line, or of the time's line under my own turn
+ * (`part="check"`), never a line of its own. Clicking or focusing it opens a popover with each agent and its status, and
  * the rule that picked them. The mark is the clock, one tick or two (`receiptTicks`). While the author's own plan
  * picks, and when no agent will answer or every one it was for passed (an agent's reaction counts as acting), "Chamar
  * um agente" is in its popover: never a line in the timeline, which read as wrong beside an agent's reaction. A

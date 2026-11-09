@@ -4156,8 +4156,32 @@ html:not([data-pointer]) .ac-receipt__check:focus-visible {
   color: var(--ink-muted);
 }
 /*
- * A grouped message's check ends its first line, its middle on the line's capitals as an `.ac-iconline` lead's, so
- * it takes the text's type (`.ac-msg__text`). The line wraps before it, never under it.
+ * A grouped message's mark ends its words' last line, right after them, small, as chat apps put a message's ticks: its
+ * middle on the line's capitals as an `.ac-iconline` lead's, so it takes the text's type. A last line with no room for
+ * it takes it to a line of its own.
+ */
+.ac-msg__aside--end {
+  vertical-align: top;
+  margin-left: var(--space-1);
+  font-size: var(--msg-text);
+  line-height: var(--msg-line);
+  white-space: nowrap;
+  /* Browsers without the lh unit: the same, from the text's line. */
+  translate: 0 calc(var(--msg-line) / 2 - var(--cap-mid) - 50%);
+}
+@supports (top: 1lh) {
+  .ac-msg__aside--end {
+    translate: 0 calc(0.5lh - var(--cap-mid) - 50%);
+  }
+}
+.ac-msg__aside--end .ac-receipt__check .ac-icon {
+  width: 14px;
+  height: 14px;
+}
+/*
+ * Where a grouped message's words end in no line (a picture, a block of code), its check ends its first line, its
+ * middle on the line's capitals as an `.ac-iconline` lead's, so it takes the text's type (`.ac-msg__text`). The line
+ * wraps before it, never under it.
  */
 .ac-msg__aside--floating {
   float: right;

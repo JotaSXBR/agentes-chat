@@ -82,6 +82,61 @@ describe("a receipt never changes a message's height", () => {
     expect(document.querySelector(".msg-steer")).toBeNull();
   });
 
+  test("Tudo à esquerda: the mark next to the message, right after the time, then after a grouped message's words", async () => {
+    const state = seedState();
+    const answering = {
+      seenBy: [ADA_ID],
+      pickedBy: [],
+      handled: [{ agentId: ADA_ID, runId: "r1", status: "running" as const }],
+    };
+    state.messages = [
+      said("s1", "Corrige o login.", 30, { receipts: answering }),
+      said("s2", "Olha também o refresh do token quando a sessão expira no meio de um envio grande.", 29.5, {
+        receipts: answering,
+      }),
+      said(
+        "s3",
+        "Pendências:\n\n- conferir o login\n- https://northwind-industries-holdings.example.com/compras/notas/2026",
+        29.4,
+        {
+          receipts: answering,
+        },
+      ),
+      said("s4", "Roda isto:\n\n```\nbun test apps/web/test/receipt-marks.test.tsx\n```", 29.3, {
+        receipts: answering,
+      }),
+    ];
+    await renderApp(`/org/${ORG_ID}/c/${ENG_ID}`, { api: createFakeApi(state) });
+    await settle(8);
+    const steered = (messageId: string) => ({
+      type: "agent.run.steered",
+      channelId: ENG_ID,
+      runId: "r1",
+      agentId: ADA_ID,
+      messageId,
+    });
+    await act(async () => {
+      for (const id of ["s1", "s2", "s3", "s4"]) steerStore.apply(steered(id));
+      steerStore.apply({ type: "agent.run.read", channelId: ENG_ID, runId: "r1", agentId: ADA_ID, messageIds: ["s2"] });
+    });
+    await settle(4);
+    // On the name's line: right after the time, never at the line's far end.
+    const waiting = row("s1").querySelector(".ac-msg__head > .ac-msg__time + .ac-msg__aside .ac-receipt__check");
+    expect(waiting?.getAttribute("data-steer")).toBe("waiting");
+    // A grouped message: the last thing on its words' last line, in its paragraph, small.
+    expect(row("s2").className).toContain("ac-msg--grouped");
+    const read = row("s2").querySelector(
+      ".ac-msg__text p:last-child > .ac-msg__aside--end:last-child .ac-receipt__check",
+    );
+    expect(read?.getAttribute("data-steer")).toBe("read");
+    expect(read?.querySelector(".ac-avatar")).not.toBeNull();
+    expect(row("s2").querySelector(".ac-msg__aside--floating")).toBeNull();
+    // Words that end in a list: its last item's line. Words that end in code: the first line's end, as before.
+    expect(row("s3").querySelector("li:last-child > .ac-msg__aside--end .ac-receipt__check")).not.toBeNull();
+    expect(row("s4").querySelector(".ac-msg__aside--end")).toBeNull();
+    expect(row("s4").querySelector(".ac-msg__body > .ac-msg__aside--floating .ac-receipt__check")).not.toBeNull();
+  });
+
   test("while the author's plan picks who answers: the clock where the check goes, nothing under the text", async () => {
     const state = comfortable(seedState());
     state.messages = [said("k1", "Revisa o PR?", 2)];
@@ -186,10 +241,13 @@ describe("a receipt never changes a message's height", () => {
     // A DM's face slot takes no width of its own: empty, it leaves the time on the bubble's edge.
     expect(value(app, ".ac-receipt__seen", "width")).toBeUndefined();
     expect(px(value(app, ".ac-receipt__seen", "height"))).toBe(16);
-    // The mark ends the first line: right after the time in the name's line (never pushed to the row's far end), or
-    // floated on a grouped message's text.
+    // Never at the row's far end: right after the time in the name's line, and on a grouped message right after its
+    // words, small, on their last line (floated on its first only where its words end in no line: code, a picture).
     expect(value(kit, ".ac-msg__head > .ac-msg__aside", "align-self")).toBe("center");
     expect(value(kit, ".ac-msg__aside", "margin-left")).toBeUndefined();
+    expect(value(kit, ".ac-msg__aside--end", "margin-left")).toBe("var(--space-1)");
+    expect(value(kit, ".ac-msg__aside--end", "float")).toBeUndefined();
+    expect(px(value(kit, ".ac-msg__aside--end .ac-receipt__check .ac-icon", "width"))).toBe(14);
     expect(value(kit, ".ac-msg__aside--floating", "float")).toBe("right");
     // On my own rows it ends the time's line, no taller than the time, so it never adds a line either.
     expect(px(value(kit, ".ac-msg__own-foot > .ac-msg__aside", "height"))).toBe(16);

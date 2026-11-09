@@ -816,27 +816,89 @@ describe("Diff", () => {
 });
 
 describe("Message aside and foot", () => {
-  test("the aside ends the first line, the header's or a grouped message's text's; the foot is a line under both", () => {
+  test("the aside follows the time on the name's line, and ends a grouped message's last line; the foot is a line under both", () => {
     const { container } = render(
       <>
-        <Message author="João" time="10:42" aside={<span>✓</span>} foot={<span>Ninguém vai responder</span>}>
+        <Message
+          author="João"
+          time="10:42"
+          note={{ label: "entrou", tip: "ninguém chamou" }}
+          aside={<span>✓</span>}
+          foot={<span>Ninguém vai responder</span>}
+        >
           <MessageText>oi</MessageText>
         </Message>
         <Message author="João" time="10:43" grouped aside={<span>✓✓</span>} foot={<span>Ninguém vai responder</span>}>
           <MessageText>de novo</MessageText>
         </Message>
+        <Message author="João" time="10:44" grouped aside={<span>✓</span>}>
+          <MessageText>
+            <div className="md">
+              <p>primeiro</p>
+              <ul>
+                <li>um</li>
+                <li>
+                  <strong>dois</strong>
+                </li>
+              </ul>
+            </div>
+          </MessageText>
+        </Message>
+        <Message author="João" time="10:45" grouped aside={<span>✓</span>}>
+          <MessageText>
+            <div className="md">
+              <p>veja</p>
+              <pre>código</pre>
+            </div>
+          </MessageText>
+        </Message>
       </>,
     );
-    const [first, second] = Array.from(container.querySelectorAll("article"));
-    expect(first?.querySelector(".ac-msg__head .ac-msg__aside")?.textContent).toBe("✓");
-    // Floated before the text, so the text's first line wraps before it.
-    expect(second?.querySelector(".ac-msg__aside--floating + .ac-msg__text")?.textContent).toBe("de novo");
-    expect(second?.querySelector(".ac-msg__aside--floating")?.textContent).toBe("✓✓");
+    const [first, second, list, code] = Array.from(container.querySelectorAll("article"));
+    // Right after the time, before what else the line says.
+    expect([...(first?.querySelector(".ac-msg__head")?.children ?? [])].map((c) => c.className.split(" ")[0])).toEqual([
+      "ac-msg__author",
+      "ac-msg__time",
+      "ac-msg__aside",
+      "ac-msg__note",
+    ]);
+    // A grouped message's mark is the last thing on its words' last line: after the words, in their box.
+    expect(second?.querySelector(".ac-msg__text > .ac-msg__aside--end:last-child")?.textContent).toBe("✓✓");
+    expect(second?.querySelector(".ac-msg__text")?.textContent).toBe("de novo✓✓");
+    expect(list?.querySelector("li:last-child > .ac-msg__aside--end:last-child")?.textContent).toBe("✓");
+    // Words that end in a block of their own (code) keep it at the end of the first line.
+    expect(code?.querySelector(".ac-msg__aside--end")).toBeNull();
+    expect(code?.querySelector(".ac-msg__body > .ac-msg__aside--floating")?.textContent).toBe("✓");
+    for (const row of [second, list]) expect(row?.querySelector(".ac-msg__aside--floating")).toBeNull();
     // The same line under the text on both: the text follows the name, and words that come and go never move it.
     for (const row of [first, second]) {
       expect(row?.querySelector(".ac-msg__body > :last-child")?.className).toBe("ac-msg__foot");
       expect(row?.querySelector(".ac-msg__head .ac-msg__foot")).toBeNull();
     }
+  });
+
+  test("the bar stands left of a mark under its place, and keeps its own where none is", () => {
+    const { container } = render(
+      <Message author="João" time="10:43" grouped aside={<span>✓</span>}>
+        <MessageText>uma linha que vai até o fim</MessageText>
+        <div className="ac-msg__actions">bar</div>
+      </Message>,
+    );
+    const row = container.querySelector("article") as HTMLElement;
+    const bar = row.querySelector(".ac-msg__actions") as HTMLElement;
+    const mark = row.querySelector(".ac-msg__aside--end") as HTMLElement;
+    const box = (left: number, top: number, width: number, height: number) =>
+      ({ left, top, width, height, right: left + width, bottom: top + height, x: left, y: top }) as DOMRect;
+    // A 600px row; the bar 100px wide, 12px from its end; the one line's end, and its mark, right under it.
+    row.getBoundingClientRect = () => box(0, 100, 600, 40);
+    bar.getBoundingClientRect = () => box(488, 89, 100, 30);
+    mark.getBoundingClientRect = () => box(540, 108, 20, 16);
+    fireEvent.pointerEnter(row);
+    expect(bar.style.right).toBe("68px");
+    // The words end short of it: the bar keeps its place.
+    mark.getBoundingClientRect = () => box(200, 108, 20, 16);
+    fireEvent.pointerEnter(row);
+    expect(bar.style.right).toBe("");
   });
 
   test("my own row: the time and then the receipt under the turn's last bubble, no time in the far-left column", () => {
@@ -930,8 +992,9 @@ describe("Message aside and foot", () => {
     const reach = -Number.parseFloat(value(`${buttons}::after`, "inset", touch) ?? "");
     expect(32 + 2 * reach).toBe(40);
     expect(Number.parseFloat(value(bar, "gap", touch) ?? "")).toBe(2 * reach);
-    // Left of a grouped message's check at the row's end (a 16px icon, 2px each side) and 8px from it, past the row's
-    // own side padding; a check right after the time in the name's line is out of its way.
+    // Left of a grouped message's check at the row's end where its words end in no line (a 16px icon, 2px each side)
+    // and 8px from it, past the row's own side padding; a check right after the time in the name's line is out of its
+    // way, and one at the end of the words' last line moves the bar only when it is under it (Message.tsx).
     expect(
       value(
         ".ac-msg:has(> .ac-msg__body > .ac-msg__aside--floating:not(:empty)) > .ac-msg__body > .ac-msg__actions",

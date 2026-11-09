@@ -147,8 +147,8 @@ const TRAIL_RECENT_MS = 12 * 60 * 60_000;
  * line under its words and what it changed ("Usou N ferramentas"), the same place live, kept and saved, and a
  * stopped one says so with "Continuar". A person's message's
  * receipt is a mark in a line the row already has (`ReceiptMark`), so it never changes the row's height: after the
- * time under my turn, whether an agent read it ("lê na próxima pausa", "leu") or who read it in a DM; at the end of
- * someone else's name line, the agents' receipt of their latest message.
+ * time under my turn, whether an agent read it ("lê na próxima pausa", "leu") or who read it in a DM; next to the
+ * time on someone else's name line, the agents' receipt of their latest message.
  */
 export const MessageRow = memo(function MessageRow({
   message: m,
@@ -588,13 +588,7 @@ export const MessageRow = memo(function MessageRow({
   // there is one; in a DM's bubble the line is only what a tag has to say. A row with no bubble (a card alone) keeps
   // the name ahead of its time, as anywhere else: a time alone beside a face reads as a broken line.
   const who = (inBubble: boolean) => (
-    <View
-      style={[
-        styles.who,
-        m.author.type === "person" && !inBubble && !compact && styles.whoRoom,
-        (inBubble || compact || !words) && styles.whoTight,
-      ]}
-    >
+    <View style={[styles.who, (inBubble || compact || !words) && styles.whoTight]}>
       {!inBubble || look.names ? (
         <Text
           variant="footnote"
@@ -666,10 +660,17 @@ export const MessageRow = memo(function MessageRow({
       )}
       {brainWait ? <AwayPill message={m} /> : null}
       {m.pinned ? <PinMark /> : null}
-      {(receipt || seenBy) && !m.local && !inBubble ? (
-        <View style={compact ? undefined : [styles.whoMark, nameSize ? { height: nameSize.lineHeight } : null]}>
-          <ReceiptMark message={m} mine={mine} receipt={receipt} seenBy={seenBy} />
+      {/* The receipt's mark next to the time (after a pin), never at the line's far end: in a slot a person's name line
+          keeps with or without one, so a mark that comes never wraps the line, and an empty one leaves no gap. */}
+      {!inBubble && !compact && m.author.type === "person" ? (
+        <View style={[styles.whoMark, nameSize ? { height: nameSize.lineHeight } : null]}>
+          {(receipt || seenBy) && !m.local ? (
+            <ReceiptMark message={m} mine={mine} receipt={receipt} seenBy={seenBy} />
+          ) : null}
         </View>
+      ) : null}
+      {compact && (receipt || seenBy) && !m.local && !inBubble ? (
+        <ReceiptMark message={m} mine={mine} receipt={receipt} seenBy={seenBy} />
       ) : null}
     </View>
   );
@@ -1331,10 +1332,8 @@ const styles = StyleSheet.create({
   choiceReply: { flexDirection: "row", alignItems: "flex-start", gap: 6, paddingVertical: 2 },
   // Wraps on a narrow phone: a routine's tag and "Ver relatório" go to the next line instead of off the edge.
   who: { flexDirection: "row", flexWrap: "wrap", alignItems: "baseline", columnGap: 8, rowGap: 4, marginBottom: 4 },
-  // A person's name line keeps room at its end for the receipt's mark, with or without one, so a mark that comes
-  // never wraps the line.
-  whoRoom: { paddingRight: 40 },
-  whoMark: { position: "absolute", top: 0, right: 0, height: 19, justifyContent: "center" },
+  // As wide as the widest mark (a face), centred on the name's line.
+  whoMark: { width: 16, height: 19, alignSelf: "center", justifyContent: "center" },
   whoTight: { marginBottom: 0 },
   // The time ends the words' line when it fits; a longer text pushes it to a line of its own, at the bubble's end.
   bubbleLine: {

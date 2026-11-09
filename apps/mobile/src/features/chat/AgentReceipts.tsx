@@ -223,8 +223,8 @@ function KeptAnswer({ messageId }: { messageId: string }) {
 
 /**
  * A person's message's receipt in a line its row already has, never one of its own (`markOf`): after the time under
- * my turn, or at the end of a turn's name line. Faces and our small marks; the words are its label, and a tap says
- * them: the agents' sheet, or a note from the top.
+ * my turn, or next to the time on a turn's name line. Faces and our small marks; the words are its label, and a tap
+ * says them: the agents' sheet, or a note from the top.
  */
 export const ReceiptMark = memo(function ReceiptMark({
   message: m,

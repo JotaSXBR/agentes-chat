@@ -11384,3 +11384,116 @@ html:not([data-pointer]) .ac-carousel__arrow:focus-visible {
     --mediarow-axis: var(--mediarow-face);
   }
 }
+
+/* ---------- AgentCursor: an agent's own pointer over a picture of its screen (Lodi's cursor) ---------- */
+/* The picture's box (set inline): nothing here takes the pointer, and what reaches past the picture is cut at it. */
+.ac-cursor {
+  position: absolute;
+  z-index: 2;
+  overflow: hidden;
+  pointer-events: none;
+  transition: opacity var(--dur-fast) var(--out);
+}
+/* Quiet, it rests fainter where the agent left it; quiet for long, it goes until the next step. */
+.ac-cursor[data-phase="rest"] {
+  opacity: 0.6;
+  transition-duration: 400ms;
+}
+.ac-cursor[data-phase="gone"] {
+  opacity: 0;
+  transition-duration: var(--dur-panel);
+}
+/* As large as the picture: moved by a share of itself, its corner lands on the place at any size of the picture. */
+.ac-cursor__track {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+/* The arrow's tip on that corner: the path's tip is a unit (2 px) into its box. */
+.ac-cursor__arrow {
+  position: absolute;
+  left: -2px;
+  top: -2px;
+  width: 24px;
+  height: 24px;
+  overflow: visible;
+  transform-origin: 2px 2px;
+  filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.3));
+}
+.ac-cursor__arrow path {
+  stroke: #fff;
+  stroke-width: 0.9;
+  stroke-linejoin: round;
+}
+/*
+ * The name below the arrow's right, its sharp corner toward the tip; where it doesn't fit it turns to the side with more
+ * room (`tagSide`). Words that don't fit beside the name go under it, and wrap: never cut.
+ */
+.ac-cursor__tag {
+  position: absolute;
+  left: 15px;
+  top: 19px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  max-width: min(360px, calc(100% - 24px));
+  overflow: hidden;
+  padding: calc(var(--space-1) / 2) var(--space-2) calc(var(--space-1) / 2) calc(var(--space-1) / 2);
+  border-radius: 3px 9px 9px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  overflow-wrap: anywhere;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.2);
+  transition: transform var(--dur-base) var(--out);
+}
+.ac-cursor__tag[data-west] {
+  border-radius: 9px 3px 9px 9px;
+  transform: translateX(calc(-100% - 19px));
+}
+.ac-cursor__tag[data-north] {
+  border-radius: 9px 9px 9px 3px;
+  transform: translateY(calc(-100% - 23px));
+}
+.ac-cursor__tag[data-west][data-north] {
+  border-radius: 9px 9px 3px;
+  transform: translate(calc(-100% - 19px), calc(-100% - 23px));
+}
+.ac-cursor__face {
+  display: flex;
+  flex: none;
+  margin-right: var(--space-1);
+}
+.ac-cursor__name,
+.ac-cursor__what {
+  min-width: 0;
+}
+/* The step in words: it fades in and out while the tag morphs to and from it (`AgentCursor`). */
+.ac-cursor__what {
+  opacity: 0.88;
+  font-weight: 500;
+}
+.ac-cursor__what::before {
+  content: "·";
+  margin: 0 var(--space-1);
+}
+/* Too little room beside the tip for the step's words (a small screen): the tag says only who. */
+.ac-cursor__tag[data-terse] .ac-cursor__what {
+  display: none;
+}
+.ac-cursor__ripple {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  margin: -14px 0 0 -14px;
+  border-radius: 50%;
+  background: currentColor;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ac-cursor,
+  .ac-cursor__tag {
+    transition-duration: 120ms;
+  }
+}

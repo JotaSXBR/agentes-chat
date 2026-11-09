@@ -67,23 +67,22 @@ describe("Rotinas: started by a webhook", () => {
     expect(card("Pedidos pagos").textContent).toContain("Quando o webhook for chamado");
   });
 
-  test("its page: a signing secret shown once, a new address after a confirmation, Testar and the latest calls", async () => {
+  test("its page: a key shown once, a new address after a confirmation, Testar and the latest calls", async () => {
     const state = seedState();
     const api = createFakeApi(state);
     await open(webhookRoutine, api);
     const page = await details("Pedidos pagos");
     const url = /https:\/\/app\.agentes\.test\/api\/hooks\/\S{43}/;
     const first = page.textContent?.match(url)?.[0];
-    expect(page.textContent).toContain("Desligada: o agente recebe qualquer chamada ao endereço.");
+    expect(page.textContent).toContain("Sem chave: quem tiver o endereço aciona o agente.");
     expect(page.textContent).toContain("Nenhuma chamada ainda.");
 
-    await click(within(page).getByRole("button", { name: "Exigir assinatura" }));
+    await click(within(page).getByRole("button", { name: "Criar chave" }));
     await settle(4);
-    expect(page.textContent).toContain("Copie o segredo agora. Ele não aparece de novo.");
-    expect(page.textContent).toContain("Ligada: só passam as chamadas assinadas com o segredo.");
-    // The example signs its body with the secret just made.
-    expect(page.textContent).toMatch(/SECRET='secret_\w+'/);
-    expect(page.textContent).toContain("X-Agentes-Signature: sha256=$SIG");
+    expect(page.textContent).toContain("Copie a chave agora. Ela não aparece de novo.");
+    // How to send it, and the example, carry the key just made.
+    expect(page.textContent).toMatch(/Mande no cabeçalho Authorization: Bearer secret_\w+\./);
+    expect(page.textContent).toMatch(/-H 'Authorization: Bearer secret_\w+'/);
 
     await click(within(page).getByRole("button", { name: "Gerar novo endereço" }));
     expect(page.textContent).toContain("O endereço atual para de funcionar na hora.");
@@ -120,33 +119,33 @@ describe("Rotinas: started by a webhook", () => {
     expect(page.textContent).toMatch(/curl 'https:\/\/app\.agentes\.test\/api\/hooks\/\S{43}\?text=hello'/);
   });
 
-  test("a new secret and turning the signature off say what stops working first", async () => {
+  test("a new key and removing it say what stops working first", async () => {
     const state = seedState();
     const api = createFakeApi(state);
     await open(webhookRoutine, api);
     const page = await details("Pedidos pagos");
     const made = (method: string) => state.calls.filter((c) => c.method === method).length;
-    await click(within(page).getByRole("button", { name: "Exigir assinatura" }));
+    await click(within(page).getByRole("button", { name: "Criar chave" }));
     await settle(4);
     expect(made("routines.newHookSecret")).toBe(1);
 
-    await click(within(page).getByRole("button", { name: "Gerar novo segredo" }));
-    expect(page.textContent).toContain("O segredo atual para de valer na hora.");
+    await click(within(page).getByRole("button", { name: "Gerar nova chave" }));
+    expect(page.textContent).toContain("A chave atual para de valer na hora.");
     expect(made("routines.newHookSecret")).toBe(1);
     await click(within(page).getByRole("button", { name: "Cancelar" }));
-    expect(page.textContent).not.toContain("O segredo atual para de valer na hora.");
-    await click(within(page).getByRole("button", { name: "Gerar novo segredo" }));
-    await click(within(page).getByRole("button", { name: "Gerar novo segredo" }));
+    expect(page.textContent).not.toContain("A chave atual para de valer na hora.");
+    await click(within(page).getByRole("button", { name: "Gerar nova chave" }));
+    await click(within(page).getByRole("button", { name: "Gerar nova chave" }));
     await settle(4);
     expect(made("routines.newHookSecret")).toBe(2);
 
-    await click(within(page).getByRole("button", { name: "Desligar assinatura" }));
-    expect(page.textContent).toContain("O agente volta a receber qualquer chamada ao endereço, assinada ou não.");
+    await click(within(page).getByRole("button", { name: "Remover chave" }));
+    expect(page.textContent).toContain("O agente volta a receber qualquer chamada ao endereço, com chave ou não.");
     expect(made("routines.removeHookSecret")).toBe(0);
-    await click(within(page).getByRole("button", { name: "Desligar assinatura" }));
+    await click(within(page).getByRole("button", { name: "Remover chave" }));
     await settle(4);
     expect(made("routines.removeHookSecret")).toBe(1);
-    expect(page.textContent).toContain("Desligada: o agente recebe qualquer chamada ao endereço.");
+    expect(page.textContent).toContain("Sem chave: quem tiver o endereço aciona o agente.");
   });
 
   test("whoever doesn't manage it never sees its address, on its page or in the menu", async () => {

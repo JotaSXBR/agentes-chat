@@ -821,6 +821,20 @@ label.routine-onair__text {
   flex-wrap: wrap;
   gap: 8px;
 }
+/* "Mais opções": what a no-code tool doesn't need, closed until opened. */
+.routine-hook__more {
+  min-width: 0;
+}
+.routine-hook__more > summary {
+  cursor: pointer;
+  width: fit-content;
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  font-weight: 550;
+}
+.routine-hook__more > .routine-hook__part {
+  margin-top: 16px;
+}
 .routine-hook__confirm {
   display: flex;
   flex-direction: column;

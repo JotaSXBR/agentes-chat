@@ -52,24 +52,24 @@ export const routineHookUrl = (r: Pick<Routine, "trigger">) => (r.trigger.type =
 export const isRefusedHookCall = (outcome: RoutineHookOutcome) =>
   outcome === "bad_signature" || outcome === "too_large" || outcome === "rate_limited";
 
+/** The header a no-code tool sets to send a routine's key (the server also takes `X-Api-Key`). */
+export const hookKeyHeader = (key: string) => `Authorization: Bearer ${key}`;
+
 /**
- * A call to try a routine's address from a terminal. With `secret` (the signing secret, or a placeholder for it),
- * the body is signed the way a sending service signs it: its HMAC-SHA256 in `X-Agentes-Signature`.
+ * A call to try a routine's address from a terminal. With `secret` (the routine's key, or a placeholder for it), it
+ * goes in `Authorization: Bearer`, the way a no-code tool sends it; services that sign their body need no example.
  */
 export function hookCurl(url: string, secret: string | null, methods: readonly string[] = ["POST"]) {
   const method = methods.includes("POST") ? "POST" : (methods.find((m) => m !== "GET") ?? "GET");
-  const sign = (data: string) => `SIG=$(printf '%s' ${data} | openssl dgst -sha256 -hmac "$SECRET" | sed 's/^.* //')`;
-  const signature = `  -H "X-Agentes-Signature: sha256=$SIG"`;
-  // A GET's data is its query string, and its signature covers that query string (without the `?`).
-  if (method === "GET") {
-    const get = `curl '${url}?text=hello'`;
-    return secret === null ? get : [`SECRET='${secret}'`, sign("'text=hello'"), `${get} \\`, signature].join("\n");
-  }
-  const body = `{"text":"hello"}`;
-  const send = (sig: string[], data: string) =>
-    [`curl -X ${method} '${url}' \\`, `  -H 'Content-Type: application/json' \\`, ...sig, `  -d ${data}`].join("\n");
-  if (secret === null) return send([], `'${body}'`);
-  return [`SECRET='${secret}'`, `BODY='${body}'`, sign('"$BODY"'), send([`${signature} \\`], '"$BODY"')].join("\n");
+  const key = secret === null ? [] : [`  -H '${hookKeyHeader(secret)}'`];
+  // A GET's data is its query string.
+  if (method === "GET") return [`curl '${url}?text=hello'`, ...key].join(" \\\n");
+  return [
+    `curl -X ${method} '${url}'`,
+    `  -H 'Content-Type: application/json'`,
+    ...key,
+    `  -d '{"text":"hello"}'`,
+  ].join(" \\\n");
 }
 
 /** Zones people pick most often, around the world; the select also keeps whatever zone a routine already has. */

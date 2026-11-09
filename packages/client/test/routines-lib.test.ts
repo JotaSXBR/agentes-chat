@@ -97,28 +97,24 @@ describe("a webhook routine's address", () => {
     expect(routineHookUrl({ trigger: { type: "event", event: "issue.created" } })).toBeNull();
   });
 
-  test("the example call: plain, or signed the way a sending service signs its body", () => {
+  test("the example call: plain, or with the key in Authorization: Bearer", () => {
     expect(hookCurl(url, null)).toBe(
       `curl -X POST '${url}' \\\n  -H 'Content-Type: application/json' \\\n  -d '{"text":"hello"}'`,
     );
-    const signed = hookCurl(url, "s3cret").split("\n");
-    expect(signed.slice(0, 3)).toEqual([
-      "SECRET='s3cret'",
-      `BODY='{"text":"hello"}'`,
-      `SIG=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$SECRET" | sed 's/^.* //')`,
+    expect(hookCurl(url, "s3cret").split("\n")).toEqual([
+      `curl -X POST '${url}' \\`,
+      `  -H 'Content-Type: application/json' \\`,
+      `  -H 'Authorization: Bearer s3cret' \\`,
+      `  -d '{"text":"hello"}'`,
     ]);
-    expect(signed).toContain(`  -H "X-Agentes-Signature: sha256=$SIG" \\`);
-    expect(signed.at(-1)).toBe('  -d "$BODY"');
   });
 
   test("the example call uses a method the address answers: POST when it can, else another; GET sends a query", () => {
     expect(hookCurl(url, null, ["GET", "PUT"]).split("\n")[0]).toBe(`curl -X PUT '${url}' \\`);
     expect(hookCurl(url, null, ["GET"])).toBe(`curl '${url}?text=hello'`);
     expect(hookCurl(url, "s3cret", ["GET"]).split("\n")).toEqual([
-      "SECRET='s3cret'",
-      `SIG=$(printf '%s' 'text=hello' | openssl dgst -sha256 -hmac "$SECRET" | sed 's/^.* //')`,
       `curl '${url}?text=hello' \\`,
-      `  -H "X-Agentes-Signature: sha256=$SIG"`,
+      `  -H 'Authorization: Bearer s3cret'`,
     ]);
   });
 

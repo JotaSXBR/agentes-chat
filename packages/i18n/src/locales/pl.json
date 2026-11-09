@@ -512,6 +512,18 @@
       "continue": "Kontynuuj tutaj ({{device}})",
       "text": "agentes.chat zostało skonfigurowane na tym urządzeniu ({{device}}): hasło nie jest potrzebne."
     },
+    "server": {
+      "into": "Logowanie do <b>{{server}}</b>",
+      "intoHere": "Logowanie do agentes.chat <b>na tym urządzeniu ({{device}})</b>"
+    },
+    "forgotHere": {
+      "ownerTitle": "Tutaj nie potrzebujesz hasła.",
+      "ownerLead": "agentes.chat jest zainstalowany na tym urządzeniu ({{device}}). Wejdź tutaj, a potem ustaw nowe hasło.",
+      "notOwner": "To nie konto osoby, która go zainstalowała? Poproś właściciela swojego workspace o link do nowego hasła.",
+      "title": "Ten serwer nie wysyła e-maili.",
+      "lead": "Poproś właściciela swojego workspace o link do nowego hasła. Tworzy go w Członkach, a link działa 1 godzinę.",
+      "back": "Wróć do hasła"
+    },
     "reset": {
       "title": "Utwórz nowe hasło.",
       "save": "Zapisz hasło",
@@ -531,18 +543,6 @@
       "wrongLinkLead": "Otwórz najnowszy link właściciela utworzony dla tego serwera.",
       "taken": "Ten serwer ma już właściciela.",
       "takenLead": "Zaloguj się na swoje konto."
-    },
-    "server": {
-      "into": "Logowanie do <b>{{server}}</b>",
-      "intoHere": "Logowanie do agentes.chat <b>na tym urządzeniu ({{device}})</b>"
-    },
-    "forgotHere": {
-      "ownerTitle": "Tutaj nie potrzebujesz hasła.",
-      "ownerLead": "agentes.chat jest zainstalowany na tym urządzeniu ({{device}}). Wejdź tutaj, a potem ustaw nowe hasło.",
-      "notOwner": "To nie konto osoby, która go zainstalowała? Poproś właściciela swojego workspace o link do nowego hasła.",
-      "title": "Ten serwer nie wysyła e-maili.",
-      "lead": "Poproś właściciela swojego workspace o link do nowego hasła. Tworzy go w Członkach, a link działa 1 godzinę.",
-      "back": "Wróć do hasła"
     }
   },
   "invite": {
@@ -1452,6 +1452,11 @@
     "addPasswordLabel": "Nowe hasło",
     "addPasswordSaved": "Hasło dodane.",
     "addPasswordReauth": "Zaloguj się ponownie, aby dodać hasło.",
+    "newPassword": "Ustaw nowe hasło",
+    "newPasswordHint": "Twoje inne sesje się zakończą, a aplikacje AI połączone starym hasłem trzeba połączyć ponownie.",
+    "newPasswordRow": "Aby zmienić hasło używane w innych przeglądarkach i na innych urządzeniach",
+    "newPasswordSaved": "Nowe hasło zapisane.",
+    "newPasswordReauth": "Zaloguj się ponownie, aby ustawić nowe hasło.",
     "yourWorkspaces": "Twoje przestrzenie robocze",
     "youAreHere": "Jesteś tutaj",
     "createdOn": "Utworzona {{date}}",
@@ -1459,6 +1464,11 @@
     "addWorkspace": "Dodaj przestrzeń roboczą",
     "addWorkspaceHint": "Dołącz do istniejącego, utwórz nowy albo użyj serwera swojego zespołu",
     "yourServer": "Twój serwer",
+    "serverHere": "agentes.chat na tym urządzeniu ({{device}})",
+    "serverStopped": "zatrzymany",
+    "serverOffline": "offline od {{time}}",
+    "serverSignedOut": "niezalogowano",
+    "serverSignIn": "Zaloguj się",
     "wiki": "Wiki",
     "settings": "Ustawienia",
     "workspaceMenu": "Menu przestrzeni roboczej",
@@ -1552,17 +1562,7 @@
     "unreadNotifications_one": "{{count}} nieprzeczytane powiadomienie",
     "unreadNotifications_few": "{{count}} nieprzeczytane powiadomienia",
     "unreadNotifications_many": "{{count}} nieprzeczytanych powiadomień",
-    "unreadNotifications_other": "{{count}} nieprzeczytane powiadomienia",
-    "newPassword": "Ustaw nowe hasło",
-    "newPasswordHint": "Twoje inne sesje się zakończą, a aplikacje AI połączone starym hasłem trzeba połączyć ponownie.",
-    "newPasswordRow": "Aby zmienić hasło używane w innych przeglądarkach i na innych urządzeniach",
-    "newPasswordSaved": "Nowe hasło zapisane.",
-    "newPasswordReauth": "Zaloguj się ponownie, aby ustawić nowe hasło.",
-    "serverHere": "agentes.chat na tym urządzeniu ({{device}})",
-    "serverStopped": "zatrzymany",
-    "serverOffline": "offline od {{time}}",
-    "serverSignedOut": "niezalogowano",
-    "serverSignIn": "Zaloguj się"
+    "unreadNotifications_other": "{{count}} nieprzeczytane powiadomienia"
   },
   "agentGroups": {
     "group": "Dział",
@@ -6072,6 +6072,16 @@
     "agentsOnlyYouHint": "W planie możesz pozwolić każdemu z nich odpowiadać innym osobom, na jego stronie.",
     "filters": "Filtruj osoby",
     "rolesOf": "Role: {{name}}",
+    "moreOf": "Więcej: {{name}}",
+    "passwordLink": {
+      "item": "Utwórz link do nowego hasła",
+      "hint": "Gdy ktoś zapomniał hasła",
+      "title": "Link do nowego hasła dla: {{name}}",
+      "lead": "Działa raz, przez 1 godzinę. Wyślij go tam, gdzie rozmawiacie.",
+      "label": "Link",
+      "making": "Tworzenie linku…",
+      "copy": "Kopiuj link"
+    },
     "everyoneNote": "Wszyscy obejmuje każdą osobę w przestrzeni roboczej.",
     "noRolesToGive": "Brak ról niższych niż twoja do nadania.",
     "roleFilter": "Rola",
@@ -6381,17 +6391,7 @@
     "ownerLine": "Właściciel: {{name}}",
     "noOwner": "Brak właściciela",
     "budgetLine": "{{percent}} budżetu na {{month}}",
-    "noAgents": "Na razie brak agentów.",
-    "moreOf": "Więcej: {{name}}",
-    "passwordLink": {
-      "item": "Utwórz link do nowego hasła",
-      "hint": "Gdy ktoś zapomniał hasła",
-      "title": "Link do nowego hasła dla: {{name}}",
-      "lead": "Działa raz, przez 1 godzinę. Wyślij go tam, gdzie rozmawiacie.",
-      "label": "Link",
-      "making": "Tworzenie linku…",
-      "copy": "Kopiuj link"
-    }
+    "noAgents": "Na razie brak agentów."
   },
   "empty": {
     "thread": {
@@ -7009,6 +7009,7 @@
       "signature": "Podpis",
       "signedOff": "Wyłączony: agent dostaje każde wywołanie adresu.",
       "signedOn": "Włączony: przechodzą tylko wywołania podpisane sekretem.",
+      "keyHow": "Wyślij go w nagłówku {{header}}.",
       "signedHelp": "Wyślij HMAC-SHA256 treści (przy wywołaniu GET: jego query stringa, bez ?) w nagłówku X-Agentes-Signature (sha256=…). X-Hub-Signature-256 z GitHuba też działa.",
       "addSecret": "Wymagaj podpisu",
       "newSecret": "Nowy sekret",
@@ -7020,6 +7021,7 @@
       "secretOnce": "Skopiuj sekret teraz. Nie pokaże się ponownie.",
       "secretCopied": "Sekret skopiowany.",
       "secretPlaceholder": "twoj-sekret",
+      "more": "Więcej opcji",
       "example": "Przykład",
       "exampleCopied": "Przykład skopiowany.",
       "test": "Testuj",
@@ -12799,6 +12801,11 @@
     }
   },
   "errors": {
+    "passwordLink": {
+      "email": "Ten serwer wysyła e-maile: osoba sama prosi o link w Nie pamiętam hasła.",
+      "serverOwner": "Osoba, która zainstalowała ten serwer, loguje się na komputerze, na którym działa, bez linku.",
+      "otherWorkspace": "Ta osoba jest też w workspace, który nie jest twój: link mogą utworzyć tylko właściciele wszystkich z nich."
+    },
     "said": {
       "gone": "Tego już tu nie ma. Odśwież stronę i spróbuj ponownie.",
       "alreadyDone": "To już ma odpowiedź lub się zakończyło. Odśwież, żeby zobaczyć stan.",
@@ -13160,11 +13167,6 @@
         "invalidInput": "Sprawdź pola i spróbuj ponownie.",
         "tooManyItems": "Vault jest pełny. Usuń elementy, zanim zsynchronizujesz więcej."
       }
-    },
-    "passwordLink": {
-      "email": "Ten serwer wysyła e-maile: osoba sama prosi o link w Nie pamiętam hasła.",
-      "serverOwner": "Osoba, która zainstalowała ten serwer, loguje się na komputerze, na którym działa, bez linku.",
-      "otherWorkspace": "Ta osoba jest też w workspace, który nie jest twój: link mogą utworzyć tylko właściciele wszystkich z nich."
     }
   },
   "machines": {

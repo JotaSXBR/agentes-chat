@@ -248,6 +248,31 @@ describe("routine webhooks", () => {
     expect(await post(d, token, body)).toMatchObject({ status: 202 });
   });
 
+  test("with a secret, the secret itself passes as a key: Authorization: Bearer or X-Api-Key, never stored", async () => {
+    f = await setup();
+    const routine = await webhookRoutine();
+    const ref = await managedWebhookRoutine(f.db, f.owner.id, f.org.id, routine.id);
+    const { secret } = await newRoutineHookSecret(hookDeps(), f.owner.id, ref);
+    const token = await tokenOf(routine.id);
+    const body = '{"ok":true}';
+    const d = hookDeps();
+    expect(await post(d, token, body, { authorization: "Bearer wrong" })).toMatchObject({ status: 401 });
+    expect(await post(d, token, body, { authorization: secret })).toMatchObject({ status: 401 });
+    expect(await post(d, token, body, { "x-api-key": `${secret}x` })).toMatchObject({ status: 401 });
+    const bearer = await post(d, token, body, { authorization: `Bearer ${secret}` });
+    expect(bearer).toMatchObject({ status: 202 });
+    expect(await post(d, token, body, { "x-api-key": secret })).toMatchObject({ status: 202 });
+    const runId = bearer.status === 202 ? (bearer.runId ?? "") : "";
+    expect(JSON.stringify((await routineRunRow(f, runId)).event)).not.toContain(secret);
+    expect((await callsOf(routine.id)).map((c) => c.outcome)).toEqual([
+      "bad_signature",
+      "bad_signature",
+      "bad_signature",
+      "accepted",
+      "accepted",
+    ]);
+  });
+
   test("a signed GET's signature covers its query string: one seen signature can't carry other data", async () => {
     f = await setup();
     const routine = await webhookRoutine();

@@ -15811,6 +15811,9 @@
   "routines.webhook.signedOn": {
     "value": "On: only calls signed with the secret get through."
   },
+  "routines.webhook.keyHow": {
+    "value": "Send it in the header {{header}}."
+  },
   "routines.webhook.signedHelp": {
     "value": "Send the HMAC-SHA256 of the body (of a GET call: its query string, without the ?) in X-Agentes-Signature (sha256=…). GitHub's X-Hub-Signature-256 works too."
   },
@@ -15843,6 +15846,9 @@
   },
   "routines.webhook.secretPlaceholder": {
     "value": "your-secret"
+  },
+  "routines.webhook.more": {
+    "value": "More options"
   },
   "routines.webhook.example": {
     "value": "Example"

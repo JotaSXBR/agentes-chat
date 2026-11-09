@@ -403,7 +403,11 @@ async function underLimit(deps: Pick<RoutineHookDeps, "db" | "rateLimiter">, hoo
   return false;
 }
 
-/** The HMAC-SHA256 of the raw body (a GET's query string), as `sha256=<hex>` in either header, compared in constant time. */
+/**
+ * The HMAC-SHA256 of the raw body (a GET's query string), as `sha256=<hex>` in either header; or the secret itself as a
+ * key, `Authorization: Bearer <secret>` or `X-Api-Key: <secret>`, for no-code tools that can set a header but can't
+ * sign. Compared in constant time.
+ */
 async function signedBy(keyWrappers: KeyWrapper[], hook: HookRow, body: Uint8Array, headers: Headers) {
   const secret = await openSecret(
     keyWrappers,
@@ -415,8 +419,19 @@ async function signedBy(keyWrappers: KeyWrapper[], hook: HookRow, body: Uint8Arr
     secretAad({ orgId: hook.orgId, id: hook.routineId }),
   );
   const expected = Buffer.from(`sha256=${createHmac("sha256", secret).update(body).digest("hex")}`);
-  return SIGNATURE_HEADERS.some((name) => {
+  const signed = SIGNATURE_HEADERS.some((name) => {
     const given = Buffer.from((headers.get(name) ?? "").trim().toLowerCase());
+    return given.length === expected.length && timingSafeEqual(given, expected);
+  });
+  return signed || keyGiven(secret, headers);
+}
+
+/** The secret sent as a key: `Authorization: Bearer <secret>` or `X-Api-Key: <secret>`. */
+function keyGiven(secret: string, headers: Headers) {
+  const expected = Buffer.from(secret);
+  const bearer = /^bearer\s+(.+)$/i.exec((headers.get("authorization") ?? "").trim())?.[1] ?? "";
+  return [bearer, headers.get("x-api-key") ?? ""].some((key) => {
+    const given = Buffer.from(key.trim());
     return given.length === expected.length && timingSafeEqual(given, expected);
   });
 }

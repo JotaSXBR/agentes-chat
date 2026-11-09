@@ -75,6 +75,7 @@ import {
 import {
   browserTimezone,
   hookCurl,
+  hookKeyHeader,
   isRefusedHookCall,
   onceParts,
   routineHookUrl,
@@ -1954,9 +1955,9 @@ function RunChatLink({ run }: { run: RoutineRun }) {
 }
 
 /**
- * A webhook routine's address (ADR 0106), for who manages it: the address to copy and a new one (the old stops at
- * once), the signing secret (shown once, replaced or turned off), an example call, Testar, and the latest calls with
- * the run each went into.
+ * A webhook routine's address (ADR 0106), for who manages it. Up front only what a no-code tool needs: the address to
+ * copy and its key (shown once, sent in `Authorization: Bearer`). Under "Mais opções": a new address (the old stops at
+ * once), removing the key, the methods, an example call, Testar, and the latest calls with the run each went into.
  */
 function WebhookPanel({ routine: r, runs }: { routine: Routine; runs: RoutineRun[] }) {
   const { t } = useTranslation();
@@ -1993,21 +1994,6 @@ function WebhookPanel({ routine: r, runs }: { routine: Routine; runs: RoutineRun
           </InfoHint>
         </span>
         <CommandBlock command={data.url} copied={t("routines.webhook.copied")} />
-        {asking === "address" ? (
-          <HookQuestion
-            text={t("routines.webhook.replaceBody")}
-            action={t("routines.webhook.replace")}
-            loading={busy("address")}
-            onCancel={() => setAsking(null)}
-            onConfirm={() => change("address")}
-          />
-        ) : (
-          <div className="routine-hook__actions">
-            <Button type="button" size="sm" icon="refresh" onClick={() => setAsking("address")}>
-              {t("routines.webhook.replace")}
-            </Button>
-          </div>
-        )}
       </div>
       <div className="routine-hook__part">
         <span className="ac-hintline">
@@ -2016,23 +2002,31 @@ function WebhookPanel({ routine: r, runs }: { routine: Routine; runs: RoutineRun
             {t("routines.webhook.signedHelp")}
           </InfoHint>
         </span>
-        <p className="small">{t(data.signed ? "routines.webhook.signedOn" : "routines.webhook.signedOff")}</p>
-        {secret && data.signed && (
+        {secret && data.signed ? (
           <>
+            <CommandBlock command={secret} copied={t("routines.webhook.secretCopied")} />
             <p className="routine-note small ac-iconline" role="status">
               <Icon name="key" size={14} />
               <span>{t("routines.webhook.secretOnce")}</span>
             </p>
-            <CommandBlock command={secret} copied={t("routines.webhook.secretCopied")} />
           </>
+        ) : (
+          <p className="small">{t(data.signed ? "routines.webhook.signedOn" : "routines.webhook.signedOff")}</p>
         )}
-        {asking === "secret" || asking === "unsign" ? (
+        {data.signed && (
+          <p className="small muted">
+            {t("routines.webhook.keyHow", {
+              header: hookKeyHeader(secret ?? t("routines.webhook.secretPlaceholder")),
+            })}
+          </p>
+        )}
+        {asking === "secret" ? (
           <HookQuestion
-            text={t(asking === "secret" ? "routines.webhook.newSecretBody" : "routines.webhook.removeSecretBody")}
-            action={t(asking === "secret" ? "routines.webhook.newSecret" : "routines.webhook.removeSecret")}
-            loading={busy(asking)}
+            text={t("routines.webhook.newSecretBody")}
+            action={t("routines.webhook.newSecret")}
+            loading={busy("secret")}
             onCancel={() => setAsking(null)}
-            onConfirm={() => change(asking)}
+            onConfirm={() => change("secret")}
           />
         ) : (
           <div className="routine-hook__actions">
@@ -2045,49 +2039,69 @@ function WebhookPanel({ routine: r, runs }: { routine: Routine; runs: RoutineRun
             >
               {t(data.signed ? "routines.webhook.newSecret" : "routines.webhook.addSecret")}
             </Button>
-            {data.signed && (
-              <Button type="button" size="sm" variant="ghost" onClick={() => setAsking("unsign")}>
-                {t("routines.webhook.removeSecret")}
-              </Button>
-            )}
           </div>
         )}
       </div>
-      <HookMethods routine={r} methods={data.methods} />
-      <div className="routine-hook__part">
-        <span className="ac-field__label">{t("routines.webhook.example")}</span>
-        <CommandBlock
-          command={hookCurl(
-            data.url,
-            data.signed ? (secret ?? t("routines.webhook.secretPlaceholder")) : null,
-            data.methods,
+      <details className="routine-hook__more">
+        <summary>{t("routines.webhook.more")}</summary>
+        <div className="routine-hook__part">
+          {asking === "address" || asking === "unsign" ? (
+            <HookQuestion
+              text={t(asking === "address" ? "routines.webhook.replaceBody" : "routines.webhook.removeSecretBody")}
+              action={t(asking === "address" ? "routines.webhook.replace" : "routines.webhook.removeSecret")}
+              loading={busy(asking)}
+              onCancel={() => setAsking(null)}
+              onConfirm={() => change(asking)}
+            />
+          ) : (
+            <div className="routine-hook__actions">
+              <Button type="button" size="sm" icon="refresh" onClick={() => setAsking("address")}>
+                {t("routines.webhook.replace")}
+              </Button>
+              {data.signed && (
+                <Button type="button" size="sm" variant="ghost" onClick={() => setAsking("unsign")}>
+                  {t("routines.webhook.removeSecret")}
+                </Button>
+              )}
+            </div>
           )}
-          copied={t("routines.webhook.exampleCopied")}
-        />
-        <div className="routine-hook__actions">
-          <Button
-            type="button"
-            size="sm"
-            icon="send"
-            loading={busy("test")}
-            onClick={() => action.mutate("test", { onSuccess: () => toast.show(t("routines.webhook.tested")) })}
-          >
-            {t("routines.webhook.test")}
-          </Button>
         </div>
-      </div>
-      <div className="routine-hook__part">
-        <span className="ac-field__label">{t("routines.webhook.calls")}</span>
-        {data.calls.length === 0 ? (
-          <p className="small muted">{t("routines.webhook.noCalls")}</p>
-        ) : (
-          <ol className="routine-runs" aria-label={t("routines.webhook.calls")}>
-            {data.calls.map((c) => (
-              <HookCallItem key={c.id} call={c} run={runs.find((x) => x.id === c.runId)} />
-            ))}
-          </ol>
-        )}
-      </div>
+        <HookMethods routine={r} methods={data.methods} />
+        <div className="routine-hook__part">
+          <span className="ac-field__label">{t("routines.webhook.example")}</span>
+          <CommandBlock
+            command={hookCurl(
+              data.url,
+              data.signed ? (secret ?? t("routines.webhook.secretPlaceholder")) : null,
+              data.methods,
+            )}
+            copied={t("routines.webhook.exampleCopied")}
+          />
+          <div className="routine-hook__actions">
+            <Button
+              type="button"
+              size="sm"
+              icon="send"
+              loading={busy("test")}
+              onClick={() => action.mutate("test", { onSuccess: () => toast.show(t("routines.webhook.tested")) })}
+            >
+              {t("routines.webhook.test")}
+            </Button>
+          </div>
+        </div>
+        <div className="routine-hook__part">
+          <span className="ac-field__label">{t("routines.webhook.calls")}</span>
+          {data.calls.length === 0 ? (
+            <p className="small muted">{t("routines.webhook.noCalls")}</p>
+          ) : (
+            <ol className="routine-runs" aria-label={t("routines.webhook.calls")}>
+              {data.calls.map((c) => (
+                <HookCallItem key={c.id} call={c} run={runs.find((x) => x.id === c.runId)} />
+              ))}
+            </ol>
+          )}
+        </div>
+      </details>
     </div>
   );
 }

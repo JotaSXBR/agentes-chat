@@ -210,7 +210,6 @@ export function AudienceChoice({
             </TokenList>
           )}
           <SearchField
-            size="sm"
             aria-label={t("audience.search")}
             placeholder={t("audience.search")}
             value={query}

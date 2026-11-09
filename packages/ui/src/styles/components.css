@@ -2875,9 +2875,9 @@ html:not([data-pointer]) .ac-tab:focus-visible {
   border-top: 1px solid var(--line);
 }
 /* Over that line, the body ends as far above it as the buttons start under it (it kept only its 4px of room for focus
-   rings). */
+   rings). Only a body right over the line: one above a search list ends on its label, 4px over the search. */
 .ac-dialog__body:has(+ .ac-dialog__foot--bar),
-.ac-locked:has(+ .ac-dialog__foot--bar) > .ac-dialog__body {
+.ac-locked:has(+ .ac-dialog__foot--bar) > .ac-dialog__body:last-child {
   padding-bottom: 12px;
 }
 .ac-form__actions {

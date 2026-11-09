@@ -322,7 +322,6 @@ export function SkillPicker({
     <div className="skill-picker">
       {searchable && (
         <SearchField
-          size="sm"
           aria-label={t("skills.search")}
           placeholder={t("skills.search")}
           value={q}

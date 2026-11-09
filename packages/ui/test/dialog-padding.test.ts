@@ -77,6 +77,8 @@ describe("dialog padding", () => {
             .pop() ?? "";
         if (!part.test(last)) continue;
         for (const side of sides) {
+          // A body right over the footer's line ends on that line's room, not on the dialog's edge.
+          if (side === "bottom" && selector.includes(":has(+ .ac-dialog__foot--bar)")) continue;
           const value = pad[side];
           // 0 is a full-bleed part (a code view, a sky over the head); anything else measures from the inset.
           if (value !== undefined && value !== "0" && !value.includes(`var(${token})`))

@@ -395,3 +395,35 @@ describe("dragging a channel into, out of and between categories (ADR 0080)", ()
     expect(places(state)).toEqual([]);
   });
 });
+
+describe("Nova categoria at its longest (ADR 0080)", () => {
+  test("a channel's long name and a category's longest wrap in its list, under a search as tall as the Nome", async () => {
+    const seeded = seedState();
+    const longChannel = "atendimento-ao-cliente-reclamacoes-e-devolucoes-da-loja-online-da-regiao-sul";
+    const longCategory = "Atendimento e Suporte ao Cliente do Sul";
+    seeded.channelCategories = [{ id: "cat-sul", name: longCategory, position: 0 }];
+    const eng = seeded.channels.find((c) => c.id === ENG_ID);
+    if (!eng) throw new Error("no #eng");
+    seeded.channels.push({
+      ...eng,
+      id: "00000000-0000-4000-8000-0000000000c5",
+      name: longChannel,
+      categoryId: "cat-sul",
+    });
+    await go(seeded);
+    const plus = within(nav()).getByRole("button", { name: "Novo canal ou categoria" });
+    await act(async () => {
+      fireEvent.keyDown(plus, { key: "Enter" });
+      fireEvent.keyUp(plus, { key: "Enter" });
+    });
+    await settle(2);
+    const menu = screen().getByRole("menu", { name: "Novo canal ou categoria" });
+    await click(within(menu).getByRole("menuitem", { name: "Nova categoria" }));
+    const dialog = screen().getByRole("dialog", { name: "Nova categoria" });
+    expect(within(dialog).getByText(longChannel)).toBeTruthy();
+    expect(within(dialog).getByText(`Hoje em ${longCategory}`)).toBeTruthy();
+    // A field of the dialog's form, as tall as its Nome: not a toolbar's compact search.
+    const search = within(dialog).getByRole("searchbox", { name: "Buscar canal" });
+    expect(search.closest(".ac-searchfield")?.classList.contains("ac-searchfield--sm")).toBe(false);
+  });
+});

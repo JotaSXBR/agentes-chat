@@ -280,7 +280,6 @@ export function DialogSearchList({
       {search && (
         <div className="ac-dialog__tools">
           <SearchField
-            size="sm"
             aria-label={searchLabel}
             placeholder={searchPlaceholder}
             value={query}

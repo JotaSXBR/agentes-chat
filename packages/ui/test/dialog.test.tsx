@@ -328,6 +328,30 @@ describe("Dialog", () => {
     expect(body().queryAllByRole("listitem")).toHaveLength(0);
     expect(body().getByText("Nada encontrado com “deploy”.")).toBeTruthy();
   });
+
+  test("its search is a field of the dialog's form: the ruler's default step, as tall as the name above it", async () => {
+    render(
+      <Dialog open onOpenChange={() => {}} title="Nova categoria" closeLabel="Fechar">
+        <DialogBody>
+          <Input aria-label="Nome" />
+        </DialogBody>
+        <DialogSearchList query="" onQueryChange={() => {}} searchLabel="Buscar canal" emptyText="Nada" isEmpty>
+          {null}
+        </DialogSearchList>
+      </Dialog>,
+    );
+    const field = body().getByRole("searchbox", { name: "Buscar canal" }).closest(".ac-searchfield");
+    expect(field?.className).toBe("ac-searchfield");
+    // Both on the ruler's default step: the search falls back to it outside a toolbar's compact row.
+    const css = (await Bun.file(new URL("../src/styles/components.css", import.meta.url).pathname).text()).replace(
+      /\/\*[\s\S]*?\*\//g,
+      "",
+    );
+    const height = (selector: string) =>
+      css.match(new RegExp(`\\n${selector.replace(".", "\\.")} \\{[^}]*?\\n  height: ([^;]+);`))?.[1];
+    expect(height(".ac-input")).toBe("var(--control-h-md)");
+    expect(height(".ac-searchfield")).toBe("var(--tool-h, var(--control-h-md))");
+  });
 });
 
 describe("Dialog without a footer", () => {

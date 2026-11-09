@@ -60,7 +60,12 @@ export const MEASURE = String.raw`(() => {
     for (const e of list.getEntries()) {
       if (e.hadRecentInput) continue;
       const box = (r) => [r.x, r.y, r.width, r.height].map(Math.round).join(',');
-      s.entries.push({ at: Math.round(e.startTime), value: e.value, sources: (e.sources || []).map((x) => label(x.node) + ' [' + box(x.previousRect) + ']→[' + box(x.currentRect) + ']') });
+      // Where the conversation's list stood then (scrolled to, how tall, what it holds first): what moved it.
+      const list = document.querySelector('.channel__messages');
+      const where = list
+        ? 'list ' + Math.round(list.scrollTop) + '/' + list.scrollHeight + ' of ' + list.clientHeight + ', ' + list.children.length + ' rows, first ' + label(list.firstElementChild)
+        : 'no list';
+      s.entries.push({ at: Math.round(e.startTime), value: e.value, sources: [...(e.sources || []).map((x) => label(x.node) + ' [' + box(x.previousRect) + ']→[' + box(x.currentRect) + ']'), where] });
     }
   }).observe({ type: 'layout-shift', buffered: true });
   const watch = () => new MutationObserver(() => { s.lastChange = performance.now(); })
@@ -226,8 +231,8 @@ async function openTab(browser: Browser, size: (typeof SIZES)[number], options: 
   let frame = 0;
   // One tab at a time: its frames are this tab's (`sessionId` here is the frame's, for the ack).
   browser.on("Page.screencastFrame", (p) => {
-    void s("Page.screencastFrameAck", { sessionId: p.sessionId });
     if (!film) return;
+    void s("Page.screencastFrameAck", { sessionId: p.sessionId }).catch(() => {});
     frame += 1;
     writeFileSync(join(film, `${String(frame).padStart(4, "0")}.jpg`), Buffer.from(String(p.data), "base64"));
   });
@@ -346,7 +351,7 @@ function report(results: Result[]) {
       (r) =>
         `| ${r.size} | ${r.screen} | ${r.score.total.toFixed(4)} | ${r.score.shifts} | ${r.score.jumps} | ${r.score.worst
           .slice(0, 3)
-          .map((w) => `${w.kind} ${w.value.toFixed(4)}: ${w.sources.slice(0, 2).join(", ")}`)
+          .map((w) => `${w.kind} ${w.value.toFixed(4)} at ${w.at} ms: ${w.sources.slice(0, 3).join(", ")}`)
           .join("<br>")
           .replaceAll("|", "\\|")} |`,
     ),

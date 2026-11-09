@@ -8709,6 +8709,14 @@ html:not([data-pointer]) .onb__step:focus-visible {
   width: var(--option-face);
   height: var(--option-face);
 }
+/* Chosen, in the trigger: its bare icon, as a maker's mark is there (`.ac-select__lead > .ac-brand`). The tile would
+   stand 5px from the edges of a 40px control. */
+.ac-select__lead > .newag__ib {
+  width: auto;
+  height: auto;
+  background: none;
+  box-shadow: none;
+}
 /* The role step: "Do zero" first (its Cargo field right under it, one card's gap apart), then the groups of presets
    under small headings. */
 .newag__role-groups {

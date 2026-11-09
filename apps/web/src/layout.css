@@ -504,8 +504,11 @@ html:not([data-pointer]) .consult-pair__row:focus-visible {
   margin: 4px 0 0;
   white-space: pre-wrap;
 }
-/* Under the request card's well, on its 4px grid. */
+/* 12px under the well's last line (its own 10px padding below it), and 12px over the footer's hairline. */
 .rq > .ac-locked > .waitcard__lines {
+  margin-top: 2px;
+}
+.rq > .ac-locked > .waitcard__lines + .rq__foot {
   margin-top: 12px;
 }
 
@@ -4803,7 +4806,9 @@ html:not([data-pointer]) .catalog-tile:focus-visible {
   height: 58%;
   object-fit: contain;
 }
-/* A service in a chip: its bare mark in the box of the chip's icons, a little smaller since it fills its square. */
+/* A service in a chip or a line of a card: its bare mark in the box of the icons around it, a little smaller since it
+   fills its square. */
+.waitcard__lines > li > .connector-icon,
 .ac-chip > .connector-icon {
   width: 14px;
   height: 14px;
@@ -4812,6 +4817,7 @@ html:not([data-pointer]) .catalog-tile:focus-visible {
   background: transparent;
   font-size: 8px;
 }
+.waitcard__lines > li > .connector-icon > :is(.connector-icon__mark, .connector-icon__img),
 .ac-chip > .connector-icon > .connector-icon__mark,
 .ac-chip > .connector-icon > .connector-icon__img {
   width: 12px;
@@ -10004,12 +10010,6 @@ html:not([data-pointer]) .agp-tabs .ac-tab:focus-visible {
 }
 .agp-card > .ac-card__foot {
   margin-bottom: -12px;
-}
-/* Something changed in it: a bar on its left edge, inside the card's line. */
-.agp-card[data-changed] {
-  box-shadow:
-    var(--card-shadow),
-    inset 2px 0 0 var(--ink);
 }
 /*
  * The overview. Wide: what it does and its recent work on the left, the Ficha as a column on the right (its rows

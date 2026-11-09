@@ -6,6 +6,7 @@ setupDom();
 
 import { act, cleanup, fireEvent } from "@testing-library/react";
 import { ArtifactCard } from "@/components/artifacts/ArtifactCard";
+import { ArtifactViewerProvider } from "@/components/artifacts/ArtifactViewer";
 import { ChoicesCard } from "@/components/blocks/ChoicesCard";
 import { ADA_ID, createFakeApi } from "./fake-api";
 import { renderPage, settle } from "./render";
@@ -152,7 +153,12 @@ test("before it loads, a question card holds its own shape from its message's re
   const artifact = held(async () => detail("card-1"));
   api.artifacts.get = artifact.read;
   const ref = { id: "card-1", version: 1, title: "Revisão", kind: "choices", options: 2, questions: 2 } as const;
-  await renderPage(<ArtifactCard artifact={ref} />, { api, org: true });
+  await renderPage(
+    <ArtifactViewerProvider>
+      <ArtifactCard artifact={ref} />
+    </ArtifactViewerProvider>,
+    { api, org: true },
+  );
   await settle(4);
   expect(document.querySelector(".artifact-tile")).toBeNull();
   const placeholder = document.querySelector('.live-block.choices[aria-busy="true"]');
@@ -187,11 +193,13 @@ test("the worst a ref can say still holds a card's shape: a title that wraps, si
   const title =
     "Placas da feira para todas as quarenta mesas, com os nomes das editoras conferidos e revisados por alguém da equipe";
   await renderPage(
-    <div className="artifact-cards">
-      <ArtifactCard artifact={{ id: "card-2", version: 1, title, kind: "choices", options: 6, questions: 5 }} />
-      <ArtifactCard artifact={{ id: "poll-1", version: 1, title, kind: "poll", options: 8 }} />
-      <ArtifactCard artifact={{ id: "block-1", version: 1, title, kind: "block" }} />
-    </div>,
+    <ArtifactViewerProvider>
+      <div className="artifact-cards">
+        <ArtifactCard artifact={{ id: "card-2", version: 1, title, kind: "choices", options: 6, questions: 5 }} />
+        <ArtifactCard artifact={{ id: "poll-1", version: 1, title, kind: "poll", options: 8 }} />
+        <ArtifactCard artifact={{ id: "block-1", version: 1, title, kind: "block" }} />
+      </div>
+    </ArtifactViewerProvider>,
     { api, org: true },
   );
   await settle(4);

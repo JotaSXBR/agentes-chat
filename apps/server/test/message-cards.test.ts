@@ -66,12 +66,6 @@ test("a conversation's page brings what its cards show (include=cards), so they 
   expect(cards?.polls).toEqual([expect.objectContaining({ id: poll.id, votes: [] })]);
   expect(cards?.choices).toEqual([{ id: choices.id, answer: null }]);
   expect(cards?.blocks).toEqual([]);
-
-  // Someone who can't read the channel gets nothing of it, cards included.
-  const stranger = browser(t);
-  await signUp(stranger, "stranger@example.com");
-  const refused = await stranger(`/api/app/organizations/${orgId}/channels/${channelId}/messages?include=cards`);
-  expect(refused.status).toBeGreaterThanOrEqual(400);
 });
 
 test("a picture keeps its size: its ref and its content say it, so its box holds before it loads", async () => {

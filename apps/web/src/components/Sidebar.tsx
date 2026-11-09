@@ -41,6 +41,7 @@ import { audienceChip, audienceNames, audienceNotice, canTalk, hiddenAgentIds } 
 import { workspaceNotes } from "@agenteschat/client/lib/deletion";
 import { ErrorBoundary } from "@agenteschat/client/lib/error-boundary";
 import { errorText } from "@agenteschat/client/lib/errors";
+import { BLANK_LINE } from "@agenteschat/client/lib/format";
 import { waitingAgents } from "@agenteschat/client/lib/outages";
 import { can, managesChannel } from "@agenteschat/client/lib/permissions";
 import { AVAILABILITIES, isOutOfOffice, presenceOfAvailability, statusEndNote } from "@agenteschat/client/lib/presence";
@@ -799,6 +800,8 @@ export function Sidebar() {
       <div
         className="sidebar__scroll"
         ref={navRef}
+        // Its lists show together once the channels, the agents and the DMs are in: no section pushes the next down.
+        data-pending={channels.isLoading || dir.loading || dms.isLoading || undefined}
         onKeyDown={(e) => spaceEvent(e) && sidebarMenu.onKeyDown(e)}
         onContextMenu={(e) => spaceEvent(e) && sidebarMenu.onContextMenu(e)}
       >
@@ -2030,7 +2033,8 @@ function WorkspaceMenu({ summary }: { summary: string | null }) {
         <OrgMark logo={org.logo} className="sidebar__org-mark" />
         <span className="sidebar__org-text">
           <span className="sidebar__org-name">{org.name}</span>
-          {summary && <span className="sidebar__org-meta">{summary}</span>}
+          {/* Its line held until the counts come, so the name doesn't move up and back down. */}
+          <span className="sidebar__org-meta">{summary ?? BLANK_LINE}</span>
         </span>
         <Icon name="chevronDown" size={16} />
       </button>

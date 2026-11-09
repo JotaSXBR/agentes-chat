@@ -541,6 +541,11 @@ html:not([data-pointer]) .consult-pair__row:focus-visible {
   flex-direction: column;
   gap: 16px;
 }
+/* Until the channels, the agents and the DMs are all in (Sidebar.tsx): laid out but unseen, then shown together. The
+   tools on top stay (nothing above them moves). */
+.sidebar__scroll[data-pending] > :not([data-section="tools"]:first-child) {
+  visibility: hidden;
+}
 .sidebar__scroll {
   position: relative;
   flex: 1 1 auto;

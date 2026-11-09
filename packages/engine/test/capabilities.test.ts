@@ -9,6 +9,7 @@ import {
   forComputerBrain,
   GITHUB_GUIDANCE,
   grantScopes,
+  OWN_TOOLS_LINE,
   postPersonMessage,
   setAgentScopes,
   summarizeGrants,
@@ -40,9 +41,13 @@ test("capabilities come from the granted tools, grouped, with what needs approva
   expect(text).toContain("Need a person's approval (you ask, someone approves in the chat): `github_merge_pr`.");
   expect(text).toContain("write there what you found and why");
   expect(text).toContain("suggest who can");
+  // The names are the agent's: people can't use them, so it acts and says what happens in plain words.
+  expect(text).toContain(OWN_TOOLS_LINE);
+  expect(OWN_TOOLS_LINE).toContain("Never tell them to use one: call it yourself.");
   const none = describeCapabilities([]);
   expect(none).toContain("You only write messages in this chat");
   expect(none).not.toContain("Download PDF");
+  expect(none).not.toContain(OWN_TOOLS_LINE);
 });
 
 test("## Your means comes last, after what needs a person and the connectors not usable yet", () => {

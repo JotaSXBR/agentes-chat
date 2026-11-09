@@ -39,6 +39,7 @@ import { pendingConnectors } from "./access";
 import { linkRunActions, publishMessageActions } from "./agent-actions";
 import { withTimeout } from "./agent-media";
 import { announceAgentStatus, askRunStatus, startRunStatus, statusCandidates } from "./agent-status";
+import { TECHNICAL_STYLE_LINE } from "./agent-style";
 import { type Agent, getAgentCached } from "./agents";
 import { agentsDmReads, readerOfRun } from "./agents-dm-reads";
 import { type AgentAi, agentAiState, noAiReasonOf, ownNotSignedIn } from "./ai-status";
@@ -167,6 +168,7 @@ import {
   type LearnSignal,
   reportRunFailure,
   type TurnEndDecision,
+  toolsNamed,
   triedCalls,
   verdictRecord,
 } from "./continuation";
@@ -4820,10 +4822,20 @@ async function executeRunInner(
               ),
             )
           : "";
+      // A person who chose technical replies welcomes tool names (ADR 0147).
+      const namedTools =
+        text && !capped && !t.system.some((b) => b.text === TECHNICAL_STYLE_LINE)
+          ? toolsNamed(
+              text,
+              [...granted, ...tools].map((x) => x.name),
+              t.request ?? triggerMessage?.body ?? triggerText,
+            )
+          : [];
       let decision = await decideTurnEnd({
         state,
         kind: betweenAgents ? "agents_dm" : "conversation",
         openRequest,
+        namedTools,
         executed: transcript.executedCalls ?? 0,
         bound: t.stuck?.endAt !== undefined ? "stuck" : t.wrapUpNoted ? "step_limit" : null,
         quiet: silent && !judged,
@@ -4886,6 +4898,7 @@ async function executeRunInner(
         untried: "untried",
         secret: "secret",
         open_request: "open_request",
+        tool_names: "tool_names",
       }[decision.rule];
       const { nudge: _, ...recorded } = { ...decision, count: t.continuation.count };
       later(() =>
@@ -4902,12 +4915,13 @@ async function executeRunInner(
         if (plan.kind !== "model") nextPrompt = decision.nudge;
         // Nothing to post first: it simply goes on. A give-up judged untried isn't posted either: it would send people
         // after something the next turn may do itself.
-        // Nor a secret asked in the chat (ADR 0109 addendum).
+        // Nor a secret asked in the chat (ADR 0109 addendum), nor a reply naming its tools to a person.
         if (
           decision.rule === "decision" ||
           decision.rule === "answer" ||
           decision.rule === "untried" ||
-          decision.rule === "secret"
+          decision.rule === "secret" ||
+          decision.rule === "tool_names"
         ) {
           await saveTranscript(db, t);
           continue;

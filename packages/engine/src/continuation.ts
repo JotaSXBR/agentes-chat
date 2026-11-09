@@ -44,6 +44,8 @@ export interface ContinuationState {
   requestNudged?: boolean;
   /** It was told once to ask for a secret securely: the next secret verdict ends the run as it is. */
   secretNudged?: boolean;
+  /** It was told once to write a reply that named its tools again (`toolNamesNudge`): the next one is posted. */
+  toolsNudged?: boolean;
 }
 
 export type ContinuationVerdict = "done" | "continue" | "ask" | "untried" | "secret";
@@ -119,6 +121,21 @@ export const ASK_NUDGE =
  */
 export const SECRET_NUDGE =
   "Not posted: never ask for a secret (a key, a token, a password) in the chat, where it stays in plain text. If you have request_secret, call it: the person types it into a secure card. Otherwise say which key is needed and where it is set up, without asking for it here.";
+
+/**
+ * The run's own tools its reply names (bare, in backticks, or behind a computer brain's `mcp__agentes__`) and the
+ * person's message doesn't: people can't see or use them. Only names with an underscore, so a one-word tool
+ * (`remember`, `react`) reads as the word it is. Tool names are `[A-Za-z0-9_-]`, nothing to escape.
+ */
+export function toolsNamed(reply: string, tools: Iterable<string>, request: string): string[] {
+  const says = (text: string, name: string) =>
+    text.includes(name) && new RegExp(`(?<![A-Za-z0-9-])${name}(?![A-Za-z0-9_-])`).test(text);
+  return [...new Set(tools)].filter((n) => /^[\w-]*_[\w-]*$/.test(n) && says(reply, n) && !says(request, n));
+}
+
+/** What a run reads, once, when its reply named its own tools to a person (`toolsNamed`): the reply is not posted. */
+export const toolNamesNudge = (names: string[]) =>
+  `Not posted: your reply names your tools (${names.map((n) => `\`${n}\``).join(", ")}), and people can't see or use them. Write it again in plain words. When a tool is the next step, call it now instead of naming it: when it needs them, they get its card. Otherwise say in everyday words what you did or what will happen. Names from code the person works on can stay.`;
 
 /** The run's last judged turn, kept for the mission's keep-going check (`keepGoingBlocker` reads `waiting`). */
 export const verdictRecord = (v: ContinuationVerdict) =>
@@ -344,6 +361,8 @@ export interface TurnEnd {
    * says once whether it still needs them before ending.
    */
   openRequest?: string;
+  /** The run's own tools its reply names to a person (`toolsNamed`): it writes it again in plain words, once. */
+  namedTools?: string[];
   /** Something durable brings it back (`wakesLater`), read only when the judgment would run. */
   wakesLater(): Promise<boolean>;
   /** Whatever run set it, something brings it back to this conversation (`comesBackHere`), read on a repeated promise. */
@@ -375,6 +394,9 @@ export async function decideTurnEnd(t: TurnEnd): Promise<TurnEndDecision> {
   if (t.quiet) return { outcome: "done", rule: "quiet" };
   if (t.decided && canNudge) return { outcome: "continue", rule: "decision", nudge: decisionNudge(t.decided) };
   if (t.unanswered && canNudge) return { outcome: "continue", rule: "answer", nudge: ANSWER_NUDGE };
+  // Only a person's conversation: another agent reading a tool's name can use it.
+  if (t.kind === "conversation" && t.namedTools?.length && !t.state.toolsNudged)
+    return { outcome: "continue", rule: "tool_names", nudge: toolNamesNudge(t.namedTools) };
   if (t.openRequest && !t.state.requestNudged)
     return { outcome: "continue", rule: "open_request", nudge: t.openRequest };
   if (!t.judged || !t.verdict) return { outcome: "done", rule: t.verdict ? "nothing_to_judge" : "no_judge" };
@@ -444,6 +466,7 @@ export function advance(state: ContinuationState, d: TurnEndDecision, executed: 
   if (d.rule === "ask") return { ...rest, askNudged: true, askPending: true };
   if (d.rule === "secret") return { ...rest, secretNudged: true };
   if (d.rule === "open_request") return { ...rest, requestNudged: true };
+  if (d.rule === "tool_names") return { ...rest, toolsNudged: true };
   return { ...rest, count: state.count + 1, executedAtNudge: executed };
 }
 

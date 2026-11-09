@@ -12091,10 +12091,12 @@ html:not([data-pointer]) .sidebar__section-toggle:focus-visible {
 .sidebar :is([data-drop="into"], .sidebar__section[data-drop="true"]) {
   background: color-mix(in srgb, var(--agent) 9%, transparent);
 }
-/* Its # on the name's first line (`.ac-iconline`): a long name wraps under it, never around a # in its middle. */
+/* Its # on the name's first line (`.ac-iconline`): a long name wraps under it, never around a # in its middle, and one
+   with no hyphen to break at wraps anywhere instead of running out of the list. */
 .channel-category__channel {
   display: inline-flex;
   gap: 6px;
+  overflow-wrap: anywhere;
 }
 .channel-category__channel .ac-icon {
   color: var(--faint);

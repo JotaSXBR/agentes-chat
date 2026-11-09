@@ -16,6 +16,7 @@ afterEach(() => {
 });
 
 const cards = () => [...document.querySelectorAll(".brw-ac")] as HTMLElement[];
+const FRAME_DATA = btoa(String.fromCharCode(0xff, 0xd8, 0xff, 0xc0, 0, 17, 8, 3, 32, 5, 0, 3, 0, 0, 0));
 
 /** Ada at work in its browser in #eng: its live row with the browser card. */
 async function browsing(api = createFakeApi(seedState())) {
@@ -84,6 +85,58 @@ describe("Assumir: the card stays the control while the agent waits", () => {
     const done = state.calls.find((c) => c.method === "browser.done");
     expect(done?.args.at(-1)).toBe("Entrei com a conta de teste");
     expect(cards()).toHaveLength(0);
+  });
+
+  test("its line takes the live row as it pauses: the same card goes on in my control, never opening again", async () => {
+    offScreen = onScreen(".brw-ac");
+    const { socket, ev } = await browsing();
+    const run = { threadId: null, runId: "r-same", agentId: ADA_ID };
+    const frame = (seq: number) =>
+      act(async () =>
+        socket.push({
+          type: "browser.frame",
+          agentId: ADA_ID,
+          seq,
+          data: FRAME_DATA,
+          metadata: { deviceWidth: 1280, deviceHeight: 800 },
+        }),
+      );
+    await ev({ type: "agent.thinking", ...run });
+    await ev({ type: "agent.tool", ...run, tool: "browser_open" });
+    await settle(3);
+    await frame(1);
+    await settle(2);
+    await act(async () => fireEvent.click(within(cards()[0] as HTMLElement).getByRole("button", { name: "Assumir" })));
+    await settle(3);
+    await frame(2);
+    await settle(2);
+    const card = cards()[0] as HTMLElement;
+    const page = card.querySelector(".brw-ac__page img");
+    expect(page).not.toBeNull();
+    // As the server pauses a run: its line first, then the run's wait.
+    await ev({
+      type: "message.created",
+      messageId: "m-same",
+      message: {
+        id: "m-same",
+        channelId: ENG_ID,
+        threadId: null,
+        author: { type: "agent", id: ADA_ID },
+        body: "Uma pessoa pegou o controle do meu navegador.",
+        mentionedAgentIds: [],
+        agentRunId: "r-same",
+        createdAt: new Date().toISOString(),
+      },
+    });
+    await ev({ type: "agent.run", ...run, status: "waiting_input" });
+    await settle(4);
+    // The saved message holds it now: the same card, its page and my control, no cover ("Abrindo o navegador…").
+    expect(document.querySelector('[data-message-id="m-same"]')?.contains(card)).toBe(true);
+    expect(cards().length).toBe(1);
+    expect(cards()[0] === card).toBe(true);
+    expect(card.classList.contains("is-control")).toBe(true);
+    expect(card.querySelector(".brw-ac__page img") === page).toBe(true);
+    expect(card.querySelector(".brw-dim, .brw-skel")).toBeNull();
   });
 
   test("the run fails while I hold the browser: the card stays for me to hand back", async () => {

@@ -253,7 +253,7 @@ import { ArtifactCard } from "@/components/artifacts/ArtifactCard";
 import { ImageSet } from "@/components/artifacts/ArtifactViewer";
 import { objectUrls } from "@/components/artifacts/FileView";
 import { MessageWorkLine } from "@/components/BackgroundWork";
-import { HeldBrowserCard, RunBrowserCard, useHeldTakeover } from "@/components/browser/BrowserCard";
+import { RunBrowserCard, useHeldTakeover } from "@/components/browser/BrowserCard";
 import { BrowserHandoffCard } from "@/components/browser/BrowserHandoffCard";
 import { BrowserTrailCard } from "@/components/browser/BrowserTrailCard";
 import { requestBrowserCard } from "@/components/browser/open";
@@ -3053,7 +3053,7 @@ const Timeline = memo(function Timeline({
   // A run can post more than one message (text before a card, the card, the final reply): only its
   // last one is drawn under the block's key, the others under their own (keys stay unique).
   const blockRows = useMemo(() => blockRowByRun(items, new Set(slots.map((s) => s.runId))), [items, slots]);
-  // Each run's last message here carries its browser card while a take over holds it (`HeldBrowserCard`).
+  // Each run's last message here carries its browser card while a take over holds it (`RunBrowserCard`).
   // The sticker or GIF an agent adds after its reply (ADR 0091) is never its run's last message: the reply is.
   const lastByRun = useMemo(() => {
     const out = new Map<string, string>();
@@ -3227,7 +3227,7 @@ function HeldBrowserRow({ place }: { place: HeldPlace }) {
       author={name}
       time={t("common.now")}
     >
-      <HeldBrowserCard agentId={place.agentId} runId={place.runId} name={name} />
+      <RunBrowserCard run={null} agentId={place.agentId} runId={place.runId} name={name} />
     </Message>
   );
 }
@@ -4428,11 +4428,12 @@ export const TimelineMessage = memo(function TimelineMessage({
         stacked={Boolean(card)}
       >
         {live && waiting ? (
-          // Keyed as in the branch below, which takes over when its words start: the browser card (its live page, its
-          // screen's connection) stays the same element instead of opening again.
+          // Keyed as in the branches below, which take over when its words start and when its message lands: the
+          // browser card (its live page, its screen's connection, the person's control) stays the same element instead
+          // of opening again.
           <Parts resetKey={m}>
             <LiveRunStatus key="status" run={live} quietOnly />
-            <RunBrowserCard key="browser" run={live} name={name} />
+            <RunBrowserCard key="browser" run={live} agentId={live.agentId} runId={live.runId} name={name} />
             <span className="ac-visually-hidden">{t("channel.writing")}</span>
             {pendingBar && <PendingFeedback key="bar" agentName={name} />}
           </Parts>
@@ -4507,7 +4508,7 @@ export const TimelineMessage = memo(function TimelineMessage({
               stopped={liveStopped || liveFailed}
             />
             {/* Last, after its tools; also on a failed or stopped run, for the person still in control (they hand back from it). */}
-            <RunBrowserCard key="browser" run={live} name={name} />
+            <RunBrowserCard key="browser" run={live} agentId={live.agentId} runId={live.runId} name={name} />
             {!liveFailed && !liveWaiting && !liveStopped && (
               <span className="ac-visually-hidden">{t("channel.writing")}</span>
             )}
@@ -4620,7 +4621,11 @@ export const TimelineMessage = memo(function TimelineMessage({
               />
             )}
             {lastOfRun && m.author.type === "agent" && m.author.id && replyRun && !m.local && (
-              <HeldBrowserCard
+              // Keyed as the live row's: a take over that holds its browser keeps the same card when this message
+              // takes the row (the agent pausing for the person who took over).
+              <RunBrowserCard
+                key="browser"
+                run={null}
                 agentId={m.author.id}
                 runId={replyRun}
                 name={name}

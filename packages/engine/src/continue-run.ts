@@ -2,18 +2,19 @@ import type { PubSub } from "@agenteschat/adapters";
 import { and, type Database, eq, gte, inArray, schema, sql } from "@agenteschat/db";
 import { recordAudit } from "./audit";
 import { runBrainOf } from "./brains/select";
-import { canceledBy, mayStopRun, runRequester } from "./cancel";
+import { mayStopRun, runRequester } from "./cancel";
 import { catchUpText } from "./catch-up";
 import { ANSWER_ANYWAY_MS, type ClosedNote } from "./catch-up-triage";
 import { ConflictError, ForbiddenError, NotFoundError } from "./errors";
-import { publishChannelEvent } from "./events";
+import { publishChannelEvent, publishMessageCreated } from "./events";
 import { continuedTranscript, type Transcript } from "./executor";
 import { setWorkIssueState } from "./issues";
-import { getMessage } from "./messages";
+import { getMessage, messageView } from "./messages";
 import { requireActiveMembership } from "./organizations";
 import { enqueue } from "./outbox";
 import { ACTIVE_RUN_STATUSES, takeInbox } from "./run-inbox";
-import { providerFailure } from "./runs";
+import { canceledBy, providerFailure } from "./runs";
+import { withWikiLinks } from "./wiki-links";
 import { announceWork, reopenWork, updatesThreadOf } from "./works";
 
 const { agentRuns, agents, messages, channels, users } = schema;
@@ -260,9 +261,9 @@ class AlreadyHandedOn extends Error {}
  * task was stopped (`postPersonMessage`). Once its stop is posted (`stopped`, the reply), a new run
  * of the same agent starts from that message: same conversation, the stopped run's context and its
  * computer session, plus "[Ana stopped you to say this:] …". Only for a message of the person who
- * stopped it, still unread (`meta.steerNow`). The stopped reply is marked continued (no "Continuar"),
- * and the app hears it read the message. The stopped run's other unread messages go along (the new
- * run reads them at its first step). Returns the new run's id, or null when there is nothing to do.
+ * stopped it, still unread (`meta.steerNow`). The stopped reply is marked continued and `restarted` (no stop
+ * line, no "Continuar"), and the app hears it read the message. The stopped run's other unread messages go
+ * along (the new run reads them at its first step). Returns the new run's id, or null when there is nothing to do.
  */
 export async function restartAfterStopAndSend(
   deps: { db: Database; pubsub?: PubSub },
@@ -325,7 +326,7 @@ export async function restartAfterStopAndSend(
       const rest = unread.filter((id) => id !== said.id);
       if (rest.length > 0)
         await tx.update(agentRuns).set({ pendingMessageIds: rest }).where(eq(agentRuns.id, newRunId));
-      const mark = JSON.stringify({ continuedRunId: newRunId, continuedByUserId: by });
+      const mark = JSON.stringify({ continuedRunId: newRunId, continuedByUserId: by, restarted: true });
       await tx
         .update(messages)
         .set({ meta: sql`jsonb_set(${messages.meta}, '{canceled}', (${messages.meta}->'canceled') || ${mark}::jsonb)` })
@@ -360,4 +361,29 @@ export async function restartAfterStopAndSend(
   });
   await publishChannelEvent(deps.pubsub, { type: "agent.thinking", ...where, runId: newRunId });
   return newRunId;
+}
+
+/**
+ * The stopped reply says again whether its run started over at once (`meta.canceled.restarted`), when its posting
+ * guessed wrong: a "Parar e mandar" whose message was read or handed on before the restart shows its stop after all,
+ * and a plain stop that started over from that person's unread "Parar e mandar" shows none.
+ */
+export async function setStopRestarted(
+  deps: { db: Database; pubsub?: PubSub },
+  reply: { id: string; orgId: string },
+  restarted: boolean,
+) {
+  const canceled = restarted
+    ? sql`(${messages.meta}->'canceled') || '{"restarted":true}'::jsonb`
+    : sql`(${messages.meta}->'canceled') - 'restarted'`;
+  const [updated] = await deps.db
+    .update(messages)
+    .set({ meta: sql`jsonb_set(${messages.meta}, '{canceled}', ${canceled})` })
+    .where(
+      and(eq(messages.orgId, reply.orgId), eq(messages.id, reply.id), sql`${messages.meta}->'canceled' is not null`),
+    )
+    .returning();
+  if (!updated || !deps.pubsub) return;
+  const [view] = await withWikiLinks(deps.db, updated.orgId, [messageView(updated)]);
+  if (view) await publishMessageCreated(deps.pubsub, view);
 }

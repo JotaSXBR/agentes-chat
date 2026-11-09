@@ -114,6 +114,33 @@ export const STUCK_ERROR = "stuck" as const;
 /** A run's error when its server stopped in the middle of a tool call (a deploy, a crash, a reboot). */
 export const INTERRUPTED_BY_RESTART = "Interrupted by a server restart";
 
+const CANCELED_BY = "canceled_by:";
+
+/**
+ * Who or what stopped a run (`stopRun`). A person: their stop, or `agentId` that stopped it at their word (the right
+ * hand), or `restarted` when it starts again from what they said at once ("Parar e mandar" to a computer brain, a
+ * mission's new brain), which is no stop to show. The system: its reason (`agent_archived`, a closed workspace's).
+ */
+export type StopActor =
+  | { type: "person"; id: string; agentId?: string; restarted?: boolean }
+  | { type: "system"; reason: string };
+
+/** The run's error for a stop: `canceled_by:{userId}`, then `|agent:{agentId}` or `|restarted`; the system's reason. */
+export const stopError = (actor: StopActor) =>
+  actor.type === "system"
+    ? actor.reason
+    : `${CANCELED_BY}${actor.id}${actor.agentId ? `|agent:${actor.agentId}` : actor.restarted ? "|restarted" : ""}`;
+
+/** A person's stop read back from its run's error (`stopError`); null for any other error. */
+export function personStopOf(error: string | null | undefined) {
+  if (!error?.startsWith(CANCELED_BY)) return null;
+  const [userId = "", tail = ""] = error.slice(CANCELED_BY.length).split("|");
+  return { userId, agentId: tail.startsWith("agent:") ? tail.slice(6) : null, restarted: tail === "restarted" };
+}
+
+/** Who canceled: the person behind the stop. */
+export const canceledBy = (error: string | null | undefined) => personStopOf(error)?.userId ?? null;
+
 /**
  * The computer's own failure codes (`BrainFailure.code`: its program, the call to it): worded as the computer's problem,
  * the code kept only as a detail. The ones that call for a different step (signed out, outdated program, missing CLI,
@@ -308,8 +335,8 @@ export function runErrorDetail(error: string | null | undefined): {
   }
   if (error.startsWith("gave_up:"))
     return { errorCode: "run.provider_unavailable", errorParams: { detail: error.slice(8).trim() } };
-  if (error.startsWith("canceled_by:"))
-    return { errorCode: "run.canceled", errorParams: { byUserId: error.slice(12) } };
+  const stop = personStopOf(error);
+  if (stop) return { errorCode: "run.canceled", errorParams: { byUserId: stop.userId } };
   // A computer brain's background run cut after its tools ran, or with nothing to think with (`executor.ts`).
   const brain = /^(brain_interrupted|brain_unavailable): ?/.exec(error);
   if (brain) return { errorCode: `run.${brain[1]}`, errorParams: { detail: error.slice(brain[0].length) } };

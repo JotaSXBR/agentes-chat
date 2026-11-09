@@ -9,7 +9,7 @@ import { releaseRoutineEmails } from "./mail/inbound";
 import { notifyRoutineFailed, notifyRoutineFinished, resolveRoutineTrouble } from "./notification-producers";
 import { startGatheredRun } from "./routine-events";
 import { pauseRoutine, ROUTINE_FATIGUE_LIMIT, routineJobAlive } from "./routine-state";
-import { type AgentRun, runErrorDetail } from "./runs";
+import { type AgentRun, canceledBy, runErrorDetail } from "./runs";
 
 const { routineRuns, routines, agentRuns } = schema;
 
@@ -304,8 +304,7 @@ export async function recordRoutineReportMessage(
 function endOfAgentRun(status: string, error: string | null): RoutineRunEnd {
   if (status === "done") return { status: "done", text: "" };
   if (status === "failed") return { status: "failed", code: routineFailureCode(error), detail: error ?? undefined };
-  const by = error?.startsWith("canceled_by:") ? error.slice("canceled_by:".length) : null;
-  return { status: "canceled", code: "stopped", byUserId: by };
+  return { status: "canceled", code: "stopped", byUserId: canceledBy(error) };
 }
 
 /** The reaper leaves an ending this long to its own path before closing it. */

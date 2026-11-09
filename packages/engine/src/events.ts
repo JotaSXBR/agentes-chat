@@ -484,6 +484,10 @@ export type ChannelEvent =
       agentId: string;
       runId: string;
       byUserId: string;
+      /** The agent that stopped it at that person's word (the right hand). */
+      byAgentId?: string;
+      /** It starts again from their message at once: no stop to show. */
+      restarted?: true;
     }
   /** A person is typing (client frame `typing`). Clients drop it after `ttlMs`. */
   | { type: "user.typing"; channelId: string; threadId: string | null; userId: string; ttlMs: number }

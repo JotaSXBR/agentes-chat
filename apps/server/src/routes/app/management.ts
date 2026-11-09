@@ -473,7 +473,13 @@ const EndedTask = z
     routine: Routine,
     startedAt: z.string().nullable(),
     finishedAt: z.string(),
-    stoppedBy: z.object({ userId: z.string(), name: z.string() }).nullable(),
+    stoppedBy: z
+      .object({
+        userId: z.string(),
+        name: z.string(),
+        agentId: z.string().optional().openapi({ description: "The agent that stopped it at their word." }),
+      })
+      .nullable(),
   })
   .openapi("EndedTask");
 

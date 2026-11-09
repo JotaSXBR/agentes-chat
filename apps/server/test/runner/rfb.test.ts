@@ -318,7 +318,7 @@ test("refused: a desktop that isn't running, one with as many viewers as it take
   await waitFor(() => last.destroyed);
 });
 
-test("protocol 55: the agent's pointer goes on every stream of its desktop as a text frame, none of another agent's, and none once a stream ended", async () => {
+test("protocol 54: the agent's pointer goes on every stream of its desktop as a text frame, none of another agent's, and none once a stream ended", async () => {
   const x = await fakeXvnc();
   const { desktops, holds } = desktopOn(x.socketPath);
   const home = tempDir("rfb-pointer-");

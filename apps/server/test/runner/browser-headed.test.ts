@@ -722,7 +722,7 @@ test.if(posix)(
 );
 
 test.if(posix)(
-  "protocol 55: on its desktop the agent's pointer is said where it goes on the screen, right before it goes; never headless",
+  "protocol 54: on its desktop the agent's pointer is said where it goes on the screen, right before it goes; never headless",
   async () => {
     const said: { agentId: string; cursor: DesktopCursor; batches: number }[] = [];
     const ran = () =>

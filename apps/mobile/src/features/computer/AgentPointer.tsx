@@ -57,7 +57,7 @@ const CORNER = {
 type Phase = "gone" | "on" | "rest";
 
 /**
- * The agent's own pointer over its screen on the phone (protocol 55), as the web's `AgentCursor`: the arrow in the
+ * The agent's own pointer over its screen on the phone (protocol 54), as the web's `AgentCursor`: the arrow in the
  * agent's color with its face and name, gliding to each step's place along a gentle curve, pressing there with a
  * ripple; quiet, it rests fainter, then goes. The step in words is the screen's own list of steps under it, so the
  * tag says only who. Drawn through the screen's `camera`, so it follows a pinch or a pan. Hidden (`shown` false), it

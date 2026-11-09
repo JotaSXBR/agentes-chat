@@ -239,7 +239,7 @@ export interface DesktopCursor {
   name?: string;
 }
 
-/** The agent's pointer a desktop socket's text frame says (`{"type":"cursor"}`, protocol 55); null for any other. */
+/** The agent's pointer a desktop socket's text frame says (`{"type":"cursor"}`, protocol 54); null for any other. */
 export function desktopCursorFrame(text: string): DesktopCursor | null {
   let f: { type?: unknown; act?: unknown; x?: unknown; y?: unknown; name?: unknown };
   try {

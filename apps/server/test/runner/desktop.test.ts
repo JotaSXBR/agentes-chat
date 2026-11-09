@@ -610,7 +610,7 @@ describe("desktop use", () => {
   });
 });
 
-describe("protocol 55: the agent's pointer", () => {
+describe("protocol 54: the agent's pointer", () => {
   test("each input's pointer is said before the helper gets it, the first step with what it acts on, never what is typed", async () => {
     const said: { agentId: string; cursor: DesktopCursor; inputs: number }[] = [];
     let inputs = () => 0;

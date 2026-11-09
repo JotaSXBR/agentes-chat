@@ -386,7 +386,7 @@ export class WorkerLink {
     this.write(JSON.stringify({ type: "browser.desktop" } satisfies WorkerLinkFrame));
   }
 
-  /** A step of its agent's pointer: root passes it to whoever watches the agent's desktop (protocol 55). */
+  /** A step of its agent's pointer: root passes it to whoever watches the agent's desktop (protocol 54). */
   cursor(cursor: DesktopCursor) {
     this.write(JSON.stringify({ type: "desktop.cursor", ...cursor } satisfies WorkerLinkFrame));
   }

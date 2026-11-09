@@ -239,7 +239,7 @@ export function AgentScreen({
 
   const line = useRef(new PointerLine((x, y, buttons) => web.current?.call("pointer", x, y, buttons))).current;
   useEffect(() => () => line.stop(), [line]);
-  // The agent's own pointer (protocol 55), drawn while the person watches.
+  // The agent's own pointer (protocol 54), drawn while the person watches.
   const agentPointer = useRef<AgentPointerHandle>(null);
 
   useEffect(() => {

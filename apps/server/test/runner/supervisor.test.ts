@@ -4658,7 +4658,7 @@ test("a worker's notice reaches root only well formed, as that agent's", async (
   await run;
 });
 
-test("protocol 55: a worker's pointer steps reach root only well formed, for its own agent's desktop", async () => {
+test("protocol 54: a worker's pointer steps reach root only well formed, for its own agent's desktop", async () => {
   const steps: unknown[][] = [];
   const t = setup({ cursor: (id, cursor) => steps.push([id, cursor]) });
   t.sup.boot();

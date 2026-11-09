@@ -7,7 +7,7 @@ import type { MergeDone } from "./command-policy";
  */
 
 /** Bumped on breaking changes; the server refuses runners older than `MIN_RUNNER_PROTOCOL`. */
-export const MACHINE_PROTOCOL_VERSION = 55;
+export const MACHINE_PROTOCOL_VERSION = 54;
 export const MIN_RUNNER_PROTOCOL = 1;
 /** From this protocol on, requests carry `agent` and each agent works in its own folder. */
 export const AGENT_FOLDERS_PROTOCOL = 2;
@@ -228,18 +228,18 @@ export interface DesktopLookReply {
 export const DESKTOP_AGENT_BROWSER = "agent browser: use browser_do";
 
 /**
- * Protocol 55: the agent's own pointer, for whoever watches its desktop. Xvnc leaves the pointer out of the picture (a
+ * Protocol 54: the agent's own pointer, for whoever watches its desktop. Xvnc leaves the pointer out of the picture (a
  * viewer asks for its shape alone) and the browser's commands never move it, so the runner says where the agent points:
  * right before each pointer step of a `desktop.act`, and each command that points at the page of its Chrome on that
  * desktop, a `{"type":"cursor"}` text frame goes on the data socket of every stream of the agent's desktop (in system
  * mode the worker tells root, which holds those sockets). The server passes it on to the viewer, checked. It never says
  * what is typed. An older runner sends none, and an older server or app drops the frame.
  */
-export const DESKTOP_CURSOR_PROTOCOL = 55;
+export const DESKTOP_CURSOR_PROTOCOL = 54;
 /** What the agent's pointer does where it goes; `type` and `scroll` may have no place (where the focus is). */
 export const DESKTOP_CURSOR_ACTS = ["move", "click", "double_click", "right_click", "drag", "scroll", "type"] as const;
 export type DesktopCursorAct = (typeof DESKTOP_CURSOR_ACTS)[number];
-/** Protocol 55: one step of the agent's pointer, in the desktop's own pixels. */
+/** Protocol 54: one step of the agent's pointer, in the desktop's own pixels. */
 export interface DesktopCursor {
   act: DesktopCursorAct;
   x?: number;
@@ -1211,7 +1211,7 @@ export type StreamControl =
   | { type: "mode"; mode: DesktopMode }
   /** Protocol 49: a browser view's frame arrived (server → runner): one more may go (`BROWSER_VIEW`). */
   | { type: "ack" }
-  /** Protocol 55: a step of the agent's pointer on its desktop (runner → viewer, `DESKTOP_CURSOR_PROTOCOL`). */
+  /** Protocol 54: a step of the agent's pointer on its desktop (runner → viewer, `DESKTOP_CURSOR_PROTOCOL`). */
   | ({ type: "cursor" } & DesktopCursor);
 
 /**

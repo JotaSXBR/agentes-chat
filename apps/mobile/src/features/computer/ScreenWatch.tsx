@@ -61,7 +61,7 @@ export function ScreenWatch({
   const said = useRef(onState);
   said.current = onState;
   const reduced = useReducedMotion();
-  // The agent's own pointer (protocol 55), at the card's scale.
+  // The agent's own pointer (protocol 54), at the card's scale.
   const agentPointer = useRef<AgentPointerHandle>(null);
   const camera = {
     s: useSharedValue(1),

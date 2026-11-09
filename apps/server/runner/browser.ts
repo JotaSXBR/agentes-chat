@@ -1018,7 +1018,7 @@ export interface InputState {
 const HUMAN_COMMANDS = new Set(["click", "dblclick", "hover", "fill", "type"]);
 /** What `agent-browser` answers to each when the runner did it itself. */
 const HUMAN_DONE: Record<string, string> = { click: "clicked", hover: "hovered", fill: "filled" };
-/** What each does with the agent's pointer where it goes (protocol 55); `fill` presses there, then types. */
+/** What each does with the agent's pointer where it goes (protocol 54); `fill` presses there, then types. */
 const HUMAN_POINTER: Record<string, DesktopCursorAct> = {
   click: "click",
   dblclick: "double_click",
@@ -1044,7 +1044,7 @@ const VIEWPORT =
   "[window.innerWidth, window.innerHeight, window.screenX, window.screenY, window.outerWidth, window.outerHeight]";
 
 /**
- * Where the page's top left is on the screen, from `VIEWPORT`'s answer (protocol 55: the agent's pointer on its
+ * Where the page's top left is on the screen, from `VIEWPORT`'s answer (protocol 54: the agent's pointer on its
  * desktop): the window's place, past its frame and bars. The width the window has beyond the page is its two sides;
  * the height beyond the page is its bars and a bottom edge as thick as a side. Null when the answer isn't numbers.
  */
@@ -1417,7 +1417,7 @@ export interface BrowserManagerOptions {
   windowDrawMs?: number;
   /** The agents' desktops (ADR 0058 §7; a worker's are root's): without them every Chrome is headless. */
   desktops?: Pick<DesktopSessions, "ensure" | "status"> & { session(agentId: string): ChromeDisplay | null };
-  /** Protocol 55: where the agent's pointer goes on its desktop, said right before it goes (its Chrome there only). */
+  /** Protocol 54: where the agent's pointer goes on its desktop, said right before it goes (its Chrome there only). */
   cursor?: (agentId: string, cursor: DesktopCursor) => void;
   /** Tests: whether a pid left in `chromes.json` is still that Chrome (default: asks the system). */
   isOurChrome?: (pid: number, profile: string) => Promise<boolean>;
@@ -2419,7 +2419,7 @@ export class BrowserManager {
   }
 
   /**
-   * Protocol 55: a step of the agent's pointer, at a point of the page, for whoever watches its desktop. Only its
+   * Protocol 54: a step of the agent's pointer, at a point of the page, for whoever watches its desktop. Only its
    * Chrome on that desktop, at the window's own size: an emulated page isn't drawn where its points say.
    */
   private point(session: Session, act: DesktopCursorAct, at?: Point) {

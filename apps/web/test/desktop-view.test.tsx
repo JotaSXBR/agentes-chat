@@ -467,7 +467,7 @@ describe("the agent's screen in the computer dialog", () => {
     expect(view().queryByRole("textbox", { name: "Digitar no computador da Ada" })).toBeNull();
   });
 
-  test("protocol 55: the agent's pointer from its computer's steps, over the screen while watching, never in control", async () => {
+  test("protocol 54: the agent's pointer from its computer's steps, over the screen while watching, never in control", async () => {
     const restore = laidOutScreens(640, 450);
     try {
       const t = await dialog();

@@ -507,7 +507,7 @@ export function createStreamBroker(deps: StreamBrokerDeps) {
           }
           // Where the computer's old session ends: the viewer starts noVNC again on the bytes after it.
           if (control?.type === "mode" && s.switches) quietly(() => s.viewer.send(JSON.stringify(control)));
-          // The agent's pointer (protocol 55), as checked: the apps draw it over the screen.
+          // The agent's pointer (protocol 54), as checked: the apps draw it over the screen.
           if (control?.type === "cursor" && s.request.kind === "desktop") {
             quietly(() => s.viewer.send(JSON.stringify(control)));
           }

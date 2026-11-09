@@ -266,7 +266,7 @@ describe("watching, then switching control", () => {
   });
 });
 
-describe("the agent's pointer (protocol 55)", () => {
+describe("the agent's pointer (protocol 54)", () => {
   test("a socket's cursor frame read as the server checks it: its acts mirror the protocol's", () => {
     expect([...DESKTOP_CURSOR_ACTS]).toEqual([...SERVER_CURSOR_ACTS]);
     const frames = [

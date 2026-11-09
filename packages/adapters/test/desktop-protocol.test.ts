@@ -163,7 +163,7 @@ describe("data sockets", () => {
     expect(parseStreamControl("{")).toBeNull();
   });
 
-  test("the agent's pointer (protocol 55): an act, a place in whole pixels or none, and a short name", () => {
+  test("the agent's pointer (protocol 54): an act, a place in whole pixels or none, and a short name", () => {
     expect(MACHINE_PROTOCOL_VERSION).toBeGreaterThanOrEqual(DESKTOP_CURSOR_PROTOCOL);
     const cursor = (v: Record<string, unknown>) => parseStreamControl(JSON.stringify({ type: "cursor", ...v }));
     expect(cursor({ act: "click", x: 514, y: 558, name: "  Join\nthe   list ", extra: 1 })).toEqual({

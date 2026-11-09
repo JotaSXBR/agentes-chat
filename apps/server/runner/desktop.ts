@@ -311,7 +311,7 @@ export interface DesktopManagerOptions {
    * across connections): numbers never come back for other elements. Default: this manager's own.
    */
   numbered?: Map<string, { last: number }>;
-  /** Protocol 55: where the agent's pointer goes, said right before it goes (to whoever watches its desktop). */
+  /** Protocol 54: where the agent's pointer goes, said right before it goes (to whoever watches its desktop). */
   cursor?: (agentId: string, cursor: DesktopCursor) => void;
   log: (line: string) => void;
   /** Tests: the computer. */
@@ -1223,7 +1223,7 @@ function pointerSteps(kind: DesktopAction["kind"], spot: Spot): HelperStep[] {
 }
 
 /**
- * Protocol 55: the agent's pointer along a helper's steps, as whoever watches its desktop sees it: each move, press,
+ * Protocol 54: the agent's pointer along a helper's steps, as whoever watches its desktop sees it: each move, press,
  * drag and wheel where it happens, and typing where the focus is (never what is typed). `name`, what the steps act
  * on, goes with the first.
  */

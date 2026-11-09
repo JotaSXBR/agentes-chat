@@ -15,7 +15,7 @@ export type ScreenEvent =
   /** The stream's session took its mode (a page from before it never says). */
   | { type: "session"; mode: DesktopMode }
   | { type: "refused"; why: "tooLong" }
-  /** A step of the agent's pointer (protocol 55): the app draws it over the screen while it watches. */
+  /** A step of the agent's pointer (protocol 54): the app draws it over the screen while it watches. */
   | ({ type: "cursor" } & DesktopCursor);
 
 const VIEW_STATES: ReadonlySet<string> = new Set<DesktopViewState>([

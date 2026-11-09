@@ -444,7 +444,7 @@ describe("the broker", () => {
     expect(terminal.viewer.closed?.code).toBe(STREAM_CLOSE.badRequest);
   });
 
-  test("protocol 55: the agent's pointer reaches a desktop's viewer as checked, in its place among the bytes; a terminal's never", async () => {
+  test("protocol 54: the agent's pointer reaches a desktop's viewer as checked, in its place among the bytes; a terminal's never", async () => {
     f = await setup();
     const machine = await paired();
     const { broker, runners } = brokerFor(machine);

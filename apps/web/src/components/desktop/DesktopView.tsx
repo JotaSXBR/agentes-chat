@@ -129,7 +129,7 @@ export function DesktopView({
   const screenRef = useRef<HTMLDivElement>(null);
   const rfbRef = useRef<RFB | null>(null);
   const keysRef = useRef<HTMLTextAreaElement>(null);
-  // The agent's own pointer (protocol 55), over the screen's picture at the desktop's own size.
+  // The agent's own pointer (protocol 54), over the screen's picture at the desktop's own size.
   const cursorRef = useRef<AgentCursorHandle>(null);
   const [screenSize, setScreenSize] = useState<{ width: number; height: number }>(DESKTOP_SIZE);
   // A card's view is small: the pointer says who, not what.

@@ -27,7 +27,7 @@
 .live-block__head {
   display: flex;
   align-items: flex-start;
-  gap: 2px;
+  gap: var(--space-1);
   padding: 12px 8px 6px 16px;
 }
 .live-block__titles {

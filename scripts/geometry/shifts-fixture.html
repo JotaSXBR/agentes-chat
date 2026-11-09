@@ -6,6 +6,10 @@
   - bad-shift--pinned: a list pinned to its end, whose last card shrinks from a tile's size to a bar (the rows above
     drop: a jump, which Chromium's API doesn't count).
   - good-shift--pinned: the last card's placeholder already had the card's size.
+  - good-shift--overflow: a list that fits until its first row is drawn at its real size (content-visibility's
+    placeholder before it, as a DM's intro), scrolled to its end in that same frame: nothing moves on screen, though
+    Chromium's API reports its rows moved by the whole scroll.
+  - bad-shift--overflow: the same list scrolled to its end a frame late (the rows drop, then come back up).
 -->
 <html lang="pt-BR">
   <head>
@@ -15,6 +19,7 @@
       .channel__messages { height: 500px; overflow: auto; display: flex; flex-direction: column; }
       .row { flex: none; height: 64px; padding: 8px 16px; box-sizing: border-box; border-bottom: 1px solid #ddd; }
       .card { flex: none; margin: 8px 16px; background: #222; border-radius: 12px; }
+      .spacer { flex: 1 0 0; }
       .box { background: #ccc; }
     </style>
   </head>
@@ -34,6 +39,31 @@
         later(() => {
           box.style.height = "160px";
           box.textContent = "Carregado";
+        });
+      } else if (twin === "bad-shift--overflow" || twin === "good-shift--overflow") {
+        later(() => {
+          const list = document.createElement("section");
+          list.className = "channel__messages";
+          const spacer = document.createElement("div");
+          spacer.className = "spacer";
+          const intro = document.createElement("div");
+          intro.className = "card";
+          // Its height from what it holds, as a message's: 56 px while content-visibility skips it, 400 once drawn.
+          intro.style.cssText = "content-visibility: auto; contain-intrinsic-size: auto 56px";
+          intro.innerHTML = '<div style="height: 400px"></div>';
+          list.append(spacer, intro);
+          for (let i = 0; i < 3; i++) {
+            const row = document.createElement("div");
+            row.className = "row";
+            row.textContent = `Mensagem ${i + 1}`;
+            list.append(row);
+          }
+          screen.append(list);
+          const pin = () => {
+            list.scrollTop = list.scrollHeight;
+          };
+          pin();
+          new ResizeObserver(() => (twin === "good-shift--overflow" ? pin() : requestAnimationFrame(pin))).observe(intro);
         });
       } else {
         const list = document.createElement("section");

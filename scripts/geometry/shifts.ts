@@ -12,6 +12,12 @@
  * - Jumps: rows of a conversation moving under the reader's eyes with no input. A scroller pinned to its end follows
  *   what changes size at its foot by scrolling, and the API counts no scroll at all (measured: a card shrinking at the
  *   end of a pinned list scores 0 there while everything above it drops 180 px).
+ * The API also errs the other way in a conversation's list: one that only starts to overflow in a frame, scrolled to
+ * its end in that same frame, has its rows reported moved by the whole scroll, though they never left their place on
+ * screen (measured, frame by frame: a DM whose intro is drawn at content-visibility's 56 px placeholder, then at its
+ * 523 px, scores 0.107 with every row still). A shift whose sources all sit in a list, where the shift says they were
+ * (within 3 px: the API rounds its boxes, and a line of text is measured by its line), is that one; the jumps watch
+ * those rows as painted.
  * A screen over `LIMIT` fails. Before the screens, the fixture's twins prove both measures (`shifts-fixture.html`).
  */
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -38,8 +44,9 @@ export const SIZES = [
 /**
  * Installed before the page's own scripts. `__shift.take()` hands over what moved since the last take:
  * - `entries`: layout shifts Chromium reports (sources named by tag, classes and words).
- * - `jumps`: frames in which rows of a `.channel__messages` list on screen before or after moved with no input in the
- *   last 500 ms, scored as CLS scores a shift (moved area over the window's, times the distance over its longest side).
+ * - `jumps`: painted frames in which rows of a `.channel__messages` list on screen before or after moved with no input
+ *   in the last 500 ms, scored as CLS scores a shift (moved area over the window's, times the distance over its longest
+ *   side).
  *   Rows gliding (an entrance that moves them) are motion on purpose and skipped; a row only fading in still counts.
  *   Positions are relative to the list, so a panel sliding in moves nothing.
  */
@@ -59,6 +66,11 @@ export const MEASURE = String.raw`(() => {
   new PerformanceObserver((list) => {
     for (const e of list.getEntries()) {
       if (e.hadRecentInput) continue;
+      const stayed = (x) => {
+        const el = x.node && x.node.nodeType === 3 ? x.node.parentElement : x.node;
+        return Boolean(el && el.isConnected && el.closest('.channel__messages') && Math.abs(el.getBoundingClientRect().top - x.previousRect.top) <= 3);
+      };
+      if (e.sources && e.sources.length > 0 && e.sources.every(stayed)) continue;
       const box = (r) => [r.x, r.y, r.width, r.height].map(Math.round).join(',');
       // Where the conversation's list stood then (scrolled to, how tall, what it holds first): what moved it.
       const list = document.querySelector('.channel__messages');
@@ -105,9 +117,20 @@ export const MEASURE = String.raw`(() => {
       const value = Math.min(1, area / (innerWidth * innerHeight)) * Math.min(1, far / Math.max(innerWidth, innerHeight));
       s.jumps.push({ at: Math.round(now), value, sources: moved.slice(0, 4) });
     }
-    requestAnimationFrame(() => setTimeout(sample, 0));
   };
-  requestAnimationFrame(() => setTimeout(sample, 0));
+  // Each frame as it is about to paint: a ResizeObserver made during the frame runs after the app's (the pin of a list
+  // to its end) and before the paint. A task's change after a paint (rows a response just added, laid out before
+  // content-visibility draws them) is only read once a frame has drawn it.
+  const frame = () => requestAnimationFrame(() => {
+    if (!document.documentElement) return frame();
+    const ro = new ResizeObserver(() => {
+      ro.disconnect();
+      sample();
+      frame();
+    });
+    ro.observe(document.documentElement);
+  });
+  frame();
   s.take = () => {
     const out = { entries: s.entries, jumps: s.jumps };
     s.entries = [];
@@ -265,8 +288,18 @@ async function openTab(browser: Browser, size: (typeof SIZES)[number], options: 
 
 type Tab = Awaited<ReturnType<typeof openTab>>;
 
-/** `shifts-fixture.html`'s cases: a shift Chromium counts, and a jump in a list pinned to its end that it doesn't. */
-export const TWINS = ["bad-shift--grow", "good-shift--grow", "bad-shift--pinned", "good-shift--pinned"];
+/**
+ * `shifts-fixture.html`'s cases: a shift Chromium counts, a jump in a list pinned to its end that it doesn't, and a list
+ * that starts to overflow, which it reports moved when only its scroll followed (and that does jump when it follows late).
+ */
+export const TWINS = [
+  "bad-shift--grow",
+  "good-shift--grow",
+  "bad-shift--pinned",
+  "good-shift--pinned",
+  "bad-shift--overflow",
+  "good-shift--overflow",
+];
 
 /** The fixture's twins: each `bad-` case must score over the limit, each `good-` one stay under it. */
 async function selfTest(browser: Browser) {

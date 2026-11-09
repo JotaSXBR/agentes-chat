@@ -792,8 +792,8 @@ export function useChannelRealtime(orgId: string, channelId: string, enabled: bo
       if (event.type === "approval.created" || event.type === "approval.decided") {
         cacheApproval(qc, orgId, event.approval);
       }
-      // A file's cards and viewer, an agent's memory list.
-      applyConversationEvent(qc, orgId, event);
+      // A file's cards and viewer (a card made here read before its message lands), an agent's memory list.
+      applyConversationEvent(qc, orgId, event, api);
       if (event.type === "poll.updated") qc.setQueryData(keys.poll(orgId, event.poll.id), event.poll);
       if (event.type === "block.state") {
         const { block } = event;

@@ -1709,6 +1709,13 @@
       "when": 1794602300000,
       "tag": "0245_brain_switches_unused",
       "breakpoints": true
+    },
+    {
+      "idx": 246,
+      "version": "7",
+      "when": 1794602600000,
+      "tag": "0246_picture_size",
+      "breakpoints": true
     }
   ]
 }

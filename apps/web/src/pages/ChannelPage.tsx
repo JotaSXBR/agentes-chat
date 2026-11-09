@@ -38,6 +38,7 @@ import {
   QUIET_AFTER_MS,
   runsInChannel,
   type StreamsState,
+  seedCards,
   sendHelpers,
   typingIn,
   useAddChannelMember,
@@ -499,6 +500,8 @@ const GESTURE_MS = 1500;
 const IDLE_CATCH_UP_MS = 20_000;
 /** Older messages per scroll-up page. */
 const OLDER_PAGE = 50;
+/** No rows: a thread's timeline while only its replies' skeleton shows. */
+const NO_ROWS: ReturnType<typeof buildTimeline> = [];
 /** Older pages a channel already loaded, and whether there are no more. */
 type OlderPages = { pages: MessageType[]; done: boolean };
 /** Same limit as the server (`MAX_MESSAGE_ATTACHMENTS`). */
@@ -1136,8 +1139,11 @@ function ChannelView({
     return () => document.removeEventListener("visibilitychange", mark);
   }, [markThreadRead, threadId, isMember, lastReplyId]);
 
-  // The skeleton was on screen: the real messages fade in (once).
-  const hadSkeleton = useRef(messages.isLoading);
+  // A thread whose replies are still loading (the root the channel holds stands in): only their skeleton shows.
+  const replyCount = thread?.replyCount ?? 0;
+  const repliesPending = messages.isPlaceholderData && replyCount > 0;
+  // The skeleton was on screen (a conversation, or a thread's replies): the real messages fade in (once).
+  const hadSkeleton = useRef(messages.isLoading || repliesPending);
   const [fresh, setFresh] = useState(false);
   useEffect(() => {
     if (!serverRead || !hadSkeleton.current) return;
@@ -1170,7 +1176,7 @@ function ChannelView({
     }
     setOlderState("loading");
     api.chat
-      .messages(org.id, channel.id, { before: oldest.createdAt, limit })
+      .messages(org.id, channel.id, { before: oldest.createdAt, limit, onCards: (c) => seedCards(qc, org.id, c) })
       .then((page) => {
         // Keep what's on screen where it is: remember the distance from the bottom.
         const el = scroller.current;
@@ -2515,7 +2521,7 @@ function ChannelView({
                           ) : (
                             <>
                               <Timeline
-                                items={timeline}
+                                items={repliesPending ? NO_ROWS : timeline}
                                 ready={serverRead}
                                 slots={slots}
                                 runKeys={runKeys.current}
@@ -2526,10 +2532,9 @@ function ChannelView({
                                 consultGroups={consultGroups}
                                 seenId={thread ? null : seenId}
                               />
-                              {/* A thread's root is on screen from the channel: only its replies are loading. */}
-                              {thread && messages.isPlaceholderData && thread.replyCount > 0 && (
-                                <LoadingConversation count={Math.min(thread.replyCount, 6)} />
-                              )}
+                              {/* A thread whose replies are still loading: their skeleton alone, not its root above it,
+                              which the replies would push out of view. It opens on them, at its end, in one paint. */}
+                              {repliesPending && <LoadingConversation count={Math.min(replyCount + 1, 6)} />}
                               {!thread && (
                                 <ArchivedThreadsNote
                                   channelId={channel.id}

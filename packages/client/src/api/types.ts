@@ -3250,6 +3250,9 @@ export interface ArtifactFileContent {
   size: number;
   sha256: string;
   text?: string;
+  /** A picture's size as it shows (PNG, JPEG, WebP saved since it was kept): its box is held before it loads. */
+  width?: number;
+  height?: number;
 }
 
 export interface ArtifactAuthor {
@@ -3415,6 +3418,26 @@ export interface ArtifactRef {
   /** The file was deleted: the card shows "Arquivo removido". */
   deleted?: boolean;
   title?: string;
+  /** What it is (newer messages): until it loads, its placeholder takes that thing's shape, a card's or a tile's. */
+  kind?: ArtifactKind;
+  /** A vote's options, or a question card's first question's: its placeholder has as many rows. */
+  options?: number;
+  /** A question card's questions (its placeholder's step line and dots). */
+  questions?: number;
+  /** A picture's size as it shows: alone on its message, its placeholder is its box. */
+  width?: number;
+  height?: number;
+}
+
+/**
+ * What a page of messages carries for its cards (`include=cards`): each live block, vote and question card at the
+ * version shown, with its state, so the cards draw whole on the first paint.
+ */
+export interface MessageCards {
+  artifacts: ArtifactDetail[];
+  polls: Poll[];
+  choices: Choices[];
+  blocks: BlockState[];
 }
 
 export interface ArtifactFilters {

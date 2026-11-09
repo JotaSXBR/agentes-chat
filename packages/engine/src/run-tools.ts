@@ -205,9 +205,21 @@ export function absorbBrowserCall(
 /**
  * A file on the reply (`meta.artifacts`), with its title: the agent reads its own message's files by name and id in
  * the conversation (context.ts `ownFilesNote`), from the meta written at post time, so "send it to Ana" finds that
- * file instead of a search. People's attachments carry the same shape (`attachmentRefsFor` in messages.ts).
+ * file instead of a search. Its kind: until it loads, the apps hold its card's or its tile's place. People's
+ * attachments carry the same shape (`attachmentRefsFor` in messages.ts).
  */
-export type ArtifactLink = { id: string; version: number; title: string };
+export type ArtifactLink = {
+  id: string;
+  version: number;
+  title: string;
+  kind?: string;
+  /** A vote's options, or a question card's first question's (`blocks.ts`). */
+  options?: number;
+  questions?: number;
+  /** A picture's size as it shows (`pictureSize`): alone on its message, its placeholder is its box. */
+  width?: number;
+  height?: number;
+};
 
 /** Adds files to the reply's cards: one per file, its newest version in the first one's place. */
 function withArtifacts(list: ArtifactLink[] | undefined, more: ArtifactLink[]): ArtifactLink[] {

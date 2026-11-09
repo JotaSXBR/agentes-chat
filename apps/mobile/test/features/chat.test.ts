@@ -251,6 +251,20 @@ describe("what a message carries", () => {
       { id: "f1", version: 2, title: "Relatório", deleted: false },
       { id: "f2", title: "", deleted: true },
     ]);
+    // A card's kind and rows (newer refs) are kept: its placeholder has the card's shape before it loads.
+    expect(
+      artifactsOf({
+        artifacts: [
+          { id: "c1", version: 1, title: "Deploy", kind: "choices", options: 3, questions: 2 },
+          { id: "f3", version: 1, title: "x", kind: "nonsense" },
+          { id: "p1", version: 1, title: "print.png", kind: "file", width: 360, height: 720 },
+        ],
+      }),
+    ).toEqual([
+      { id: "c1", version: 1, title: "Deploy", deleted: false, kind: "choices", options: 3, questions: 2 },
+      { id: "f3", version: 1, title: "x", deleted: false },
+      { id: "p1", version: 1, title: "print.png", deleted: false, kind: "file", width: 360, height: 720 },
+    ]);
   });
 });
 

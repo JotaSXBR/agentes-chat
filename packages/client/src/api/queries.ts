@@ -128,6 +128,7 @@ import type {
   MailImapInput,
   Me,
   Message,
+  MessageCards,
   MessageMemory,
   MoveAgentsInput,
   NoticeCategory,
@@ -1223,7 +1224,10 @@ export const messagesQuery = (api: ApiClient, orgId: string, channelId: string) 
     queryFn: async ({ client, queryKey }) => {
       const start = client.getQueryData<Message[]>(queryKey);
       return withLocalCopies(
-        await api.chat.messages(orgId, channelId, { limit: MESSAGES_PAGE }),
+        await api.chat.messages(orgId, channelId, {
+          limit: MESSAGES_PAGE,
+          onCards: (cards) => seedCards(client, orgId, cards),
+        }),
         client.getQueryData<Message[]>(queryKey),
         outbox.has,
         start,
@@ -1237,6 +1241,18 @@ export const useMessages = (orgId: string, channelId: string, enabled = true) =>
   const api = useApi();
   return useQuery({ ...messagesQuery(api, orgId, channelId), enabled });
 };
+
+/**
+ * A page's cards (`include=cards`) into the caches their cards read (`useArtifact`, `usePoll`, `useChoices`,
+ * `useSharedBlock`): they draw whole with the messages, never a placeholder that changes size after.
+ */
+export function seedCards(qc: QueryClient, orgId: string, cards: MessageCards) {
+  for (const a of cards.artifacts) qc.setQueryData(keys.artifact(orgId, a.id, a.shownVersion), a);
+  for (const p of cards.polls) qc.setQueryData(keys.poll(orgId, p.id), p);
+  for (const c of cards.choices) qc.setQueryData(keys.choices(orgId, c.id), c);
+  for (const b of cards.blocks)
+    qc.setQueryData<BlockState>(keys.blockState(orgId, b.id, b.version), (old) => newerBlockState(old, b));
+}
 
 /** Sidebar hover/focus: load a conversation before the click. */
 export function usePrefetchMessages(orgId: string) {
@@ -1432,9 +1448,15 @@ export async function catchUpChannel(
     .findAll({ queryKey: prefix, type: "active" })
     .flatMap(({ queryKey: [, , , , list, rootId] }) =>
       list === "messages"
-        ? [api.chat.messages(orgId, channelId, { limit: MESSAGES_PAGE })]
+        ? [api.chat.messages(orgId, channelId, { limit: MESSAGES_PAGE, onCards: (c) => seedCards(qc, orgId, c) })]
         : list === "thread" && typeof rootId === "string"
-          ? [api.chat.messages(orgId, channelId, { threadId: rootId, limit: THREAD_PAGE })]
+          ? [
+              api.chat.messages(orgId, channelId, {
+                threadId: rootId,
+                limit: THREAD_PAGE,
+                onCards: (c) => seedCards(qc, orgId, c),
+              }),
+            ]
           : [],
     );
   const settled = await Promise.allSettled(reads);
@@ -5229,30 +5251,53 @@ export function useThreadInfo(orgId: string, threadId: string | null | undefined
   });
 }
 
+/** A thread's root and replies, with what their cards show (the same cache the channel uses for agent replies). */
+export const threadMessagesQuery = (api: ApiClient, orgId: string, channelId: string, rootId: string) =>
+  queryOptions({
+    queryKey: keys.thread(orgId, channelId, rootId),
+    queryFn: async ({ client, queryKey }) => {
+      const start = client.getQueryData<Message[]>(queryKey);
+      const read = await api.chat.messages(orgId, channelId, {
+        threadId: rootId,
+        limit: THREAD_PAGE,
+        onCards: (cards) => seedCards(client, orgId, cards),
+      });
+      return withLocalCopies(read, client.getQueryData<Message[]>(queryKey), outbox.has, start);
+    },
+    staleTime: 30_000,
+  });
+
 /**
- * A thread's root and replies (the same cache the channel uses for agent replies). Until they are read, the root
- * the channel already holds stands in (`isPlaceholderData`): only the replies are still unknown.
+ * A thread's root and replies. Until they are read, the root the channel already holds stands in
+ * (`isPlaceholderData`): only the replies are still unknown.
  */
 export function useThreadMessages(orgId: string, channelId: string | undefined, rootId: string) {
   const api = useApi();
   const qc = useQueryClient();
   return useQuery({
+    ...threadMessagesQuery(api, orgId, channelId ?? "", rootId),
     placeholderData: () => {
       const root = channelId ? cachedTopLevel(qc, orgId, rootId, channelId) : undefined;
       return root ? [root] : undefined;
     },
-    queryKey: keys.thread(orgId, channelId ?? "", rootId),
-    queryFn: async ({ client, queryKey }) => {
-      const start = client.getQueryData<Message[]>(queryKey);
-      const read = await api.chat.messages(orgId, channelId ?? "", { threadId: rootId, limit: THREAD_PAGE });
-      return withLocalCopies(read, client.getQueryData<Message[]>(queryKey), outbox.has, start);
-    },
     enabled: Boolean(channelId),
-    staleTime: 30_000,
     // Every opening reads it: a reply heard live keeps the list looking fresh while it may lack what was said when
     // this channel wasn't listened to.
     refetchOnMount: "always",
   });
+}
+
+/**
+ * A thread line's hover or focus: its replies and cards load before the click, so the panel opens on them, at its end,
+ * in one paint.
+ */
+export function usePrefetchThread(orgId: string) {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useCallback(
+    (channelId: string, rootId: string) => void qc.prefetchQuery(threadMessagesQuery(api, orgId, channelId, rootId)),
+    [api, qc, orgId],
+  );
 }
 
 /** How far back the context block looks for the start of a range (pages of 200). */

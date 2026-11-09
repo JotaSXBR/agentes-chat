@@ -110,7 +110,11 @@ describe("the AI select's rows", () => {
       "en",
       input({
         view: view({
-          accounts: [account(), account({ id: "acct_home", label: "Home", email: "ana@home.example.com", plan: "Max" }), bia],
+          accounts: [
+            account(),
+            account({ id: "acct_home", label: "Home", email: "ana@home.example.com", plan: "Max" }),
+            bia,
+          ],
           canUseOthersPlans: true,
         }),
         keys: [key({ id: "key_openai", provider: "openai", label: "OpenAI key", keyHint: "9876" }), key()],
@@ -172,13 +176,24 @@ describe("the AI select's rows", () => {
 
   test("signed out: its note asks for the sign-in; a coding plan's refused key, for a new one; another agent's can't be picked", () => {
     const out = input({ view: view({ accounts: [account({ status: "signed_out" })] }) });
-    expect(aiRows(t, "en", out)[0]).toMatchObject({ state: "Signed out", tone: "danger", act: "signIn", disabled: false });
+    expect(aiRows(t, "en", out)[0]).toMatchObject({
+      state: "Signed out",
+      tone: "danger",
+      act: "signIn",
+      disabled: false,
+    });
     expect(noteOf(out, "acct_work")).toEqual({
       icon: "alert",
       text: "Work is signed out. Sign in again so Ada can use it.",
       action: { kind: "signIn", label: "Sign in again" },
     });
-    const taken = account({ id: "acct_theo", label: "Home", email: "x@example.com", status: "signed_out", usedBy: ["Theo"] });
+    const taken = account({
+      id: "acct_theo",
+      label: "Home",
+      email: "x@example.com",
+      status: "signed_out",
+      usedBy: ["Theo"],
+    });
     const rows = aiRows(t, "en", input({ view: view({ accounts: [account(), taken] }) }));
     expect(rows.find((r) => r.value === "acct_theo")?.disabled).toBe(true);
     const glm = input({
@@ -244,7 +259,11 @@ describe("a new agent's rows (Criar agente)", () => {
       { ...account(), machineId: "m1", computer: "MacBook" },
       { ...account({ id: "acct_theo", label: "Home", usedBy: ["Theo"] }), machineId: "m1", computer: "MacBook" },
       { ...account({ id: "acct_out", label: "Old", status: "signed_out" }), machineId: "m1", computer: "MacBook" },
-      { ...account({ id: "acct_all", label: "Shared", usedBy: ["Theo"], shared: true }), machineId: "m1", computer: "MacBook" },
+      {
+        ...account({ id: "acct_all", label: "Shared", usedBy: ["Theo"], shared: true }),
+        machineId: "m1",
+        computer: "MacBook",
+      },
     ],
     computers: [
       {
@@ -274,7 +293,10 @@ describe("a new agent's rows (Criar agente)", () => {
   test("the person's free accounts and the computer's own sign-ins, then the keys; a login another agent has waits for its page", () => {
     const rows = newAgentRows(t, "en", base);
     expect(rows.map((r) => r.value)).toEqual(["acct_all", "acct_work", "own:codex:m1", "key:default"]);
-    expect(rows.find((r) => r.value === "own:codex:m1")).toMatchObject({ who: "Signed in on MacBook", machineId: "m1" });
+    expect(rows.find((r) => r.value === "own:codex:m1")).toMatchObject({
+      who: "Signed in on MacBook",
+      machineId: "m1",
+    });
     expect(rows.find((r) => r.value === "acct_all")?.hint).toBe("Theo thinks with it");
   });
 

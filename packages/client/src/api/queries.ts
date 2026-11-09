@@ -3024,12 +3024,13 @@ export function useRemoveCredential(orgId: string) {
   });
 }
 
-export const useAgentDetail = (orgId: string, agentId: string) => {
+export const useAgentDetail = (orgId: string, agentId: string, enabled = true) => {
   const api = useApi();
   return useQuery({
     queryKey: keys.agentDetail(orgId, agentId),
     queryFn: () => api.agents.detail(orgId, agentId),
     staleTime: 15_000,
+    enabled: enabled && agentId !== "",
   });
 };
 

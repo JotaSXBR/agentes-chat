@@ -573,7 +573,6 @@ export async function suggestAgentAi(
       model: AUTO_MODEL,
       credentialId: null,
       brain: "model",
-      brainFallback: false,
       brainAccountId: null,
       machineId: null,
     };

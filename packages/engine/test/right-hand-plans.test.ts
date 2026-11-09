@@ -12,7 +12,6 @@ import {
   insertMessage,
   type MachineStatus,
   machineAgents,
-  mayFallBack,
   OpencodeBrain,
   openPersonAgentDm,
   PLAN_OPENED_JOB,
@@ -26,6 +25,7 @@ import {
   UNAVAILABLE_CODES,
 } from "../src";
 import { agentAiState } from "../src/ai-status";
+import { paysExtraUsage } from "../src/usage-pause";
 import { addMember, type Fixture, setup } from "./fixtures";
 import { pairMachine } from "./machine-fixtures";
 
@@ -124,17 +124,17 @@ test("Lodi takes a Claude plan signed in as an account, never a computer's own s
   expect(await lodi()).toMatchObject({ brainAccountId: CAIOS, planForOthers: false });
 });
 
-test("a plan given to Lodi starts with its switches off, whatever was set before it", async () => {
+test("a plan given to Lodi starts with its switch off, whatever was set before it", async () => {
   const { fx, deps, caio, lodi } = await world();
   const id = (await lodi()).id;
-  // An admin arms paid extra usage while it is on a key: it doesn't carry over to Ana's plan.
-  await setAgentBrain(deps, caio.id, fx.org.id, id, { extraUsage: true });
   await setAgentBrain(deps, fx.owner.id, fx.org.id, id, { brain: "claude_code", account: ANAS });
-  expect(await lodi()).toMatchObject({ brainAccountId: ANAS, brainExtraUsage: false, planForOthers: false });
+  expect(await lodi()).toMatchObject({ brainAccountId: ANAS, planForOthers: false });
   // Ana opens hers to others; moved straight onto Caio's plan, his starts closed.
-  await setAgentBrain(deps, fx.owner.id, fx.org.id, id, { onlyOwner: false, extraUsage: true });
+  await setAgentBrain(deps, fx.owner.id, fx.org.id, id, { onlyOwner: false });
   await setAgentBrain(deps, caio.id, fx.org.id, id, { account: CAIOS });
-  expect(await lodi()).toMatchObject({ brainAccountId: CAIOS, brainExtraUsage: false, planForOthers: false });
+  expect(await lodi()).toMatchObject({ brainAccountId: CAIOS, planForOthers: false });
+  // Its long work never spends a plan's paid extra usage.
+  expect(paysExtraUsage(await lodi())).toBe(false);
 });
 
 test("its turns think on the plan's computer and owner; another person's DM only once the plan answers others", async () => {
@@ -166,8 +166,7 @@ test("its turns think on the plan's computer and owner; another person's DM only
   expect((await resolveBrain({ db: fx.db, machines: old }, open, ana.run, ana.dm.id)).unavailable).toMatchObject({
     code: "runner_outdated",
   });
-  // It never stands in on the API, and its state says the computer is away, not "no AI".
-  expect(mayFallBack(open, { background: false })).toBe(false);
+  // Its state says the computer is away, not "no AI".
   const away = { status: async (id: string) => statusOf(id, { online: false }) };
   expect(await agentAiState({ db: fx.db, gateway: fx.gateway, machines: away }, open)).toEqual({ state: "waiting" });
 });

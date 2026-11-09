@@ -2225,6 +2225,36 @@
     "receipt": "没有人会回复：未连接 AI",
     "chip": "无 AI"
   },
+  "aiSelect": {
+    "placeholder": "选择一个 AI",
+    "groupOthers": "其他人的套餐",
+    "groupKeys": "API 密钥",
+    "connect": "连接其他 AI",
+    "connectLine": "其他账号、套餐或 API 密钥",
+    "ownOn": "已在 {{computer}} 上登录",
+    "keyRefused": "密钥被拒绝",
+    "unknown": "登录未确认",
+    "inUse": "{{agents}} 正在使用",
+    "keyDefault": "工作区默认 · 尾号 {{hint}}",
+    "serverKey": "这台服务器的 Claude 密钥",
+    "serverKeyLine": "在服务器上设置",
+    "signedOut": "{{label}} 已退出登录。重新登录后 {{name}} 才能使用它。",
+    "limited": "使用这个账号时，{{name}} 会在 {{when}} 再次回复。",
+    "limitedUnknown": "使用这个账号时，{{name}} 会在套餐续期后再次回复。",
+    "move": "{{agent}} 将不再用它思考。",
+    "moveTo": "移给 {{name}}",
+    "lent": "{{owner}} 会收到邮件，并且可以收回。",
+    "useLent": "使用 {{owner}} 的套餐",
+    "signInAgain": "重新登录 {{label}}",
+    "for": "用于 {{names}}",
+    "plans": "你的 AI 套餐",
+    "endpointLine": "你自己的网关或服务器",
+    "keyLocked": "只有管理员可以添加",
+    "preparing": "正在准备电脑",
+    "geminiTiers": "Google AI Pro、Ultra 或 Enterprise",
+    "cursorTiers": "Pro、Pro+、Ultra 或 Teams",
+    "undo": "撤销"
+  },
   "connectAi": {
     "title": {
       "any": "连接 AI",
@@ -2238,23 +2268,10 @@
     },
     "titleFor": "为 {{name}} 连接 AI",
     "titleFor_female": "为 {{name}} 连接 AI",
-    "have": {
-      "title": "已连接",
-      "titleFor": "已为 {{name}} 连接",
-      "titleFor_female": "已为 {{name}} 连接",
-      "other": "或连接其他",
-      "manageKeys": "管理或删除密钥"
-    },
     "billing": "套餐登录在工作区的电脑上，而这台电脑需要有效的 agentes.chat 套餐才会提供。",
     "billingWeb": "请在网页上的 agentes.chat 选择一个。",
     "orPayGo": "或按量付费",
-    "pay": {
-      "label": "你怎么付费？",
-      "plan": "用套餐",
-      "key": "用 API 密钥"
-    },
     "pick": {
-      "plan": "套餐",
       "placeholder": "选择套餐",
       "search": "搜索服务商",
       "searchPlaceholder": "服务商名称",
@@ -2327,10 +2344,7 @@
       "shared": "你的智能体共用的账号",
       "sharedLower": "你的智能体共用的账号",
       "free": "OpenCode 的免费模型",
-      "freeLower": "OpenCode 的免费模型",
-      "one": "{{name}} 专用的账号",
-      "one_female": "{{name}} 专用的账号",
-      "each": "每个智能体专用的账号"
+      "freeLower": "OpenCode 的免费模型"
     },
     "popup": {
       "title": "正在连接 {{name}}",
@@ -2352,14 +2366,11 @@
         "next": "等待中"
       }
     },
-    "for": "用于",
-    "all": "所有智能体",
     "agentAria": "使用此套餐的智能体",
     "each": "每个智能体单独登录，使用同一个账号。",
     "eachHint": "每个智能体都有自己的登录，共享你套餐的用量上限。",
     "once": "所有智能体只登录一次。",
     "onceHint": "它们共享你套餐的用量上限。",
-    "use": "使用 {{label}}",
     "another": "其他账号",
     "reuse": {
       "active": "你在这里已经有 {{label}}。重新登录它，或使用其他账号。",
@@ -4170,7 +4181,6 @@
         "label_female": "她的工作方式",
         "computer": "工作位置",
         "brain": "思考方式",
-        "brainWith": "用 {{plan}} 思考",
         "browser": "浏览器",
         "effort": "{{level}}投入"
       },
@@ -4191,14 +4201,8 @@
       "saved": {
         "brain": "{{name}} 现在使用 {{brain}} 思考。",
         "brain_female": "{{name}} 现在使用 {{brain}} 思考。",
-        "brainMoved": "{{name}} 现在在 {{computer}} 上工作，并使用 {{brain}} 思考。",
-        "brainMoved_female": "{{name}} 现在在 {{computer}} 上工作，并使用 {{brain}} 思考。",
         "brainOwner": "{{name}} 现在使用 {{brain}} 思考，并且只回复 {{owner}}。",
         "brainOwner_female": "{{name}} 现在使用 {{brain}} 思考，并且只回复 {{owner}}。",
-        "brainMovedOwner": "{{name}} 现在在 {{computer}} 上工作，使用 {{brain}} 思考，并且只回复 {{owner}}。",
-        "brainMovedOwner_female": "{{name}} 现在在 {{computer}} 上工作，使用 {{brain}} 思考，并且只回复 {{owner}}。",
-        "account": "{{name}} 现在使用 {{account}} 账号。",
-        "account_female": "{{name}} 现在使用 {{account}} 账号。",
         "computer": "{{name}} 现在在 {{computer}} 上工作。",
         "computer_female": "{{name}} 现在在 {{computer}} 上工作。",
         "none": "{{name}} 现在没有电脑。",
@@ -4218,13 +4222,7 @@
         "model": "API 密钥",
         "modelText": "按用量付费，计入 {{name}} 的预算。",
         "modelText_female": "按用量付费，计入 {{name}} 的预算。",
-        "planText": "使用你的 {{plan}} 套餐",
-        "planTextOf": "使用 {{owner}} 的 {{plan}} 套餐",
-        "moves": "将转到 {{computer}}",
-        "off": "{{computer}} 已离线",
-        "none": "没有电脑可用",
         "planModel": "模型",
-        "account": "账号",
         "accountWho": "只有 {{name}} 的负责人 {{owner}} 的账号：套餐只为其所有者的智能体思考。",
         "accountSignedOut": "已退出登录，请重新登录",
         "accountUnknown": "登录未确认，稍后会再次检查",
@@ -4233,19 +4231,14 @@
         "accountAlso": "{{agents}} 也在使用",
         "accountOf": "{{name}} 的",
         "accountOthers": "其他人的套餐会显示是谁的。主人会收到邮件，并且可以收回。",
-        "addAccount": "添加账号",
         "signInAgain": "重新登录",
-        "connectPlan": "连接其他套餐",
-        "keyLabel": "API 密钥",
-        "fallbackTitle": "{{computer}} 无响应时，通过 API 回复",
-        "fallbackHint": "将通过 API 回复，并计入 {{name}} 的预算。否则 {{name}} 会告知提出请求的人，并等待电脑恢复。",
-        "fallbackHint_female": "将通过 API 回复，并计入 {{name}} 的预算。否则 {{name}} 会告知提出请求的人，并等待电脑恢复。",
         "effort": "投入程度",
         "efforts": {
           "auto": "自动",
           "low": "低",
           "medium": "中",
           "high": "高",
+          "xhigh": "超高",
           "max": "最高"
         },
         "effortsLower": {
@@ -4253,6 +4246,7 @@
           "low": "低",
           "medium": "中",
           "high": "高",
+          "xhigh": "超高",
           "max": "最高"
         },
         "effortText": {
@@ -4260,6 +4254,7 @@
           "low": "回复快，适合简单问题。",
           "medium": "默认设置，大多数时候思考得足够充分。",
           "high": "在难题上思考更多，更慢，费用也更高。",
+          "xhigh": "在又长又难的任务上思考得多得多，更慢，也更贵。",
           "max": "尽可能深入思考，慢得多，也贵得多。"
         },
         "speed": "速度",
@@ -4282,40 +4277,19 @@
         },
         "advanced": {
           "title": "高级设置",
-          "sub": "{{brain}}。适用于所有对话。",
-          "think": "思考方式",
-          "answers": "回复对象",
           "defaults": "恢复默认",
-          "done": "完成",
-          "contents": {
-            "model": "上下文窗口",
-            "auto": "上下文窗口和回复对象",
-            "fixed": "投入程度、上下文窗口和回复对象",
-            "autoSpeed": "速度、上下文窗口和回复对象",
-            "fixedSpeed": "投入程度、速度、上下文窗口和回复对象"
-          },
           "allDefault": "全部为默认",
           "effort": "投入程度：{{level}}",
           "speed": "速度：快速",
-          "context": "上下文：{{size}}",
-          "sharing": "回复其他成员",
-          "waits": "等待电脑"
+          "context": "上下文：{{size}}"
         },
         "copy": {
-          "row": "用于其他智能体",
-          "rowLine": "相同的 AI、模型、投入程度和自主权限",
-          "title": "用于其他智能体",
-          "sub": "它们将使用 {{setup}} 思考。",
-          "all": "全部",
-          "allLine_other": "{{count}} 个智能体可以使用",
-          "none": "目前没有其他智能体可以使用。",
           "now": "当前：{{brain}}",
           "same": "已经是这样思考的",
           "keeps": "保留 {{account}}",
           "keepsOwn": "保留其电脑的账号",
           "autonomy": "自主权限：{{from}} → {{to}}",
           "withAutonomy": "包括自主权限",
-          "withAutonomyLine": "{{value}}，与这个智能体相同。关闭时，各自保留自己的设置。",
           "reasons": {
             "not_allowed": "只有管理员和 {{owner}} 可以更改",
             "not_allowedNobody": "只有管理员可以更改",
@@ -4328,12 +4302,6 @@
             "model_missing": "{{plan}} 不包含 {{model}}",
             "failed": "暂时无法更改"
           },
-          "search": "查找智能体",
-          "noMatch": "没有名为“{{q}}”的智能体",
-          "pick": "选择智能体",
-          "use_other": "用于 {{count}} 个智能体",
-          "done_other": "{{count}} 个智能体现在使用 {{setup}} 思考。",
-          "autonomyOnly_other": "{{count}} 个智能体只更改了自主权限。",
           "missed_other": "{{count}} 个智能体未更改。"
         },
         "add": {
@@ -4395,10 +4363,8 @@
             "opencode": "这个 OpenCode 密钥已作为 {{account}} 连接。"
           },
           "startFailed": "{{computer}} 没有响应，请稍后重试。",
-          "sendFailed": "无法发送代码，请检查后重试。",
-          "done": "{{account}} 账号已在 {{computer}} 上。点击“使用”保存。"
-        },
-        "offCloud": "{{computer}} 无响应"
+          "sendFailed": "无法发送代码，请检查后重试。"
+        }
       },
       "computer": {
         "title": "{{name}} 在哪里工作？",
@@ -5408,15 +5374,12 @@
     "price": "每百万 token US$ {{input}} / {{output}}",
     "plans": "使用套餐，在电脑上运行",
     "plansHelp": "使用连接电脑者的订阅运行 Claude Code 或 Codex。不需要密钥。",
-    "planOnlyOwner": "使用套餐时，{{name}} 起初只回复 {{owner}}。在 {{name}} 的页面上，{{owner}} 可以选择是否让他回复其他人。",
-    "planOnlyOwner_female": "使用套餐时，{{name}} 起初只回复 {{owner}}。在 {{name}} 的页面上，{{owner}} 可以选择是否让她回复其他人。",
     "partly": "{{name}} 已就绪，但你的部分选择没有保存。{{reason}}",
     "planNotSaved": "{{name}} 已就绪，但暂时无法设置 {{brain}}。请在 {{name}} 页面的“思考方式”中重新选择。",
     "lastSetup": "沿用最近的选择：{{setup}}。",
     "lastAutonomy": "{{value}}，与最近的选择相同。关闭时：以 {{fallback}} 开始。",
     "autoCost": "费用随每个任务而定",
     "noKeyFor": "没有 {{provider}} 密钥",
-    "key": "密钥",
     "defaultKey": "工作区默认密钥",
     "defaultKeyDesc": "{{provider}} · 尾号 {{hint}}",
     "otherKeyDesc": "{{provider}} · 尾号 {{hint}}",
@@ -5428,7 +5391,6 @@
       "needsKey": "需要 {{plan}} 密钥",
       "other": "选择其他"
     },
-    "noKeys": "还没有密钥",
     "budgetTitle": "每月预算",
     "budget": "每月预算（US$）",
     "budgetHelp": "达到上限时，{{name}} 会停下并告知。",
@@ -8333,7 +8295,6 @@
       "savedEveryone_female": "{{name}} 现在会回复其他成员。",
       "savedOwner": "{{name}} 现在只回复你。",
       "savedOwner_female": "{{name}} 现在只回复你。",
-      "savedOwnerOf": "{{name}} 现在只回复 {{owner}}。",
       "backOnApi": "{{name}} 已改回使用 API，仍然只回复你。",
       "backOnApi_female": "{{name}} 已改回使用 API，仍然只回复你。",
       "letEveryone": "让 {{name}} 回复所有人",
@@ -11696,7 +11657,7 @@
       "takeOverNoAccess": "接手例行工作之前，请先加入它所在的对话。",
       "agentNotInChannel": "请先把智能体添加到对话中。",
       "webhookPaused": "请开启例行工作后再测试。",
-      "continueExtraOff": "这个套餐的时间窗口额度已用完，而这个智能体的长时间工作没有启用付费额外用量。在它的 AI 设置中开启后即可立即继续，否则会在额度重置后继续。",
+      "continueExtraOff": "这个套餐的时间窗口额度已用完，而这个智能体的长时间工作不使用套餐的付费额外用量。额度重置后会继续。",
       "continueExtraUsedUp": "这个套餐的时间窗口额度已用完，付费额外用量也已用完或不可用。它会在额度重置后继续。",
       "actionsNeedApprover": "只有智能体负责人或批准其操作的人可以让例行工作自行执行。",
       "editorOnly": "只有例行工作的创建者、智能体负责人或管理员可以修改它。",

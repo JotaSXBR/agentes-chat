@@ -68,7 +68,7 @@ async function computerAgent(fx: Fixture) {
   const paired = await pairMachine(deps, fx.owner.id, fx.org.id, { name: "MacBook", ...RUNNER, exec: true });
   await fx.db
     .update(schema.agents)
-    .set({ machineId: paired.machineId, brain: "claude_code", brainFallback: false })
+    .set({ machineId: paired.machineId, brain: "claude_code" })
     .where(eq(schema.agents.id, fx.agent.id));
   return paired.machineId;
 }

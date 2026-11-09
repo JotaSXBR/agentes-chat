@@ -169,6 +169,7 @@ export * from "./management";
 export * from "./media";
 export * from "./media-tools";
 export * from "./member-status";
+export * from "./message-cards";
 export * from "./message-links";
 export * from "./message-memories";
 export * from "./message-preview";

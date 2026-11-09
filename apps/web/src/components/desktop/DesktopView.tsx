@@ -61,6 +61,16 @@ const PICTURE_WAIT_MS = 10_000;
  */
 /** A stream that changes mode in place and hasn't this long after the mode changed opens again in the new one. */
 const SWITCH_WAIT_MS = 3_000;
+/**
+ * Each agent's last picture in a browser card's view (`preview`): its next view (a new run's card, the card back on
+ * screen, its connection opening again) opens over it, never on the cold "Abrindo o computador…". For this page's life,
+ * shown only to whoever may watch that screen then.
+ */
+const stills = new Map<string, string>();
+
+/** Tests: every app starts with none. */
+export const forgetScreenStills = () => stills.clear();
+
 /** A browser card's screen (`preview`) opens again this many times after drops, then the card shows frames. */
 const PREVIEW_RETRIES = 3;
 
@@ -125,6 +135,8 @@ export function DesktopView({
   // Control opening over the last picture it watched, or watching again over the last one in control.
   const [taking, setTaking] = useState(false);
   const [returning, setReturning] = useState(false);
+  // A card's view opening over a picture it holds (`stills`): no cover over it, and still "connecting" to the card.
+  const [stilled, setStilled] = useState(false);
   const [backNote, setBackNote] = useState("");
   const screenRef = useRef<HTMLDivElement>(null);
   const rfbRef = useRef<RFB | null>(null);
@@ -219,6 +231,16 @@ export function DesktopView({
     return () => clearTimeout(late);
   }, [connect, mode, screenMode]);
 
+  // A card's view opens over the agent's last picture (`stills`), before anything paints.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: each new connection
+  useLayoutEffect(() => {
+    const el = screenRef.current;
+    const still = preview && connect ? stills.get(agentId) : undefined;
+    if (!el || !still || heldPicture(el)) return;
+    holdImage(el, still);
+    setStilled(true);
+  }, [connect, round, agentId, preview]);
+
   // biome-ignore lint/correctness/useExhaustiveDependencies: a new `round` opens the screen again
   useEffect(() => {
     const el = screenRef.current;
@@ -227,14 +249,21 @@ export function DesktopView({
       heldPicture(el)?.remove();
       setTaking(false);
       setReturning(false);
+      setStilled(false);
       return;
     }
     // While it retries, the cover keeps saying why; a picture held over a hand back stays under "Devolvendo ao…", and
-    // over control opening under "Assumindo o controle…"; anything else is a fresh start.
+    // over control opening under "Assumindo o controle…"; anything else is a fresh start. A card's view only watches:
+    // what it holds stays clear (`stilled`).
     const holding = heldPicture(el) !== null;
     setTaking(holding && modeNow.current === "control");
-    setReturning(holding && modeNow.current !== "control");
+    setReturning(!preview && holding && modeNow.current !== "control");
     setView((v) => (holding || v === "offline" || v === "busy" || v === "paused" || v === "held" ? v : "connecting"));
+    /** A card's view leaves its last picture to the next one (`stills`). */
+    const keep = () => {
+      const picture = preview ? pictureOf(el) : null;
+      if (picture) stills.set(agentId, picture);
+    };
     let cancelled = false;
     let closed = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -275,15 +304,23 @@ export function DesktopView({
           // A close that arrives after the next connection took over (watching turned control) leaves that one be.
           if (rfbRef.current === rfb) rfbRef.current = null;
           if (cancelled) return;
+          // Before noVNC takes its canvas off the page (`DesktopLink`).
+          keep();
           setTaking(false);
           const next = desktopCloseState(e.code, e.reason, { preview });
           // A card's screen that keeps dropping says so, and the card shows the frames.
           const spent = preview && next.retry !== "never" && attempts.current >= PREVIEW_RETRIES;
-          // Control ended (handed back): it opens again as a watcher over the picture it had; any other close says why.
-          if (e.code !== DESKTOP_CLOSE.controlEnded || !holdPicture(el)) {
+          // Control ended (handed back), or a card's screen that opens again: the next connection opens over the
+          // picture it had. Any other close says why.
+          const holds = e.code === DESKTOP_CLOSE.controlEnded || (preview && next.retry !== "never" && !spent);
+          if (!holds || !holdPicture(el)) {
             heldPicture(el)?.remove();
             setReturning(false);
+            setStilled(false);
             setView(spent ? "offline" : next.state);
+          } else if (preview) {
+            setStilled(true);
+            setView(next.state);
           }
           // What changed shows at once (someone took control); a state that blocks it stops the retry.
           void refetch();
@@ -324,6 +361,7 @@ export function DesktopView({
               heldPicture(el)?.remove();
               if (cancelled) return;
               setReturning(false);
+              setStilled(false);
               setView("live");
               if (canvas?.width && canvas.height) {
                 const { width, height } = canvas;
@@ -369,6 +407,7 @@ export function DesktopView({
       if (linkRef.current === link) linkRef.current = null;
       if (closed) return;
       closed = true;
+      keep();
       // Handed back or taken: the picture stays over the connection that replaces this one.
       if ((session === "control") !== (modeNow.current === "control")) holdPicture(el);
       if (rfb) rfb.disconnect();
@@ -647,8 +686,9 @@ export function DesktopView({
           />
         )}
         {shown !== "live" ? (
-          // A card's view says only that it opens: the card itself says every other state, on its frames.
-          preview && shown !== "connecting" ? null : (
+          // A card's view says only that it opens, and not over a picture it holds: the card itself says every other
+          // state, on its frames.
+          preview && (shown !== "connecting" || stilled) ? null : (
             cover[shown]
           )
         ) : switchingTo ? (

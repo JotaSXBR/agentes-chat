@@ -15,6 +15,7 @@ import { AppProviders, type AppServices } from "@/app/providers";
 import { createQueryClient } from "@/app/query-client";
 import type { RouterContext } from "@/app/router-context";
 import type { AuthClient } from "@/auth/client";
+import { forgetScreenStills } from "@/components/desktop/DesktopView";
 import { OrgProvider } from "@/components/org-context";
 import { forgetComposerDrafts } from "@/hooks/useComposerDraft";
 import { createI18n, type LocaleCode, setLocale } from "@/i18n";
@@ -34,6 +35,8 @@ export function makeServices(
   auth: AuthClient = createFakeAuth().auth,
   createSocket: SocketFactory = fakeSockets().factory,
 ): AppServices {
+  // A fresh page: no screen's last picture from an app before it.
+  forgetScreenStills();
   const toasts = createToastStore();
   const i18n = createI18n("pt-BR");
   const queryClient = createQueryClient({

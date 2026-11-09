@@ -18,7 +18,7 @@ import {
   timeOptions,
 } from "../src";
 import { TIP_OPEN_MS } from "../src/components/Tip";
-import { EDGE_ROOM, placeTip, pullToFit, TIP_GAP } from "../src/floating";
+import { EDGE_ROOM, joinList, placeTip, pullToFit, TIP_GAP } from "../src/floating";
 
 const body = () => within(document.body);
 const key = async (el: Element, k: string) => {
@@ -214,6 +214,37 @@ describe("floating layers", () => {
     expect(placeTip({ ...time, left: 40, right: 70 }, { width: 300, height: 26 }, "end", 390).left).toBe(EDGE_ROOM);
     // A note's reason: centered on it.
     expect(placeTip({ ...time, left: 100, right: 160 }, { width: 100, height: 20 }, "center", 1280).left).toBe(80);
+  });
+
+  test("a list's ⓘ keeps the tip as far inside the list's edges as inside the window's", () => {
+    const info = { left: 290, top: 300, right: 304, bottom: 314 };
+    expect(placeTip(info, { width: 200, height: 30 }, "center", 1280).left).toBe(197);
+    expect(placeTip(info, { width: 200, height: 30 }, "center", 1280, { left: 0, right: 310 }).left).toBe(
+      310 - EDGE_ROOM - 200,
+    );
+    expect(
+      placeTip({ ...info, left: 20, right: 34 }, { width: 200, height: 30 }, "center", 1280, { left: 10, right: 400 })
+        .left,
+    ).toBe(10 + EDGE_ROOM);
+  });
+
+  test("an open list joins its trigger on the side it opened, follows a flip, and lets go when it closes", async () => {
+    const trigger = document.createElement("button");
+    const list = document.createElement("div");
+    list.dataset.side = "bottom";
+    const undo = joinList(list, trigger);
+    expect([trigger.dataset.join, list.dataset.join]).toEqual(["bottom", "bottom"]);
+    list.dataset.side = "top";
+    await act(() => new Promise((r) => setTimeout(r, 0)));
+    expect([trigger.dataset.join, list.dataset.join]).toEqual(["top", "top"]);
+    undo();
+    expect(trigger.dataset.join).toBeUndefined();
+    // Square where they meet, one shape: the trigger's corners on that side, the list's unless it reaches past them.
+    const kit = await css("components.css");
+    expect(kit).toMatch(
+      /\.ac-select__trigger\[data-join="bottom"\] \{\s*border-end-start-radius: 0;\s*border-end-end-radius: 0;/,
+    );
+    expect(kit).toContain('.ac-menu[data-join="bottom"]:not([data-wide="start"], [data-wide="both"])');
   });
 });
 

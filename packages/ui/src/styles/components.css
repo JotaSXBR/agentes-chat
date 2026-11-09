@@ -312,10 +312,22 @@ html[data-pointer] :focus-visible {
   flex-wrap: wrap;
   row-gap: var(--space-2);
 }
-.ac-acts > .ac-btn--ghost {
+.ac-acts > .ac-btn--ghost,
+.ac-setrow__end > .ac-btn--ghost {
   margin-inline: calc(-1 * var(--ghost-plate));
 }
-.ac-acts > .ac-btn--ghost:not(.ac-btn--icon) {
+/*
+ * Among a settings row's controls (a schedule's selects, then "Parar de receber") a ghost button is flush with them as
+ * in a row of actions: under them, its words start on their edge, its plate reaching out past it.
+ */
+.ac-acts > .ac-btn--ghost:not(.ac-btn--icon),
+.ac-setrow__end > .ac-btn--ghost:not(.ac-btn--icon) {
+  padding-inline: var(--ghost-plate);
+}
+/* The same for a ghost button on a line of its own under a settings row's controls (`ac-btn--under`). */
+.ac-btn--ghost.ac-btn--under {
+  align-self: flex-start;
+  margin-inline-start: calc(-1 * var(--ghost-plate));
   padding-inline: var(--ghost-plate);
 }
 /*
@@ -1977,6 +1989,33 @@ html:not([data-pointer]) .ac-select__trigger:focus-visible,
 }
 .ac-select__trigger[aria-invalid="true"] {
   border-color: var(--danger);
+}
+/*
+ * An open list joins its trigger (`joinList`): square where the two meet, one border between them, so they read as one
+ * shape. Where the list reaches past the trigger's edge (`data-wide`), that corner of the list stays round.
+ */
+.ac-select__trigger[data-join] {
+  box-shadow: var(--e2);
+}
+.ac-select__trigger[data-join="bottom"] {
+  border-end-start-radius: 0;
+  border-end-end-radius: 0;
+}
+.ac-select__trigger[data-join="top"] {
+  border-start-start-radius: 0;
+  border-start-end-radius: 0;
+}
+.ac-menu[data-join="bottom"]:not([data-wide="start"], [data-wide="both"]) {
+  border-start-start-radius: 0;
+}
+.ac-menu[data-join="bottom"]:not([data-wide="end"], [data-wide="both"]) {
+  border-start-end-radius: 0;
+}
+.ac-menu[data-join="top"]:not([data-wide="start"], [data-wide="both"]) {
+  border-end-start-radius: 0;
+}
+.ac-menu[data-join="top"]:not([data-wide="end"], [data-wide="both"]) {
+  border-end-end-radius: 0;
 }
 .ac-select__trigger:disabled {
   cursor: not-allowed;
@@ -5774,7 +5813,6 @@ html:not([data-pointer]) .ac-hint:focus-visible {
 .ac-menu__tip {
   position: fixed;
   z-index: var(--z-floating);
-  translate: 0 -100%;
   pointer-events: none;
 }
 

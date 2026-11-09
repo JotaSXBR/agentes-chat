@@ -5,6 +5,7 @@ import Animated, { Easing, useAnimatedStyle, useSharedValue, withSpring, withTim
 import { scheduleOnRN } from "react-native-worklets";
 import { AgentAvatar } from "@/agent/AgentAvatar";
 import { type AgentLookInput, lookOf } from "@/agent/looks";
+import { MOTION_GATES } from "./motion-gates";
 import { motion, useTheme } from "./theme";
 
 /**
@@ -451,7 +452,7 @@ export function FaceTravelHost() {
   const done = useSharedValue(0);
 
   useEffect(() => {
-    enabled = !reducedMotion;
+    enabled = MOTION_GATES.faceTravel && !reducedMotion;
     if (!enabled && flight) {
       end();
       emit();

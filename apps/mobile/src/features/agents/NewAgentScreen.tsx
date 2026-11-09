@@ -80,6 +80,7 @@ import {
   useToast,
 } from "@/ui";
 import { faceTravel } from "@/ui/FaceTravel";
+import { MOTION_GATES } from "@/ui/motion-gates";
 import { router } from "@/ui/navigation";
 import { newAgentAi, pickedAi } from "../ai/logic";
 import { openConnectAi } from "../ai/NoAiCard";
@@ -498,7 +499,7 @@ function NewAgentForm({
       else {
         // Agentes greets it once when it is next on screen (its row comes in, the others look at it).
         markArrived(agent.id);
-        if (reduced) {
+        if (reduced || !MOTION_GATES.agentBirth) {
           successHaptic();
           // It joined, and what it thinks with, under its face: the one note before its conversation opens.
           const thinksLabel = chosen?.title ?? (start && useLast ? startText : t("brain.auto.label"));

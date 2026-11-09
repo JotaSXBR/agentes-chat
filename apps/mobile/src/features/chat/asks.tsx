@@ -75,6 +75,7 @@ import {
   useReducedMotion,
   useTheme,
 } from "@/ui";
+import { MOTION_GATES } from "@/ui/motion-gates";
 import { SparkCheck } from "@/ui/SparkCheck";
 import { approvalTitleText } from "../approvals/parts";
 import { AgentFace } from "../shared/Face";
@@ -488,7 +489,8 @@ export function AskFold({ pending, children }: { pending: boolean; children: Rea
   const [fold, setFold] = useState<{ from: number; to: number | null } | null>(null);
   if (was !== pending) {
     setWas(pending);
-    setFold(was && !reducedMotion && cardHeight.current > 0 ? { from: cardHeight.current, to: null } : null);
+    const folds = MOTION_GATES.askFold && was && !reducedMotion && cardHeight.current > 0;
+    setFold(folds ? { from: cardHeight.current, to: null } : null);
   }
   // Both rest at 0 (the card whole, the line clear), so the fold's first frame needs nothing set.
   const closed = useSharedValue(0);

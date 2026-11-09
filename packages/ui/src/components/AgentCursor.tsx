@@ -294,6 +294,7 @@ export function AgentCursor({
     if (!el) return;
     // Only a morph of its own (its size, measured next): the turn's transition goes on.
     for (const a of el.getAnimations?.() ?? []) if (a.id === MORPH) a.cancel();
+    el.removeAttribute("data-morphing");
     turn();
     const was = tagSize.current;
     const now = { width: el.offsetWidth, height: el.offsetHeight };
@@ -308,6 +309,14 @@ export function AgentCursor({
         { duration: CURSOR.morphMs, easing: OUT },
       );
       morph.id = MORPH;
+      // Meanwhile its words keep their place in one line, uncovered as it grows, never wrapped under the name.
+      el.toggleAttribute("data-morphing", true);
+      const settled = () => {
+        if (!el.getAnimations?.().some((a) => a.id === MORPH && a.playState === "running")) {
+          el.removeAttribute("data-morphing");
+        }
+      };
+      morph.finished.then(settled, settled);
     }
     if (words) what.current?.animate([{ opacity: 0 }, { opacity: 0.88 }], { duration: CURSOR.morphMs, easing: OUT });
   }, [words]);
@@ -330,8 +339,10 @@ export function AgentCursor({
           <path d="m5 4 10 4.17-4.17 1.66L9.17 14 5 4Z" fill={tones.arrow} />
         </svg>
         <span ref={tag} className="ac-cursor__tag" style={{ background: tones.tag }}>
-          {face ? <span className="ac-cursor__face">{face}</span> : null}
-          <span className="ac-cursor__name">{name}</span>
+          <span className="ac-cursor__who">
+            {face ? <span className="ac-cursor__face">{face}</span> : null}
+            <span className="ac-cursor__name">{name}</span>
+          </span>
           {words ? (
             <span ref={what} className="ac-cursor__what">
               {words}

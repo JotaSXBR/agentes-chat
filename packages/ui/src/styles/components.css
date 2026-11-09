@@ -11435,7 +11435,7 @@ html:not([data-pointer]) .ac-carousel__arrow:focus-visible {
   top: 19px;
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   max-width: min(360px, calc(100% - 24px));
   overflow: hidden;
   padding: calc(var(--space-1) / 2) var(--space-2) calc(var(--space-1) / 2) calc(var(--space-1) / 2);
@@ -11460,6 +11460,12 @@ html:not([data-pointer]) .ac-carousel__arrow:focus-visible {
   border-radius: 9px 9px 3px;
   transform: translate(calc(-100% - 19px), calc(-100% - 23px));
 }
+/* The face and the name keep together: a long name wraps beside the face. */
+.ac-cursor__who {
+  display: flex;
+  align-items: flex-start;
+  min-width: 0;
+}
 .ac-cursor__face {
   display: flex;
   flex: none;
@@ -11468,6 +11474,14 @@ html:not([data-pointer]) .ac-carousel__arrow:focus-visible {
 .ac-cursor__name,
 .ac-cursor__what {
   min-width: 0;
+}
+/* While the tag grows to its words, they hold one line beside the name and are uncovered, never wrapped under it. */
+.ac-cursor__tag[data-morphing] {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+.ac-cursor__tag[data-morphing] > * {
+  flex-shrink: 0;
 }
 /* The step in words: it fades in and out while the tag morphs to and from it (`AgentCursor`). */
 .ac-cursor__what {

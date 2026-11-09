@@ -1904,6 +1904,7 @@
     "visibilityPublic": "Public",
     "visibilityPrivate": "Privé",
     "actions": "Actions sur le message de {{name}}",
+    "actionsWhenDone": "Disponible quand {{name}} aura fini",
     "helpful": "Utile",
     "notHelpful": "Pas utile",
     "correct": "Corriger la réponse",

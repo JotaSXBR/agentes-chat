@@ -1777,6 +1777,7 @@
     "visibilityPublic": "公开",
     "visibilityPrivate": "私密",
     "actions": "{{name}} 的消息的操作",
+    "actionsWhenDone": "{{name}} 完成后可用",
     "helpful": "有帮助",
     "notHelpful": "没帮助",
     "correct": "纠正回复",

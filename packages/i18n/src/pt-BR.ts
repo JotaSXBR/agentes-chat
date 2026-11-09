@@ -1829,6 +1829,8 @@ export const ptBR = {
     visibilityPublic: "Público",
     visibilityPrivate: "Privado",
     actions: "Ações da mensagem de {{name}}",
+    actionsWhenDone: "Disponível quando o {{name}} terminar",
+    actionsWhenDone_female: "Disponível quando a {{name}} terminar",
     helpful: "Útil",
     notHelpful: "Não ajudou",
     correct: "Corrigir resposta",

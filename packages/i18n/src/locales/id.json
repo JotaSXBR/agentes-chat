@@ -1777,6 +1777,7 @@
     "visibilityPublic": "Publik",
     "visibilityPrivate": "Privat",
     "actions": "Tindakan untuk pesan {{name}}",
+    "actionsWhenDone": "Tersedia setelah {{name}} selesai",
     "helpful": "Membantu",
     "notHelpful": "Tidak membantu",
     "correct": "Koreksi balasan",

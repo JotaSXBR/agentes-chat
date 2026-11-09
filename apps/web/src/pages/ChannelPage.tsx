@@ -303,7 +303,7 @@ import { AwayPill, WaitingCard } from "@/components/MachineOutages";
 import { useMediaTabs } from "@/components/MediaPicker";
 import { MemberPickerRows, memberOf, type PickKey, useMemberRows } from "@/components/MemberPicker";
 import { MemoryMarks } from "@/components/MemoryMark";
-import { MessageFeedback } from "@/components/MessageFeedback";
+import { MessageFeedback, PendingFeedback } from "@/components/MessageFeedback";
 import { MessageMoreMenu, PersonMessageActions, ReplyButton, useMessageMenu } from "@/components/MessageMore";
 import { MessageReceipts, SeenMark } from "@/components/MessageReceipts";
 import { MembersColumn, MembersSheet } from "@/components/members/MembersColumn";
@@ -4226,6 +4226,9 @@ export const TimelineMessage = memo(function TimelineMessage({
     missionCard ||
     issueWork;
   const feedback = !readOnly && m.author.type === "agent" && !card && !m.local && !live && !mediaAfter;
+  // At work its row is no message yet (the run saves it when done) and every action of the bar acts on that message:
+  // the bar shows in its place, each action off until then.
+  const pendingBar = Boolean(live) && !readOnly && !liveFailed && !liveStopped;
   const menu = useMessageMenu(m, channelName ?? "", {
     feedback,
     readOnly,
@@ -4425,10 +4428,13 @@ export const TimelineMessage = memo(function TimelineMessage({
         stacked={Boolean(card)}
       >
         {live && waiting ? (
+          // Keyed as in the branch below, which takes over when its words start: the browser card (its live page, its
+          // screen's connection) stays the same element instead of opening again.
           <Parts resetKey={m}>
-            <LiveRunStatus run={live} quietOnly />
-            <RunBrowserCard run={live} name={name} />
+            <LiveRunStatus key="status" run={live} quietOnly />
+            <RunBrowserCard key="browser" run={live} name={name} />
             <span className="ac-visually-hidden">{t("channel.writing")}</span>
+            {pendingBar && <PendingFeedback key="bar" agentName={name} />}
           </Parts>
         ) : live ? (
           <Parts resetKey={m}>
@@ -4490,7 +4496,7 @@ export const TimelineMessage = memo(function TimelineMessage({
             {liveStopped ? (
               <StoppedLine runId={live.runId} byUserId={live.canceledBy} owner={live} />
             ) : (
-              !liveFailed && <LiveRunStatus run={live} />
+              !liveFailed && <LiveRunStatus key="status" run={live} />
             )}
             {/* Its tools, as on its saved message: one line (what it does now) opening into each call. */}
             <LiveTools
@@ -4501,10 +4507,11 @@ export const TimelineMessage = memo(function TimelineMessage({
               stopped={liveStopped || liveFailed}
             />
             {/* Last, after its tools; also on a failed or stopped run, for the person still in control (they hand back from it). */}
-            <RunBrowserCard run={live} name={name} />
+            <RunBrowserCard key="browser" run={live} name={name} />
             {!liveFailed && !liveWaiting && !liveStopped && (
               <span className="ac-visually-hidden">{t("channel.writing")}</span>
             )}
+            {pendingBar && <PendingFeedback key="bar" agentName={name} />}
           </Parts>
         ) : (
           <Parts resetKey={m}>

@@ -1777,6 +1777,7 @@
     "visibilityPublic": "공개",
     "visibilityPrivate": "비공개",
     "actions": "{{name}}의 메시지 작업",
+    "actionsWhenDone": "{{name}}의 답변이 끝나면 사용할 수 있어요",
     "helpful": "도움이 됐어요",
     "notHelpful": "도움이 안 됐어요",
     "correct": "답변 정정",

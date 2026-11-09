@@ -1967,6 +1967,7 @@
     "visibilityPublic": "Открытый",
     "visibilityPrivate": "Закрытый",
     "actions": "Действия с сообщением {{name}}",
+    "actionsWhenDone": "Будет доступно, когда {{name}} закончит",
     "helpful": "Полезно",
     "notHelpful": "Бесполезно",
     "correct": "Поправить ответ",

@@ -768,6 +768,45 @@ describe("the card in the message", () => {
     await settle(6);
     expect(screen().getByRole("dialog", { name: "Computador da Ada" })).toBeTruthy();
   });
+
+  test("its words start under it: the same card goes on showing the page, never Opening again", async () => {
+    const undo = onScreen(".brw-ac");
+    try {
+      const r = await renderApp(`/org/${ORG_ID}/c/${ENG_ID}`, { api: createFakeApi(seedState()) });
+      await settle(5);
+      const socket = r.sockets.last();
+      await act(async () => socket.open());
+      const run = { channelId: ENG_ID, threadId: null, runId: "r-words", agentId: ADA_ID };
+      const ev = (event: Record<string, unknown>) =>
+        act(async () => socket.push({ type: "event", channelId: ENG_ID, event: { ...run, ...event } }));
+      await ev({ type: "agent.thinking" });
+      await ev({ type: "agent.tool", tool: "browser_open" });
+      await settle(3);
+      await act(async () =>
+        socket.push({
+          type: "browser.frame",
+          agentId: ADA_ID,
+          seq: 1,
+          data: FRAME_DATA,
+          metadata: { deviceWidth: 1280, deviceHeight: 800 },
+        }),
+      );
+      await settle(2);
+      const card = document.querySelector(".brw-ac") as HTMLElement;
+      const page = card.querySelector(".brw-ac__page img");
+      expect(page).not.toBeNull();
+      // Until now its row waited for words (only its face and the card): the first ones take the same row.
+      await ev({ type: "agent.delta", seq: 1, text: "Achei o pedido." });
+      await settle(4);
+      expect(document.querySelector(".ac-msg--streaming")?.textContent).toContain("Achei o pedido.");
+      expect(document.querySelector(".brw-ac")).toBe(card);
+      expect(card.querySelector(".brw-ac__page img")).toBe(page);
+      // No cover ("Abrindo o navegador da Ada…") and no skeleton over the page.
+      expect(card.querySelector(".brw-dim, .brw-skel")).toBeNull();
+    } finally {
+      undo();
+    }
+  });
 });
 
 describe("the frame's stop", () => {
@@ -1093,6 +1132,34 @@ describe("its browser on the agent's screen: the card shows the whole screen (AD
     expect(within(over).getByRole("button", { name: "Parar" })).toBeTruthy();
     expect(FakeRfb.all.at(-1)?.viewOnly).toBe(true);
     expect(watches(socket)).toBe(0);
+  });
+
+  test("its words start under it: the same screen goes on, on the same socket (no new connection)", async () => {
+    const { socket, screens, card } = await working();
+    await act(async () => FakeRfb.all.at(-1)?.emit("connect"));
+    await settle(3);
+    const views = FakeRfb.all.length;
+    await act(async () =>
+      socket.push({
+        type: "event",
+        channelId: ENG_ID,
+        event: {
+          type: "agent.delta",
+          channelId: ENG_ID,
+          threadId: null,
+          runId: "r-screen",
+          agentId: ADA_ID,
+          seq: 1,
+          text: "Pronto.",
+        },
+      }),
+    );
+    await settle(4);
+    expect(document.querySelector(".ac-msg--streaming")?.textContent).toContain("Pronto.");
+    expect(document.querySelector(".brw-ac")).toBe(card);
+    expect(screens).toHaveLength(1);
+    expect(FakeRfb.all).toHaveLength(views);
+    expect(card.querySelector(".brw-mf__over")).not.toBeNull();
   });
 
   test("a screen that can't show (not available, not running): the browser's frames, never its socket", async () => {

@@ -8713,9 +8713,9 @@ html:not([data-pointer]) .onb__step:focus-visible {
   width: var(--option-face);
   height: var(--option-face);
 }
-/* Chosen, in the trigger: its bare icon, as a maker's mark is there (`.ac-select__lead > .ac-brand`). The tile would
-   stand 5px from the edges of a 40px control. */
-.ac-select__lead > .newag__ib {
+/* Chosen, in a select's trigger: its bare icon, as a maker's mark is there (`.ac-select__lead > .ac-brand`). The tile
+   would stand 5px from the edges of a 40px control; the new-agent page's 60px card picker keeps it. */
+.ac-select:not(.newag__sel) .ac-select__lead > .newag__ib {
   width: auto;
   height: auto;
   background: none;

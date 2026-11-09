@@ -2,7 +2,7 @@ import type { LiveRun, Message } from "@agenteschat/client";
 import { waitsForWords } from "@agenteschat/client/lib/activity";
 import { holdsText } from "@agenteschat/client/lib/text";
 import { blockPlaces } from "@agenteschat/client/lib/timeline";
-import { type ToolItem, toolItemsLive } from "@agenteschat/client/lib/work";
+import { type ReplyStop, replyStopOf, type ToolItem, toolItemsLive } from "@agenteschat/client/lib/work";
 
 /**
  * An agent's turn in the conversation as one block: from "pensando" through
@@ -225,14 +225,11 @@ export function recentTurn(runId: string, now: number, maxAgeMs = 8000): TurnSna
  */
 export function stoppedOf(
   meta: Record<string, unknown> | undefined,
-): { byUserId: string | null; continuedRunId: string | null } | null {
+): (ReplyStop & { continuedRunId: string | null }) | null {
   const c = meta?.canceled;
   if (!c) return null;
   const o = typeof c === "object" ? (c as Record<string, unknown>) : {};
-  return {
-    byUserId: typeof o.byUserId === "string" ? o.byUserId : null,
-    continuedRunId: typeof o.continuedRunId === "string" ? o.continuedRunId : null,
-  };
+  return { ...replyStopOf(c), continuedRunId: typeof o.continuedRunId === "string" ? o.continuedRunId : null };
 }
 
 /**

@@ -75,8 +75,12 @@ export interface RunCanceledEvent {
   threadId: string | null;
   runId: string;
   agentId: string;
-  /** Who stopped it. */
+  /** Who stopped it, or at whose word `byAgentId` did. */
   byUserId?: string | null;
+  /** The agent that stopped it at that person's word (the right hand). */
+  byAgentId?: string;
+  /** It starts again from their message at once: no stop to show. */
+  restarted?: true;
 }
 
 /** Pressed "Parar": "Parando…" until the event, and who stopped it ("Interrompido por Walter"). */
@@ -94,7 +98,11 @@ export function unmarkStopping(state: StreamsState, runId: string): StreamsState
 }
 
 /** Stopped: a row with text stays (muted "Interrompido por…"); one with nothing written goes away. */
-function cancel(state: StreamsState, runId: string, byUserId?: string | null): StreamsState {
+function cancel(
+  state: StreamsState,
+  runId: string,
+  by: Pick<RunCanceledEvent, "byUserId" | "byAgentId" | "restarted"> = {},
+): StreamsState {
   const r = state.runs[runId];
   if (!r) return state;
   if (!r.text) {
@@ -110,7 +118,9 @@ function cancel(state: StreamsState, runId: string, byUserId?: string | null): S
         ...r,
         status: "canceled",
         stopping: false,
-        canceledBy: byUserId ?? r.canceledBy ?? null,
+        canceledBy: by.byUserId ?? r.canceledBy ?? null,
+        ...(by.byAgentId ? { canceledByAgent: by.byAgentId } : {}),
+        ...(by.restarted ? { restarted: true } : {}),
         work,
         tool: null,
       },
@@ -165,8 +175,12 @@ export interface LiveRun {
   stopping?: boolean;
   /** Its browser command waits for a shared profile someone else has (ADR 0110). */
   browserWait?: BrowserProfileWait | null;
-  /** Who stopped it (user id). */
+  /** Who stopped it (user id), or at whose word `canceledByAgent` did. */
   canceledBy?: string | null;
+  /** The agent that stopped it at that person's word (the right hand). */
+  canceledByAgent?: string | null;
+  /** Stopped to start again at once from that person's message: no stop to show. */
+  restarted?: boolean;
   /** The code the agent is running (`run_code`, a skill script), from `agent.tool`. */
   code?: LiveCode | null;
   /**
@@ -570,7 +584,7 @@ function applyEvent(state: StreamsState, event: StreamEvent): StreamsState {
       });
     }
     case "run.canceled":
-      return cancel(state, event.runId, event.byUserId);
+      return cancel(state, event.runId, event);
     case "agent.tool": {
       if (state.finished[event.runId]) return state;
       const current = state.runs[event.runId];

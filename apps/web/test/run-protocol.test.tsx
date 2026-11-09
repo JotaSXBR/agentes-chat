@@ -8,7 +8,7 @@ import type { Message, RunStep } from "@agenteschat/client";
 import { applyChannelEvent, emptyStreams, narrationOf, reconcileRuns, type StreamsState } from "@agenteschat/client";
 import { splitCanceled, workFromSteps } from "@agenteschat/client/lib/work";
 import { act, cleanup, fireEvent, within } from "@testing-library/react";
-import { ADA_ID, createFakeApi, ENG_ID, ORG_ID, seedState } from "./fake-api";
+import { ADA_ID, ATLAS_ID, createFakeApi, ENG_ID, ORG_ID, seedState } from "./fake-api";
 import { renderApp, screen, settle } from "./render";
 
 afterEach(() => cleanup());
@@ -112,10 +112,23 @@ describe("work summary and stopped messages", () => {
   });
 
   test("splitCanceled keeps the text and takes out the server's last line; the person comes from the meta", () => {
+    const none = { byAgentId: null, restarted: false, code: null };
     expect(
       splitCanceled("Comecei a análise.\n\n_Interrompido por Walter._", { canceled: { byUserId: "u-walter" } }),
-    ).toEqual({ body: "Comecei a análise.", canceled: true, byUserId: "u-walter", note: "Interrompido por Walter" });
-    expect(splitCanceled("_ênfase_", {})).toEqual({ body: "_ênfase_", canceled: false, byUserId: null, note: null });
+    ).toEqual({
+      body: "Comecei a análise.",
+      canceled: true,
+      byUserId: "u-walter",
+      ...none,
+      note: "Interrompido por Walter",
+    });
+    expect(splitCanceled("_ênfase_", {})).toEqual({
+      body: "_ênfase_",
+      canceled: false,
+      byUserId: null,
+      ...none,
+      note: null,
+    });
   });
 });
 
@@ -143,6 +156,60 @@ describe("in the channel", () => {
     await act(async () => fireEvent.click(within(line).getByRole("button", { name: "Continuar" })));
     await settle(3);
     expect(state.calls.find((c) => c.method === "agents.continueRun")?.args).toEqual([ORG_ID, "r-stopped"]);
+    expect(within(msg).queryByRole("button", { name: "Continuar" })).toBeNull();
+  });
+
+  /** Ada's reply in #eng, stopped as `canceled` says. */
+  async function stoppedReply(canceled: Record<string, unknown>) {
+    const state = seedState();
+    state.messages.push({
+      id: "m-stopped",
+      channelId: ENG_ID,
+      threadId: null,
+      author: { type: "agent", id: ADA_ID },
+      body: "Comecei a revisar o PR.\n\n_Stopped._",
+      mentionedAgentIds: [],
+      agentRunId: "r-stopped",
+      meta: { canceled: { text: "Comecei a revisar o PR.", ...canceled } },
+      createdAt: new Date().toISOString(),
+    } as Message);
+    await renderApp(`/org/${ORG_ID}/c/${ENG_ID}`, { api: createFakeApi(state) });
+    await settle(5);
+    const msg = screen().getByText("Comecei a revisar o PR.").closest(".ac-msg") as HTMLElement;
+    return { msg, line: msg.querySelector(".run-canceled") as HTMLElement | null };
+  }
+
+  test("someone else stopped it: their name, never 'Você'", async () => {
+    const { line } = await stoppedReply({ byUserId: "u-joao" });
+    expect(line?.textContent).toContain("João parou a Ada");
+    expect(line?.textContent).not.toContain("Você");
+  });
+
+  test("the right hand stopped it at my word: its name, never 'Você', and Continuar", async () => {
+    const { line } = await stoppedReply({ byUserId: "u-walter", byAgentId: ATLAS_ID });
+    expect(line?.textContent).toContain("Atlas parou a Ada");
+    expect(line?.textContent).not.toContain("Você parou");
+    expect(within(line as HTMLElement).getByRole("button", { name: "Continuar" })).toBeTruthy();
+  });
+
+  test("nobody stopped it: its cause in my language, nobody's name and no Continuar", async () => {
+    const { line } = await stoppedReply({ byUserId: null, code: "run.agent_archived" });
+    expect(line?.textContent).toContain("O agente foi arquivado.");
+    expect(line?.textContent).not.toContain("parou a Ada");
+    expect(line?.textContent).not.toContain("Stopped");
+    expect(within(line as HTMLElement).queryByRole("button", { name: "Continuar" })).toBeNull();
+  });
+
+  test("a cause with no words of its own says it stopped, in my language", async () => {
+    const { line } = await stoppedReply({ byUserId: null, code: "run.failed" });
+    expect(line?.textContent).toContain("Parou aqui");
+    expect(within(line as HTMLElement).queryByRole("button", { name: "Continuar" })).toBeNull();
+  });
+
+  test("'Parar e mandar' started it again from my message: no stop line, no Continuar", async () => {
+    const { msg, line } = await stoppedReply({ byUserId: "u-walter", restarted: true, continuedRunId: "r-next" });
+    expect(line).toBeNull();
+    expect(msg.textContent).not.toContain("parou");
     expect(within(msg).queryByRole("button", { name: "Continuar" })).toBeNull();
   });
 

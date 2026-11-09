@@ -2,14 +2,19 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { EndedTask, ManagedTask } from "@agenteschat/client";
-import { taskProgram, taskTitle, taskWaitGroups, taskWaitGroupText } from "@agenteschat/client/lib/task-manager";
+import {
+  endedText,
+  taskProgram,
+  taskTitle,
+  taskWaitGroups,
+  taskWaitGroupText,
+} from "@agenteschat/client/lib/task-manager";
 import {
   agentTasksHref,
   agentTasksOf,
   computerLine,
   doneTodayOf,
   endedLatestFirst,
-  endedText,
   groupLine,
   isHere,
   rowState,
@@ -207,6 +212,9 @@ describe("what ended today", () => {
     const byAna = ended({ runId: "d", status: "canceled", stoppedBy: { userId: "ana", name: "Ana" } });
     expect(endedText(t, byAna, "me")).toBe("Ana parou");
     expect(endedText(t, ended({ runId: "e", status: "canceled" }), "me")).toBe("Parada");
+    // The right hand stopped it at my word: its name, never "Você parou".
+    const byLodi = ended({ runId: "f", status: "canceled", stoppedBy: { userId: "me", name: "Bia", agentId: "lodi" } });
+    expect(endedText(t, byLodi, "me", (id) => (id === "lodi" ? "Lodi" : undefined))).toBe("Lodi parou");
   });
 
   test("the latest first", () => {

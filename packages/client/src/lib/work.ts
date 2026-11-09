@@ -374,29 +374,49 @@ export function foldSteps<T>(steps: T[], text: (step: T) => string): { step: T; 
   return lines;
 }
 
+/** Who or what stopped a run, as its stopped reply's `meta.canceled` keeps it (the engine's `stopCanceled`). */
+export interface ReplyStop {
+  byUserId: string | null;
+  /** The agent that stopped it at that person's word (the right hand). */
+  byAgentId: string | null;
+  /** It started again at once from what that person said ("Parar e mandar"): no stop to show. */
+  restarted: boolean;
+  /** Nobody stopped it: its cause (`run.agent_archived`…), in the person's words through `runErrorText`. */
+  code: string | null;
+}
+
+const NO_STOP: ReplyStop = { byUserId: null, byAgentId: null, restarted: false, code: null };
+
+/** The stop of a reply's `meta.canceled` (`true` on older replies, else an object). */
+export function replyStopOf(canceled: unknown): ReplyStop {
+  const c = typeof canceled === "object" && canceled ? (canceled as Record<string, unknown>) : {};
+  const str = (v: unknown) => (typeof v === "string" && v ? v : null);
+  return { byUserId: str(c.byUserId), byAgentId: str(c.byAgentId), restarted: c.restarted === true, code: str(c.code) };
+}
+
 /**
  * A message of a stopped run (`meta.canceled`, `true` or `{ byUserId }`) ends
  * with the server's "_Interrompido por Walter._": that line leaves the text,
  * and the note is written on the client, in the UI language, from the meta.
  * `note` is the server's line (only a fallback when the meta has no person).
  */
-export function splitCanceled(body: string, meta: Record<string, unknown> | undefined) {
+export function splitCanceled(
+  body: string,
+  meta: Record<string, unknown> | undefined,
+): ReplyStop & { body: string; canceled: boolean; note: string | null } {
   const canceled = meta?.canceled;
-  if (!canceled) return { body, canceled: false, byUserId: null as string | null, note: null as string | null };
-  const byUserId =
-    typeof canceled === "object" && canceled && typeof (canceled as { byUserId?: unknown }).byUserId === "string"
-      ? ((canceled as { byUserId: string }).byUserId as string)
-      : null;
+  if (!canceled) return { body, canceled: false, ...NO_STOP, note: null };
+  const stop = replyStopOf(canceled);
   // The server also sends what the agent wrote, without the note.
   const said = typeof canceled === "object" && canceled ? (canceled as { text?: unknown }).text : undefined;
   const match = /\n*\s*_([^_\n]+)_\s*$/.exec(body);
   if (typeof said === "string")
-    return { body: said, canceled: true, byUserId, note: match?.[1]?.trim().replace(/\.$/, "") ?? null };
-  if (!match) return { body, canceled: true, byUserId, note: null };
+    return { body: said, canceled: true, ...stop, note: match?.[1]?.trim().replace(/\.$/, "") ?? null };
+  if (!match) return { body, canceled: true, ...stop, note: null };
   return {
     body: body.slice(0, match.index).trimEnd(),
     canceled: true,
-    byUserId,
+    ...stop,
     note: (match[1] ?? "").trim().replace(/\.$/, ""),
   };
 }

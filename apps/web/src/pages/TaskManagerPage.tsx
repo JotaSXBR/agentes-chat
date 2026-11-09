@@ -8,6 +8,7 @@ import {
   agentSummary,
   delegationText,
   endedState,
+  endedText,
   groupTasks,
   helpersOf,
   hiddenCount,
@@ -890,13 +891,10 @@ function EndedRow({
   onOpen: () => void;
 }) {
   const { t } = useTranslation();
+  const { org } = useOrg();
+  const dir = useDirectory(org.id);
   const state = endedState(task);
-  const word =
-    state === "stopped"
-      ? task.stoppedBy && task.stoppedBy.userId !== meId
-        ? t("taskManager.ended.stoppedBy", { name: task.stoppedBy.name })
-        : t("taskManager.ended.stopped")
-      : t(state === "done" ? "taskManager.ended.done" : "taskManager.ended.failed");
+  const word = endedText(t, task, meId, (id) => dir.anyAgent(id)?.name);
   const took = Date.parse(task.finishedAt) - Date.parse(task.startedAt ?? task.finishedAt);
   return (
     <li className="tm-row tm-row--ended" data-selected={selected || undefined}>

@@ -3,6 +3,7 @@ import { TASK_MANAGER_POLL_MS, useTaskSteps } from "@agenteschat/client";
 import { type Activity, activityVerb, toolActivity } from "@agenteschat/client/lib/activity";
 import { capitalize } from "@agenteschat/client/lib/format";
 import { agentGrammar } from "@agenteschat/client/lib/grammar";
+import { stopperOf } from "@agenteschat/client/lib/notices";
 import {
   delegationText,
   endedState,
@@ -89,7 +90,11 @@ export function TaskPanel({
   const meta = [name, taskPlace(t, source), source.background ? null : (chain ?? asked)].filter(Boolean).join(" · ");
   // How it ended: the page's list, else my own stop on its way there.
   const end = task ? null : ended ? endedState(ended) : stopping ? "stopped" : null;
-  const stopper = ended?.stoppedBy ?? (stopping ? { userId: me.user.id, name: me.user.name } : null);
+  const stopper: EndedTask["stoppedBy"] =
+    ended?.stoppedBy ?? (stopping ? { userId: me.user.id, name: me.user.name } : null);
+  // "Você" only for who stopped it; the right hand that did at their word goes by its name, and they still say why.
+  const who = stopper ? stopperOf({ byUserId: stopper.userId, byAgentId: stopper.agentId }, me.user.id) : null;
+  const whoName = who?.kind === "agent" ? nameOf(who.agentId) : who?.kind === "person" ? stopper?.name : null;
   const byMe = end === "stopped" && stopper?.userId === me.user.id;
   const reason = said ?? sent;
   const doing: Activity = task?.now
@@ -147,11 +152,11 @@ export function TaskPanel({
               <PixelStop size={12} dim />
               <span>
                 <b>
-                  {byMe
+                  {who?.kind === "you"
                     ? t("taskManager.stopped.line", { agent: name, context: agentGrammar(name).context })
-                    : stopper
+                    : whoName
                       ? t("taskManager.stopped.lineBy", {
-                          name: stopper.name,
+                          name: whoName,
                           agent: name,
                           context: agentGrammar(name).context,
                         })

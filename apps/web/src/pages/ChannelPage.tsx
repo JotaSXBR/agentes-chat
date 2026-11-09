@@ -3502,15 +3502,21 @@ function LiveRunStatus({
 function StoppedLine({
   runId,
   byUserId,
-  note,
+  byAgentId,
+  restarted,
+  cause,
   limit,
   owner,
   message,
 }: {
   runId: string | null | undefined;
   byUserId: string | null | undefined;
-  /** The server's line, for older messages without a person in the meta. */
-  note?: string | null;
+  /** The agent that stopped it at that person's word (the right hand). */
+  byAgentId?: string | null;
+  /** It started again at once from that person's message ("Parar e mandar"): no stop to show, no Continuar. */
+  restarted?: boolean;
+  /** Nobody stopped it: why it stopped (`run.agent_archived`…), on the saved reply. */
+  cause?: { code: string | null };
   /**
    * The run ended at its step limit, or because it got stuck (`meta.stepLimit`), or its long work failed on its AI
    * provider (`meta.workEnd`, whose text already says so): nobody stopped it.
@@ -3528,8 +3534,16 @@ function StoppedLine({
   const cont = useContinueRun();
   const continued = useWasContinued(runId, message);
   const stop = useStopNotice(runId);
-  // Its words when no person stopped it: the step limit, stuck; long work its provider cut off says it in its text.
-  const fallback = limit ? (limit === "failed" ? null : t(limit === "stuck" ? "run.stuck" : "run.stepLimit")) : note;
+  if (restarted) return null;
+  // Its words when no person stopped it: the step limit, stuck, or its cause once the reply is saved (an archived
+  // agent, a paused workspace); long work its provider cut off says it in its text.
+  const fallback = limit
+    ? limit === "failed"
+      ? null
+      : t(limit === "stuck" ? "run.stuck" : "run.stepLimit")
+    : cause && !byUserId && !stop
+      ? (runErrorText(t, cause.code) ?? t("run.stopped"))
+      : null;
   const said = Boolean(stop || byUserId || fallback);
   // Only a run a person stopped, one at its step limit, or long work its provider cut off, picks up again.
   const can = Boolean(runId && (byUserId || stop || limit) && owner && !continued && canStop(owner));
@@ -3558,7 +3572,7 @@ function StoppedLine({
   return (
     <StopPill
       agent={agent}
-      who={{ notice: stop?.notice, at: stop?.at, byUserId }}
+      who={{ notice: stop?.notice, at: stop?.at, byUserId, byAgentId }}
       fallback={fallback}
       cont={go}
       channelId={owner?.channelId ?? message?.channelId ?? ""}
@@ -4488,7 +4502,13 @@ export const TimelineMessage = memo(function TimelineMessage({
               </div>
             )}
             {liveStopped ? (
-              <StoppedLine runId={live.runId} byUserId={live.canceledBy} owner={live} />
+              <StoppedLine
+                runId={live.runId}
+                byUserId={live.canceledBy}
+                byAgentId={live.canceledByAgent}
+                restarted={live.restarted}
+                owner={live}
+              />
             ) : (
               !liveFailed && <LiveRunStatus run={live} />
             )}
@@ -4557,7 +4577,9 @@ export const TimelineMessage = memo(function TimelineMessage({
               <StoppedLine
                 runId={m.agentRunId}
                 byUserId={stopped.byUserId}
-                note={stopped.note}
+                byAgentId={stopped.byAgentId}
+                restarted={stopped.restarted}
+                cause={{ code: stopped.code }}
                 limit={providerCut ? "failed" : atLimit}
                 owner={
                   m.author.type === "agent" && m.author.id
@@ -4598,7 +4620,7 @@ export const TimelineMessage = memo(function TimelineMessage({
                 runId={m.agentRunId ?? null}
                 name={name}
                 steps={browserTrail}
-                stopped={stopped.canceled ? { byUserId: stopped.byUserId } : null}
+                stopped={stopped.canceled && !stopped.restarted ? stopped : null}
                 recent={Date.now() - Date.parse(m.createdAt) < HELD_RECENT_MS}
               />
             )}
@@ -4608,7 +4630,7 @@ export const TimelineMessage = memo(function TimelineMessage({
                 runId={m.agentRunId ?? null}
                 name={name}
                 steps={desktopTrail}
-                stopped={stopped.canceled ? { byUserId: stopped.byUserId } : null}
+                stopped={stopped.canceled && !stopped.restarted ? stopped : null}
                 screen="desktop"
               />
             )}

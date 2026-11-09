@@ -24,7 +24,7 @@ import { type RunPosition, runAround } from "@agenteschat/client/lib/chat";
 import { mineOnRight } from "@agenteschat/client/lib/chat-look";
 import { choiceReplyLine } from "@agenteschat/client/lib/choices";
 import { agentsByAnyHandle } from "@agenteschat/client/lib/directory";
-import { CONTINUE_ERRORS, errorCode, errorText } from "@agenteschat/client/lib/errors";
+import { CONTINUE_ERRORS, errorCode, errorText, runErrorText } from "@agenteschat/client/lib/errors";
 import { mentionsReader } from "@agenteschat/client/lib/everyone";
 import { agentGrammar } from "@agenteschat/client/lib/grammar";
 import { issueWorkOf } from "@agenteschat/client/lib/issues";
@@ -34,14 +34,14 @@ import { isMediaAfterReply, messageMediaOf } from "@agenteschat/client/lib/media
 import { memberRoleColor } from "@agenteschat/client/lib/member-groups";
 import { serverBody } from "@agenteschat/client/lib/message-body";
 import { missionSetupOf } from "@agenteschat/client/lib/missions";
-import { isTalkerReply, routineReportText, talkerWaited } from "@agenteschat/client/lib/notices";
+import { isTalkerReply, routineReportText, stopperOf, talkerWaited } from "@agenteschat/client/lib/notices";
 import { can } from "@agenteschat/client/lib/permissions";
 import { reachHandoffs } from "@agenteschat/client/lib/reach";
 import { replyOf } from "@agenteschat/client/lib/reply";
 import { isReminderMessage, reminderBody, routineReplyOf } from "@agenteschat/client/lib/routines";
 import { appVia } from "@agenteschat/client/lib/via";
 import { voiceOf } from "@agenteschat/client/lib/voice";
-import { showsActivity, splitCanceled } from "@agenteschat/client/lib/work";
+import { type ReplyStop, showsActivity, splitCanceled } from "@agenteschat/client/lib/work";
 import type { AgentColorName } from "@agenteschat/ui/agent/engine";
 import { useQueryClient } from "@tanstack/react-query";
 import { memo, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
@@ -841,6 +841,9 @@ export const MessageRow = memo(function MessageRow({
                 stopped={
                   stopped ?? {
                     byUserId: null,
+                    byAgentId: null,
+                    restarted: false,
+                    code: null,
                     continuedRunId: atLimit?.continuedRunId ?? providerCut?.continuedRunId ?? null,
                   }
                 }
@@ -858,7 +861,7 @@ export const MessageRow = memo(function MessageRow({
                 agentId={m.author.id}
                 runId={m.agentRunId ?? null}
                 steps={trails.browser}
-                stopped={stopped}
+                stopped={stopped?.restarted ? null : stopped}
                 recent={trails.recent}
               />
             ) : null}
@@ -867,7 +870,7 @@ export const MessageRow = memo(function MessageRow({
                 agentId={m.author.id}
                 runId={m.agentRunId ?? null}
                 steps={trails.desktop}
-                stopped={stopped}
+                stopped={stopped?.restarted ? null : stopped}
                 screen="desktop"
               />
             ) : null}
@@ -981,10 +984,10 @@ function Sending({ offline, end }: { offline: boolean; end: boolean }) {
 
 /**
  * A reply someone stopped: what it wrote stays, with one pill under it, "You stopped Ada · 14:16 | Continue | Add a
- * reason" ("At the step limit | Continue" under the reply of a run that reached its step limit). The run's stop
- * notice, when the conversation has it, gives the pill its words (who, the reason, "Add a reason") and draws nothing
- * itself (`stoppedRunsOf`). Continue picks up from where it stopped (a new run) and goes away once it did, for
- * everyone.
+ * reason" ("At the step limit | Continue" under the reply of a run that reached its step limit, its cause when no
+ * person stopped it). The run's stop notice, when the conversation has it, gives the pill its words (who, the reason,
+ * "Add a reason") and draws nothing itself (`stoppedRunsOf`). Continue picks up from where it stopped (a new run) and
+ * goes away once it did, for everyone. A run that started again at once from a person's message draws nothing.
  */
 function StoppedLine({
   message: m,
@@ -994,7 +997,7 @@ function StoppedLine({
 }: {
   message: Message;
   runId: string;
-  stopped: { byUserId: string | null; continuedRunId: string | null };
+  stopped: ReplyStop & { continuedRunId: string | null };
   /**
    * It ended at its step limit, or because it got stuck, or its long work failed on its AI provider (the end's text
    * already says so, so only Continue shows): nobody stopped it.
@@ -1015,17 +1018,28 @@ function StoppedLine({
   const stop = useStoppedRun(limit ? null : runId);
   // Continued here or on another device (`run.continued`), or already in the message's meta.
   const continued = useContinuedRun(m.id) ?? stopped.continuedRunId;
-  const byMe = Boolean(meId) && (stop?.notice.byUserId || stopped.byUserId) === meId;
-  // Without a notice and a name for whoever stopped it, or nobody did: the words the reply alone can say.
+  const by = limit ? null : stop?.notice.byUserId || stopped.byUserId;
+  const byMe = Boolean(meId) && by === meId;
+  const stopper = stopperOf({ byUserId: by, byAgentId: stop?.notice.byAgentId || stopped.byAgentId }, meId);
+  const stopperName =
+    stopper?.kind === "agent"
+      ? dir.nameOf({ type: "agent", id: stopper.agentId })
+      : stopper?.kind === "person"
+        ? dir.nameOf({ type: "person", id: stopper.userId })
+        : "";
+  // Without a notice and a name for whoever stopped it, or nobody did: the words the reply alone can say, its cause
+  // when no person stopped it (an archived agent, a paused workspace).
   const fallback = limit
     ? limit === "failed"
       ? null
       : t(limit === "stuck" ? "mobile.chat.stopped.stuck" : "mobile.chat.stopped.limit")
-    : byMe
+    : stopper?.kind === "you"
       ? t("mobile.chat.stopped.byYou")
-      : stopped.byUserId && dir.nameOf({ type: "person", id: stopped.byUserId })
-        ? t("mobile.chat.stopped.by", { name: dir.nameOf({ type: "person", id: stopped.byUserId }) })
-        : t("mobile.chat.stopped.plain");
+      : stopperName
+        ? t("mobile.chat.stopped.by", { name: stopperName })
+        : by
+          ? t("mobile.chat.stopped.plain")
+          : (runErrorText(t, stopped.code) ?? t("mobile.chat.stopped.plain"));
   const owner = m.author.id ? dir.agentById.get(m.author.id)?.ownerUserId : null;
   const loaded = [
     ...(qc.getQueryData<Message[]>(keys.messages(orgId, m.channelId)) ?? []),
@@ -1038,7 +1052,8 @@ function StoppedLine({
       { agentId: m.author.id ?? "", threadId: m.threadId ?? m.id, triggerMessageId: null },
       { meId, manageAgents: can(org, "manage_agents"), agentOwnerId: owner, messages: loaded },
     );
-  const open = may && !continued && !busy;
+  // Only a run a person stopped, one at its step limit, or long work its provider cut off, picks up again.
+  const open = Boolean(limit || by) && may && !continued && !busy;
   const onContinue = () => {
     setBusy(true);
     api.agents
@@ -1055,6 +1070,7 @@ function StoppedLine({
         });
       });
   };
+  if (stopped.restarted) return null;
   if (fallback === null) {
     // Its text already says why (its long work's provider failed): Continue alone, nothing to say.
     if (!open) return null;
@@ -1084,7 +1100,8 @@ function StoppedLine({
         agent={agentName}
         notice={stop?.notice}
         at={stop?.message.createdAt}
-        byUserId={limit ? null : stopped.byUserId}
+        byUserId={by}
+        byAgentId={limit ? null : stopped.byAgentId}
         fallback={fallback}
         cont={
           !continued && (open || busy) ? (

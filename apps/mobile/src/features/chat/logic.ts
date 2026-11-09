@@ -24,6 +24,7 @@ import {
   isAgentOnlyNotice,
   isAnsweredNotice,
   isEventLine,
+  isQuietRestart,
   isTalkerReply,
   type NoticeView,
   noticeOf,
@@ -207,8 +208,9 @@ export function standsAlone(m: Message) {
 /**
  * Day dividers and messages, oldest first (the list draws them newest at the bottom). What a routine
  * found, told by its agent, stands alone with its own header; the report it answers folds into it, and a
- * routine's call written as its creator is left out, like the web's `buildTimeline`. The sticker or GIF an agent
- * adds right after its own reply (ADR 0091) always groups under that reply, whatever the reply carries.
+ * routine's call written as its creator is left out, like the web's `buildTimeline`, as is a stop that started again
+ * with nothing said (`isQuietRestart`). The sticker or GIF an agent adds right after its own reply (ADR 0091) always
+ * groups under that reply, whatever the reply carries.
  */
 export function buildRows(
   messages: Message[],
@@ -227,7 +229,8 @@ export function buildRows(
       settled.has(m.id) ||
       isRoutineCall(m) ||
       isAnsweredNotice(m, answered) ||
-      isAgentOnlyNotice(m.meta)
+      isAgentOnlyNotice(m.meta) ||
+      isQuietRestart(m)
     )
       continue;
     const day = dayKey(m.createdAt);

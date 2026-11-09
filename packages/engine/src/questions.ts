@@ -10,6 +10,7 @@ import { publishChannelEvent } from "./events";
 import type { ResourcefulDeps } from "./hand-off";
 import { notifyQuestion, resolveQuestionNotifications } from "./notification-producers";
 import { enqueue } from "./outbox";
+import { personBehindCall } from "./requester";
 import type { ToolDefinition, ToolSource } from "./tools/types";
 
 const { agentQuestions, channelMembers, messages, notifications, organizationMembers, users } = schema;
@@ -44,6 +45,8 @@ export interface AgentQuestion {
   withdrawn?: true;
   /** A person skipped it (`answeredByUserId`): the agent went on without an answer. */
   dismissed?: true;
+  /** Why it is for `requestedForUserId` and not who asked the agent: its card's line (`meta.question` only). */
+  forWhy?: string;
 }
 
 export function questionView(q: AgentQuestionRow): AgentQuestion {
@@ -68,11 +71,11 @@ export function questionView(q: AgentQuestionRow): AgentQuestion {
 /**
  * A question card's meta: the question as the app renders it, and the agent's required reason
  * (`why`, ADR 0053), which the gateway took out of the call. `syncQuestionMessage` only rewrites
- * `meta.question`, so the reason stays on the card.
+ * `meta.question`, so the reason stays on the card, as does `forWhy`, which its syncs merge into.
  */
-export const questionCardMeta = (q: AgentQuestionRow, why: string) => ({
+export const questionCardMeta = (q: AgentQuestionRow, why: string, forWhy?: string) => ({
   questionId: q.id,
-  question: questionView(q),
+  question: { ...questionView(q), ...(forWhy ? { forWhy } : {}) },
   ...(why ? { why } : {}),
 });
 
@@ -100,7 +103,13 @@ export function createAskUserToolSource(deps: ResourcefulDeps = {}): ToolSource 
         person: {
           type: "string",
           maxLength: 200,
-          description: "Name or @handle of the one person it is for. Leave it out when anyone here can answer.",
+          description:
+            "Left out: who asked you. Someone else (name or @handle) only when only they can answer (only an admin connects a connector), with person_why.",
+        },
+        person_why: {
+          type: "string",
+          maxLength: 120,
+          description: "Why them, one short line in the people's language, shown on the card.",
         },
       },
       required: ["question"],
@@ -136,6 +145,16 @@ export function createAskUserToolSource(deps: ResourcefulDeps = {}): ToolSource 
       ) {
         return { content: `${named} isn't in this conversation, so they wouldn't see the question.`, isError: true };
       }
+      // Someone other than who asked only with why: their card says it (`postPauseCards` keeps it).
+      const other = requestedForUserId !== null && requestedForUserId !== (await personBehindCall(ctx));
+      const forWhy = other && typeof input.person_why === "string" ? input.person_why.trim() : "";
+      if (other && !forWhy) {
+        const name = matches[0]?.name ?? named;
+        return {
+          content: `${name} didn't ask you this. Leave person out to ask who asked you, or say in person_why why only ${name} can answer: their card shows it.`,
+          isError: true,
+        };
+      }
       const text = typeof input.question === "string" ? input.question.trim() : "";
       if (text.length > QUESTION_MAX_CHARS) return { content: questionTooLong(text.length), isError: true };
       // Loaded here: the check pulls in the controller, which imports most of the engine.
@@ -146,7 +165,12 @@ export function createAskUserToolSource(deps: ResourcefulDeps = {}): ToolSource 
         : [];
       return {
         content: "",
-        waitForAnswer: { text, choices: choices.length >= 2 ? choices.slice(0, 4) : null, requestedForUserId },
+        waitForAnswer: {
+          text,
+          choices: choices.length >= 2 ? choices.slice(0, 4) : null,
+          requestedForUserId,
+          ...(forWhy ? { forWhy } : {}),
+        },
       };
     },
   };
@@ -175,11 +199,12 @@ async function peopleNamedIn(db: Executor, orgId: string, channelId: string, tex
 }
 
 /**
- * Who a question that didn't say is for: the person behind the run, or the last to write here since it started
- * (who it is replying to), when its text names them and nobody else here. A name alone proves nothing ("Ana disse
- * que sim, confirmam?" asks the room), so anyone else it names stays a question for the room.
+ * Who a question that named nobody waits on: who asked, the person behind the run, or the last to write here since
+ * it started (who it is replying to) when its text names them and nobody else here. Anyone else it names proves
+ * nothing ("Ana disse que sim, confirmam?" asks who asked). Null, anyone here answers, when nobody is behind the run
+ * or they can't read the place.
  */
-export async function impliedAddressee(
+export async function defaultAddressee(
   db: Executor,
   run: { id: string; orgId: string; createdAt: Date },
   place: { channelId: string; threadId: string | null },
@@ -203,9 +228,11 @@ export async function impliedAddressee(
       .orderBy(desc(messages.createdAt))
       .limit(1),
   ]);
-  const named = await peopleNamedIn(db, run.orgId, place.channelId, text);
-  const [one] = named;
-  return named.length === 1 && one && (one.userId === personId || one.userId === last?.userId) ? one.userId : null;
+  if (last?.userId && last.userId !== personId) {
+    const named = await peopleNamedIn(db, run.orgId, place.channelId, text);
+    if (named.length === 1 && named[0]?.userId === last.userId) return last.userId;
+  }
+  return personId && (await readableChannelIds(db, run.orgId, personId, [place.channelId])).size > 0 ? personId : null;
 }
 
 /** What the model hears back once the question is closed. */

@@ -4487,6 +4487,7 @@ async function executeRunInner(
               choices: outcome.choices,
               requestedForUserId: outcome.requestedForUserId,
               why: outcome.why,
+              ...(outcome.forWhy ? { forWhy: outcome.forWhy } : {}),
             });
           } else if (!outcome.output.isError && waitOf(outcome.output.data)) {
             const wait = waitOf(outcome.output.data) as { id: string };

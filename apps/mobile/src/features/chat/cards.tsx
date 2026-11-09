@@ -737,6 +737,13 @@ export function QuestionCard({ question }: { question: AgentQuestion }) {
         onSubmit={(text) => answer({ text }).then(() => sheet.close())}
       />,
     );
+  // Asked of someone other than who asked the agent: the agent's reason, under the question.
+  const reason =
+    q.requestedForUserId && question.forWhy ? (
+      <Text variant="footnote" tone="muted">
+        {question.forWhy}
+      </Text>
+    ) : undefined;
   if (!questionWaitsOn(q, meId)) {
     const person = dir.memberById.get(q.requestedForUserId ?? "")?.name ?? t("channel.unknownPerson");
     return (
@@ -746,6 +753,7 @@ export function QuestionCard({ question }: { question: AgentQuestion }) {
         agentId={q.agentId}
         waitsFor={t("ask.waitingFor", { name: person })}
         lead={q.text}
+        body={reason}
       />
     );
   }
@@ -756,6 +764,7 @@ export function QuestionCard({ question }: { question: AgentQuestion }) {
       agentId={q.agentId}
       waitsFor="you"
       lead={q.text}
+      body={reason}
       foot={
         <AskFoot>
           {choices.length > 0 ? (

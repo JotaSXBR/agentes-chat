@@ -891,6 +891,10 @@ describe("an agent's question (ask_user)", () => {
     expect(questionWaitsOn(forBia ?? question, "bia")).toBe(true);
     expect(questionWaitsOn(forBia ?? question, "ana")).toBe(false);
     expect(questionWaitsOn(question, "ana")).toBe(true);
+    // And why it is theirs, not who asked: the card's line under the question.
+    const why = { ...question, requestedForUserId: "bia", forWhy: "Só ela esteve na reunião." };
+    expect(questionOf({ question: why })?.forWhy).toBe("Só ela esteve na reunião.");
+    expect(questionOf({ question })).not.toHaveProperty("forWhy");
     expect(questionOf({ question: { id: "q", text: "" } })).toBeNull();
     expect(questionOf({})).toBeNull();
     expect(questionOf(undefined)).toBeNull();

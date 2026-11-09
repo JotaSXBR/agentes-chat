@@ -418,7 +418,14 @@ export type InvokeResult =
   | { type: "result"; output: ToolOutput; ran?: Approval; autoApproved?: { by: string | null; reads: boolean } }
   | { type: "approval"; approval: Approval }
   /** `ask_user`: the executor posts the question and suspends the run. */
-  | { type: "question"; text: string; choices: string[] | null; requestedForUserId: string | null; why: string }
+  | {
+      type: "question";
+      text: string;
+      choices: string[] | null;
+      requestedForUserId: string | null;
+      why: string;
+      forWhy?: string;
+    }
   /** `request_secret`: the executor posts the card and suspends the run. */
   | { type: "secret"; requestId: string };
 

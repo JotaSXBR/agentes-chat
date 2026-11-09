@@ -137,10 +137,11 @@ export function waitingLast<S extends Pick<RunSlot, "runId">>(
 /**
  * Its block is in the conversation: words of its own, or something to show while it waits for them (its browser
  * card, "sem notícias · Atualizar" on a run gone quiet). Until then the bar above the composer speaks for it: its
- * face, what it does now, for how long, and its stop.
+ * face, what it does now, for how long, and its stop. `card`: its row carries its browser card (one per agent in a
+ * conversation, `useRunCard`); by default, it used its browser.
  */
-export const rowShows = (r: LiveRun, now: number) =>
-  !waitsForWords(r) || browserSteps(r.work).length > 0 || isQuiet(r, now);
+export const rowShows = (r: LiveRun, now: number, card = browserSteps(r.work).length > 0) =>
+  !waitsForWords(r) || card || isQuiet(r, now);
 
 /** The first thing it said, out of its work list (the line its block opens with, above its tools). */
 export function openerOf(r: Pick<LiveRun, "work">): { said: string | null; work: NonNullable<LiveRun["work"]> } {

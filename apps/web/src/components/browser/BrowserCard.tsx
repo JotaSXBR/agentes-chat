@@ -10,6 +10,7 @@ import type {
   ScreenKind,
 } from "@agenteschat/client";
 import {
+  browserCardRun,
   browserFrameDataUrl,
   browserSiteUrl,
   browserSteps,
@@ -235,22 +236,17 @@ export function RunBrowserCard({
   /** Without its run: ask the server (a recent message); otherwise only what the realtime events said. */
   enabled?: boolean;
 }) {
-  const { org, me } = useOrg();
-  const steps = browserSteps(run?.work);
+  const { org } = useOrg();
+  const card = useRunCard({ run, agentId, runId, enabled });
+  const { steps, handoff, held } = card;
   // In a shared profile (ADR 0110) the card shows the profile, to those who may watch it.
   const settings = useAgentBrowserSettings(org.id, agentId, steps.length > 0);
   const profiles = useBrowserProfiles(org.id, steps.length > 0);
   const inProfile = runProfile(steps, settings.data?.profileId ?? null, profiles.data);
-  const ended = run?.status === "failed" || run?.status === "canceled";
-  const ask = run ? !run.provisional && (ended || steps.length === 0) : enabled;
-  const open = useAgentBrowserHandoff(org.id, agentId, ask, HELD_STALE_MS);
   const liveHere = useStreams((s) => Boolean(s.runs[runId]));
-  const held = isHeldTakeover(open.data, runId);
   if (!run)
-    return held && !liveHere ? (
-      <BrowserCard agentId={agentId} name={name} runId={runId} handoff={open.data ?? null} />
-    ) : null;
-  if (ended ? !(held && controlledBy(open.data, me.user.id)) : steps.length === 0 && !held) return null;
+    return held && !liveHere ? <BrowserCard agentId={agentId} name={name} runId={runId} handoff={handoff} /> : null;
+  if (!card.shows) return null;
   return (
     <BrowserCard
       agentId={agentId}
@@ -258,7 +254,7 @@ export function RunBrowserCard({
       steps={steps}
       runId={runId}
       place={{ channelId: run.channelId, threadId: run.threadId }}
-      handoff={held ? (open.data ?? null) : null}
+      handoff={held ? handoff : null}
       profileWait={run.browserWait ?? null}
       {...(inProfile
         ? {
@@ -272,6 +268,30 @@ export function RunBrowserCard({
         : {})}
     />
   );
+}
+
+/**
+ * Whether a run at work carries the agent's browser card in its row, with the agent's open request or take over. Its
+ * browser is one, so it is one card per agent in a conversation: on its newest run there that used it, and on none
+ * while the agent's request for help is open (that request's card shows its browser, "Ver a tela"). A take over bound to
+ * the run keeps its card, also once it failed or was stopped, for the person in control: they hand back from it.
+ */
+export function useRunCard(o: { run: LiveRun | null; agentId: string; runId: string; enabled: boolean }) {
+  const { org, me } = useOrg();
+  const { run, runId } = o;
+  const steps = browserSteps(run?.work);
+  const open = useAgentBrowserHandoff(org.id, o.agentId, run ? !run.provisional : o.enabled, HELD_STALE_MS);
+  const newest = useStreams((s) => (run ? browserCardRun(s.runs, run) : null));
+  const handoff = open.data ?? null;
+  const held = isHeldTakeover(handoff, runId);
+  const ended = run?.status === "failed" || run?.status === "canceled";
+  const asked = handoff?.kind === "ask" && isOpenHandoff(handoff);
+  const shows =
+    run !== null &&
+    (held
+      ? !ended || controlledBy(handoff, me.user.id)
+      : !ended && steps.length > 0 && !asked && (newest === null || newest === runId));
+  return { steps, handoff, held, shows };
 }
 
 /** The agent's open take over bound to this run, while the run has no live block here. */

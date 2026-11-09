@@ -3,12 +3,18 @@ import { setupDom } from "@agenteschat/ui/testing/dom";
 
 setupDom();
 
-/** noVNC as the screen drives it, connected to nothing: `emit` plays its events. */
+/**
+ * noVNC as the screen drives it, connected to nothing: `emit` plays its events. Like noVNC, its disconnect closes its
+ * socket.
+ */
 class FakeRfb {
   static all: FakeRfb[] = [];
   viewOnly = false;
   private listeners = new Map<string, (() => void)[]>();
-  constructor() {
+  constructor(
+    _el?: HTMLElement,
+    private readonly ws?: { close(): void },
+  ) {
     FakeRfb.all.push(this);
   }
   addEventListener(type: string, fn: () => void) {
@@ -20,7 +26,9 @@ class FakeRfb {
   sendKey() {}
   clipboardPasteFrom() {}
   focus() {}
-  disconnect() {}
+  disconnect() {
+    this.ws?.close();
+  }
 }
 mock.module("@novnc/novnc", () => ({ default: FakeRfb }));
 
@@ -912,11 +920,12 @@ describe("a card whose page doesn't come never stays on Opening", () => {
     expect(card.querySelector(".brw-ac__page img")).toBeTruthy();
   });
 
-  test("Abrir aqui while the agent's own card watches its browser: the request's card gets the page too", async () => {
+  test("Abrir aqui after the agent's own card watched its browser: the request's card gets the page too", async () => {
     offScreen = onScreen(".brw-ac");
     const { state, handoff } = seedRequest();
+    // The request comes as the agent asks, while its run's card watches.
+    const request = state.messages.pop();
     const api = createFakeApi(state);
-    fakeBrowserOf.get(api)?.handoffs.set(handoff.id, handoff);
     const r = await renderApp(`/org/${ORG_ID}/c/${ENG_ID}`, { api });
     await settle(6);
     const socket = r.sockets.last();
@@ -938,7 +947,15 @@ describe("a card whose page doesn't come never stays on Opening", () => {
     await settle(3);
     await serve({ mode: "watch", controllerUserId: null, handoff: null });
     expect(document.querySelector(".brw-ac .brw-ac__page img")).toBeTruthy();
-    // It asked for help; Abrir aqui opens the request's own card, in control.
+    // It asks for help: its request's card is its browser now (one card).
+    fakeBrowserOf.get(api)?.handoffs.set(handoff.id, handoff);
+    const ev = (event: Record<string, unknown>) =>
+      act(async () => socket.push({ type: "event", channelId: ENG_ID, event }));
+    await ev({ type: "message.created", messageId: handoff.id, message: request });
+    await ev({ type: "browser.handoff.updated", channelId: ENG_ID, threadId: null, handoff });
+    await settle(4);
+    expect(document.querySelectorAll(".brw-ac")).toHaveLength(0);
+    // Abrir aqui opens the request's own card, in control.
     await act(async () => fireEvent.click(within(waitingRequest()).getByRole("button", { name: "Abrir aqui" })));
     await settle(4);
     const active = { ...handoff, status: "active", controllerUserId: "u-walter", expiresAt: null };
@@ -1112,8 +1129,19 @@ describe("its browser on the agent's screen: the card shows the whole screen (AD
     );
     await settle(6);
     const card = document.querySelector(".brw-ac") as HTMLElement;
-    return { state, socket, screens, card };
+    return { state, fake, socket, screens, card };
   }
+
+  /** Ada's run `runId` here opens its browser (`agent.thinking`, then `browser_open`). */
+  const browses = async (socket: { push(frame: unknown): void }, runId: string) => {
+    const run = { channelId: ENG_ID, threadId: null, runId, agentId: ADA_ID };
+    await act(async () => socket.push({ type: "event", channelId: ENG_ID, event: { type: "agent.thinking", ...run } }));
+    await act(async () =>
+      socket.push({ type: "event", channelId: ENG_ID, event: { type: "agent.tool", tool: "browser_open", ...run } }),
+    );
+    await settle(6);
+  };
+  const openScreens = (screens: ScreenSocket[]) => screens.filter((s) => !s.closed);
 
   test("the screen in the card, watching only, on a card's own socket; no frames watched meanwhile", async () => {
     const { socket, screens, card } = await working();
@@ -1199,6 +1227,72 @@ describe("its browser on the agent's screen: the card shows the whole screen (AD
     expect(document.querySelector(".brw-ac")).toBe(card);
     expect(screens).toHaveLength(1);
     expect(FakeRfb.all).toHaveLength(views);
+  });
+
+  test("two of its runs here at work in its browser: one card, on the newest run's row, one view of the screen", async () => {
+    const { socket, screens } = await working();
+    await act(async () => FakeRfb.all.at(-1)?.emit("connect"));
+    await settle(3);
+    // A newer run of Ada's here opens its browser while the first one is still at work.
+    await browses(socket, "r-two");
+    expect(document.querySelectorAll(".brw-ac.is-open")).toHaveLength(1);
+    expect(document.querySelectorAll(".dsk--card")).toHaveLength(1);
+    expect(openScreens(screens)).toHaveLength(1);
+    expect(document.querySelector('[data-run-id="r-two"] .brw-ac')).not.toBeNull();
+    // The first one has no words yet and nothing else to show: no row of its own (the bar above the box speaks for it).
+    expect(document.querySelector('[data-run-id="r-screen"]')).toBeNull();
+  });
+
+  test("its request for help is open: Ver a tela opens the one card, under the request", async () => {
+    // Who watches its screen but doesn't drive it sees the request's browser in place, not in the computer dialog.
+    const { fake, socket, screens } = await working({ canControl: false });
+    // An earlier run of Ada's asked for help and waits on it.
+    const handoff: BrowserHandoff = {
+      id: "h-ask",
+      agentId: ADA_ID,
+      runId: "r-asked",
+      machineId: "machine-1",
+      kind: "ask",
+      instructions: "Entrar no painel com a conta de teste",
+      status: "pending",
+      requestedForUserId: "u-walter",
+      controllerUserId: null,
+      note: null,
+      expiresAt: new Date(Date.now() + 10 * 60_000).toISOString(),
+      createdAt: new Date().toISOString(),
+      resolvedAt: null,
+    };
+    fake?.handoffs.set(handoff.id, handoff);
+    const ev = (event: Record<string, unknown>) =>
+      act(async () => socket.push({ type: "event", channelId: ENG_ID, event }));
+    await ev({
+      type: "message.created",
+      messageId: handoff.id,
+      message: {
+        id: handoff.id,
+        channelId: ENG_ID,
+        threadId: null,
+        author: { type: "agent", id: ADA_ID },
+        body: `Help needed in the browser: ${handoff.instructions}`,
+        mentionedAgentIds: [],
+        agentRunId: "r-asked",
+        createdAt: new Date(Date.now() + 10_000).toISOString(),
+        meta: {
+          browserHandoff: handoff,
+          bodyCode: "browser_handoff",
+          bodyParams: { instructions: handoff.instructions },
+        },
+      },
+    });
+    await ev({ type: "browser.handoff.updated", channelId: ENG_ID, threadId: null, handoff });
+    await settle(6);
+    const request = document.querySelector(`[data-ask-id="${handoff.id}"]`) as HTMLElement;
+    await act(async () => fireEvent.click(within(request).getByRole("button", { name: "Ver a tela" })));
+    await settle(6);
+    const cards = document.querySelectorAll(".brw-ac");
+    expect(cards).toHaveLength(1);
+    expect(document.querySelector(`[data-message-id="${handoff.id}"]`)?.contains(cards[0] as HTMLElement)).toBe(true);
+    expect(openScreens(screens)).toHaveLength(1);
   });
 
   test("a screen that can't show (not available, not running): the browser's frames, never its socket", async () => {

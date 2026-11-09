@@ -253,7 +253,7 @@ import { ArtifactCard } from "@/components/artifacts/ArtifactCard";
 import { ImageSet } from "@/components/artifacts/ArtifactViewer";
 import { objectUrls } from "@/components/artifacts/FileView";
 import { MessageWorkLine } from "@/components/BackgroundWork";
-import { RunBrowserCard, useHeldTakeover } from "@/components/browser/BrowserCard";
+import { RunBrowserCard, useHeldTakeover, useRunCard } from "@/components/browser/BrowserCard";
 import { BrowserHandoffCard } from "@/components/browser/BrowserHandoffCard";
 import { BrowserTrailCard } from "@/components/browser/BrowserTrailCard";
 import { requestBrowserCard } from "@/components/browser/open";
@@ -3297,7 +3297,9 @@ function RunBlock({
   // show (`rowShows`). A run gone quiet meanwhile draws for "sem notícias · Atualizar": wake when that moment comes.
   const waits = Boolean(live && !message && waitsForWords(live));
   useDue(live?.lastEventAt ?? liveStart ?? null, QUIET_AFTER_MS, waits);
-  const hidden = Boolean(live && !message && !rowShows(live, Date.now()));
+  // Its browser card is something to show only while this row carries it (another of its agent's runs may).
+  const card = useRunCard({ run: waits ? (live ?? null) : null, agentId: liveAgent ?? "", runId, enabled: false });
+  const hidden = Boolean(live && !message && !rowShows(live, Date.now(), card.shows));
   const shown = message ?? placeholder;
   // Its live row on the page: the view measures which blocks are in view again (the bar speaks for those out of it).
   const rowDrawn = useContext(RowDrawnContext);

@@ -10950,8 +10950,8 @@ html:not([data-pointer]) .ac-msg__note:focus-visible {
 .ac-mo__kbd {
   visibility: hidden;
 }
-.ac-mo__item:hover .ac-mo__kbd:not(:empty),
-.ac-mo__item:focus-visible .ac-mo__kbd:not(:empty) {
+.ac-mo__item:hover .ac-mo__kbd,
+.ac-mo__item:focus-visible .ac-mo__kbd {
   visibility: visible;
 }
 /* A workspace's mark where the icon goes, with the name lined up with the other labels. */
@@ -10961,6 +10961,11 @@ html:not([data-pointer]) .ac-msg__note:focus-visible {
   width: 32px;
   height: 32px;
   margin: -6px;
+}
+/* The mark stands 6px into the row's padding: what ends its row ("Você está aqui", a count) stands as far into the
+   other side, so both ends sit the same distance from the row's edges. */
+.ac-mo__item:has(> .ac-mo__leading) > .ac-menu__hint {
+  margin-right: -6px;
 }
 @media (prefers-reduced-motion: no-preference) {
   .ac-mo__scrim {

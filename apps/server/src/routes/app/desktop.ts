@@ -66,7 +66,12 @@ export function desktopRoutes(deps: AppDeps) {
   const { db } = deps;
   const app = createAppRouter(deps);
   app.use("/organizations/*", requireSession(deps.auth));
-  const desktopDeps = () => ({ db, hub: deps.extras?.sandbox?.machines?.hub, streams: deps.extras?.streams });
+  const desktopDeps = () => ({
+    db,
+    hub: deps.extras?.sandbox?.machines?.hub,
+    streams: deps.extras?.streams,
+    log: deps.log,
+  });
 
   app.openapi(
     createRoute({

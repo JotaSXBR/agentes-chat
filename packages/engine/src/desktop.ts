@@ -238,6 +238,7 @@ export interface DesktopDeps {
   db: Database;
   hub?: MachineCaller;
   streams?: Pick<StreamBroker, "count">;
+  log?: { warn(message: string, data?: Record<string, unknown>): void };
 }
 
 /** The REST reaches a computer through whichever server holds its socket (`hub.call`), unlike a stream. */
@@ -326,8 +327,11 @@ export async function desktopStatus(
       );
       running = reply.running;
       startedAt = reply.startedAt ?? null;
-    } catch {
-      // Not known now: a stream finds out (and starts it).
+    } catch (error) {
+      // Not known now (the computer slow or busy). A viewer open here means it runs, as opening one starts it: a
+      // browser card showing it stays on it instead of going back to its frames until the next answer.
+      running = (deps.streams?.count(agentId, "desktop") ?? 0) > 0;
+      deps.log?.warn("desktop status failed", { agentId, running, error: String(error) });
     }
   }
   const reasonOf = (t: StreamTarget) => ("refused" in t ? t.reason : null);

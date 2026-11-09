@@ -914,9 +914,9 @@
         for (let i = 1; i < kids.length; i++) {
           const [a, b] = [kids[i - 1], kids[i]];
           // Words on one side, a control on the other: two controls side by side (a toolbar's ghost buttons, a pill's
-          // actions, faces in a stack) are drawn as one group.
+          // actions, faces in a stack) are drawn as one group. Words that show: an ⓘ's hidden note is no words.
           const ca = control(a);
-          if (ca === control(b) || !((ca ? b : a).textContent ?? "").trim()) continue;
+          if (ca === control(b) || !visibleText(ca ? b : a)) continue;
           const ra = a.getBoundingClientRect();
           const rb = b.getBoundingClientRect();
           // Columns of a layout (a list beside a pane) are no inline items.
@@ -1684,6 +1684,141 @@
           (p) => seen(p) && !p.matches("[class*='chev']") && !p.closest("[class*='chev']"),
         );
         if (!visibleText(value) && !picture) out.push({ rule: "emptyselect", node: el, el: sig(el), box: placeOf(el) });
+      }
+    },
+    /**
+     * A dialog's fields on lines of their own (a text input, a search, a select, a date, across most of its column) are
+     * steps of the control ruler, 32 or 40, within 0.5px, and one height: a search under a name is as tall as the
+     * name's input. Even, the forms' step wins. A toolbar's, a menu's or a popover's search, a list row's control and
+     * a field beside other controls keep theirs.
+     */
+    fieldheight(out) {
+      const FIELD = ".ac-input:not(textarea),.ac-input-affix,.ac-searchfield,.ac-select__trigger,.ac-date__trigger";
+      // A row's own control (a setting's select) is the row's step, on a line of its own too once the row wraps.
+      const OWN =
+        ".ac-toolbar,.ac-menu,.ac-popover,[role=listbox],[role=menu],.ac-setrow,.settings-row,[class*='__row'],[class*='-row']";
+      const steps = ["--control-h-sm", "--control-h-md"].map(lengthOf);
+      for (const dialog of document.querySelectorAll(".ac-dialog")) {
+        if (!seen(dialog)) continue;
+        const column = dialog.clientWidth - 2 * (parseFloat(style(dialog).getPropertyValue("--dialog-pad")) || 0);
+        const controls = [...dialog.querySelectorAll(`${CONTROL},${FIELD}`)].filter(seen);
+        const alone = [...dialog.querySelectorAll(FIELD)]
+          .filter((f) => seen(f) && !f.closest(OWN) && !f.parentElement.closest(FIELD))
+          .flatMap((f) => {
+            const r = f.getBoundingClientRect();
+            if (r.width < 0.6 * column) return [];
+            const beside = controls.some((c) => {
+              if (c === f || f.contains(c) || c.contains(f)) return false;
+              const b = c.getBoundingClientRect();
+              return sameLine(r, b) && (b.right <= r.left + 1 || b.left >= r.right - 1);
+            });
+            return beside ? [] : [[f, Math.round(r.height * 2) / 2]];
+          });
+        const onStep = (h) => steps.some((step) => Math.abs(h - step) <= 0.5);
+        const count = new Map();
+        for (const [, h] of alone) if (onStep(h)) count.set(h, (count.get(h) ?? 0) + 1);
+        const usual = [...count].sort((a, b) => b[1] - a[1] || b[0] - a[0])[0]?.[0];
+        for (const [f, h] of alone) {
+          const base = { rule: "fieldheight", node: f, el: sig(f), box: placeOf(f), px: h };
+          if (!onStep(h)) out.push({ ...base, side: "step", want: steps.join(" or ") });
+          else if (Math.abs(h - usual) > 0.5) out.push({ ...base, side: "height", want: usual });
+        }
+      }
+    },
+    /**
+     * A card of rows that show a plate of their own (their corners: on hover, open or picked) keeps one room around
+     * them: the first row as far under its top and the last above its bottom as the rows stand from its sides, within
+     * 0.5px, and a row in one of the card's corners is rounded as the card less that room, within 1. A card's corner
+     * no rounder than the room has no curve to follow.
+     */
+    concentric(out) {
+      const CORNERS = [
+        ["TopLeft", "Top", "Left"],
+        ["TopRight", "Top", "Right"],
+        ["BottomLeft", "Bottom", "Left"],
+        ["BottomRight", "Bottom", "Right"],
+      ];
+      const ROWLIKE =
+        "button,a,label,li,[role=button],[role=option],[role^=menuitem],[role=tab],[class*='row'],[class*='item']";
+      const NOT_ROW = ".ac-btn,.ac-input,.ac-input-affix,.ac-searchfield,.ac-select__trigger,.ac-seg,.ac-optrow";
+      const radius = (el, name) => parseFloat(style(el)[`border${name}Radius`]) || 0;
+      const rounded = (el) => CORNERS.some(([name]) => radius(el, name) > 0.5);
+      // What draws a row's plate: the row, or the one box that fills it (a list item's button).
+      const plateOf = (el) => {
+        let at = el;
+        for (let depth = 0; at && depth < 3; depth++) {
+          if (rounded(at)) return at.matches(ROWLIKE) && !at.matches(NOT_ROW) ? at : null;
+          if (hasSurface(style(at))) return null;
+          const kids = flow(at);
+          if (kids.length !== 1) return null;
+          const a = at.getBoundingClientRect();
+          const b = kids[0].getBoundingClientRect();
+          if (Math.abs(a.width - b.width) > 1 || Math.abs(a.height - b.height) > 1) return null;
+          at = kids[0];
+        }
+        return null;
+      };
+      // A plate shown only on hover, or one a picked row shows at rest.
+      const plated = (el) => !hasSurface(style(el)) || el.matches(PICKED);
+      for (const card of document.body.querySelectorAll("div,section,article,aside,nav,ul,ol,form")) {
+        if (!seen(card) || card.closest("svg")) continue;
+        const s = style(card);
+        if (!hasSurface(s) || !rounded(card)) continue;
+        const kids = flow(card);
+        if (!kids.length) continue;
+        // Rows straight in the card, or in a list in it with no surface of its own.
+        const rows = kids.flatMap((k) => {
+          const own = plateOf(k);
+          if (own) return [own];
+          if (hasSurface(style(k)) || rounded(k)) return [];
+          return flow(k).map(plateOf).filter(Boolean);
+        });
+        if (rows.length < 2 || rows.filter((r) => !hasSurface(style(r))).length < 2 || !rows.every(plated)) continue;
+        const rects = rows.map((r) => r.getBoundingClientRect());
+        const [r0] = rects;
+        const b = card.getBoundingClientRect();
+        const edge = {
+          Top: b.top + parseFloat(s.borderTopWidth),
+          Bottom: b.bottom - parseFloat(s.borderBottomWidth),
+          Left: b.left + parseFloat(s.borderLeftWidth),
+          Right: b.right - parseFloat(s.borderRightWidth),
+        };
+        // One column of rows across the card: each under the one before it, on one pair of edges (a grid's column of
+        // labels beside its tracks is no list).
+        if (
+          r0.width < 0.6 * (edge.Right - edge.Left) ||
+          rects.some(
+            (r, i) =>
+              Math.abs(r.left - r0.left) > 1 ||
+              Math.abs(r.right - r0.right) > 1 ||
+              (i > 0 && r.top < rects[i - 1].bottom - 1),
+          )
+        )
+          continue;
+        // The first and last rows on the card's ends, when nothing else stands there (a head, a foot).
+        const leads = (row, k) => k === row || (k.contains(row) && flow(k)[0]?.contains(row));
+        const ends = (row, k) => k === row || (k.contains(row) && flow(k).at(-1)?.contains(row));
+        const first = leads(rows[0], kids[0]) ? rects[0] : null;
+        const last = ends(rows.at(-1), kids.at(-1)) ? rects.at(-1) : null;
+        const room = { Left: r0.left - edge.Left, Right: edge.Right - r0.right };
+        const want = room.Left;
+        // An end is the rows' when they reach it: not past it (a list that scrolls inside the card) nor far from it (a
+        // column stretched taller than its rows).
+        const near = (px) => px >= -0.5 && px <= 2 * Math.max(want, 8);
+        if (first && near(first.top - edge.Top)) room.Top = first.top - edge.Top;
+        if (last && near(edge.Bottom - last.bottom)) room.Bottom = edge.Bottom - last.bottom;
+        const base = { rule: "concentric", node: card, el: sig(card), box: placeOf(card) };
+        const uneven = Object.entries(room).filter(([, px]) => Math.abs(px - want) > 0.5);
+        for (const [side, px] of uneven) out.push({ ...base, side, px: +px.toFixed(1), want: +want.toFixed(1) });
+        if (uneven.length) continue;
+        for (const [name, v] of CORNERS) {
+          const row = v === "Top" ? (first ? rows[0] : null) : last ? rows.at(-1) : null;
+          const outer = radius(card, name);
+          if (!row || outer <= want + 0.5) continue;
+          const own = radius(row, name);
+          if (Math.abs(own - (outer - want)) > 1)
+            out.push({ ...base, node: row, el: sig(row), box: sig(card), side: name, px: own, want: outer - want });
+        }
       }
     },
     /**

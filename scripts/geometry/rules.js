@@ -1814,6 +1814,25 @@
      * sizes its view: a split's column grows with the window, so a page's reading width that fits it at 1280 leaves the
      * view short of the pane's edge at 1512. A conversation's own widths (its messages, its composer) are the chat's.
      */
+    /**
+     * Option cards (`OptionList` with layout="cards") stand all side by side or one per row: never some side by side
+     * over one left alone, a layout that a scrollbar coming and going (a picker opening under them) switches.
+     */
+    optcards(out) {
+      for (const box of document.querySelectorAll(".ac-optlist__cards")) {
+        if (!seen(box)) continue;
+        const rows = [];
+        for (const card of box.children) {
+          if (!seen(card)) continue;
+          const top = card.getBoundingClientRect().top;
+          const row = rows.find((x) => Math.abs(x.top - top) <= 2);
+          if (row) row.cards += 1;
+          else rows.push({ top, cards: 1 });
+        }
+        if (rows.length > 1 && rows.some((x) => x.cards > 1))
+          out.push({ rule: "optcards", node: box, el: sig(box), box: placeOf(box), rows: rows.length });
+      }
+    },
     panefill(out) {
       const PANE = "aside,.page-split > *";
       const HOLDS = ":scope > :is(section,article,form,ul,ol,table,.ac-card)";

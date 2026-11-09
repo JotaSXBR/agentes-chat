@@ -41,6 +41,7 @@ import { usagePauseRefetchMs } from "../lib/routine-view";
 import { withRead } from "../lib/seen";
 import {
   knownToolOrder,
+  placeBefore,
   SIDEBAR_DEFAULTS,
   SIDEBAR_ITEMS,
   SIDEBAR_SECTIONS,
@@ -96,6 +97,7 @@ import type {
   CalendarProposal,
   CardDelegate,
   Channel,
+  ChannelCategory,
   ChannelEvent,
   ChannelInput,
   ChannelOverride,
@@ -1146,19 +1148,26 @@ export function useDeleteChannelCategory(orgId: string) {
   });
 }
 
+/** Moves a category before another (null: to the end). The list moves at once and refetches for the exact order. */
 export function usePlaceChannelCategory(orgId: string) {
   const api = useApi();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: { categoryId: string; beforeCategoryId: string | null }) =>
       api.chat.placeCategory(orgId, input.categoryId, input.beforeCategoryId),
-    onSuccess: () => refreshLayout(qc, orgId),
+    onMutate: (input) => {
+      qc.setQueryData<ChannelCategory[]>(
+        keys.channelCategories(orgId),
+        (list) => list && placeBefore(list, input.categoryId, input.beforeCategoryId),
+      );
+    },
+    onSettled: () => refreshLayout(qc, orgId),
   });
 }
 
 /**
- * Puts a channel in a category (null: none), before another channel or at its end. The list moves at once
- * (the channel takes its new category) and refetches for the exact order.
+ * Puts a channel in a category (null: none), before another channel or at its end. The list moves at once (the
+ * channel in its new place) and refetches for the exact order.
  */
 export function usePlaceChannel(orgId: string) {
   const api = useApi();
@@ -1167,8 +1176,11 @@ export function usePlaceChannel(orgId: string) {
     mutationFn: (input: { channelId: string; categoryId: string | null; beforeChannelId?: string | null }) =>
       api.chat.place(orgId, input.channelId, { categoryId: input.categoryId, beforeChannelId: input.beforeChannelId }),
     onMutate: (input) => {
-      qc.setQueryData<Channel[]>(keys.channels(orgId), (list) =>
-        list?.map((c) => (c.id === input.channelId ? { ...c, categoryId: input.categoryId } : c)),
+      qc.setQueryData<Channel[]>(
+        keys.channels(orgId),
+        (list) =>
+          list &&
+          placeBefore(list, input.channelId, input.beforeChannelId, (c) => ({ ...c, categoryId: input.categoryId })),
       );
     },
     onSettled: () => refreshLayout(qc, orgId),

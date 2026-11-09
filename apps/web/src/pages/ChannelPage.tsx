@@ -121,6 +121,7 @@ import { workAnchorBody, workContinuable, workIsOver } from "@agenteschat/client
 import { supersededBrainNotices } from "@agenteschat/client/lib/machine-outages";
 import { hasWideBlock, plainLine } from "@agenteschat/client/lib/markdown";
 import { isMediaAfterReply, isMediaAlone, messageMediaOf, quoteText, textOrMedia } from "@agenteschat/client/lib/media";
+import { isAgentOff, isConnected } from "@agenteschat/client/lib/member-groups";
 import { serverBody } from "@agenteschat/client/lib/message-body";
 import {
   isOpenMission,
@@ -138,6 +139,7 @@ import { noAiCardOf } from "@agenteschat/client/lib/no-ai";
 import { isTalkerReply, noticeOf, routineReportText, talkerWaited } from "@agenteschat/client/lib/notices";
 import { brainUnavailableOf, isOfflineNotice } from "@agenteschat/client/lib/outages";
 import { can, leavesChannel, managesChannel, setsAutoReply } from "@agenteschat/client/lib/permissions";
+import { agentOffLine } from "@agenteschat/client/lib/presence";
 import { reachHandoffs } from "@agenteschat/client/lib/reach";
 import { localMeta, replyOf } from "@agenteschat/client/lib/reply";
 import { isReminderMessage, reminderBody, routineReplyOf } from "@agenteschat/client/lib/routines";
@@ -370,6 +372,7 @@ import { useComposerDraft } from "@/hooks/useComposerDraft";
 import { useDirectory } from "@/hooks/useDirectory";
 import { useDmSidebar, useMembersColumn } from "@/hooks/useMembersColumn";
 import { useMentionSearch } from "@/hooks/useMentionSearch";
+import { useAgentsShown, usePresences } from "@/hooks/usePresence";
 import { usePrefersReducedMotion, useRevealedText } from "@/hooks/useRevealedText";
 import { useRightHandLook } from "@/hooks/useRightHandLook";
 import { useHeaderSearch } from "@/hooks/useWorkspaceSearch";
@@ -4830,7 +4833,7 @@ function ChannelDetails({
   /** Open on adding members (who manages the channel), with no details under it. */
   startAdding?: boolean;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { org, me } = useOrg();
   const api = useApi();
   const qc = useQueryClient();
@@ -4838,6 +4841,8 @@ function ChannelDetails({
   const roster = useRoster(org.id, channel.id, open && channel.isMember);
   // What "on its own" means for my messages: who reads the ones that mention nobody.
   const routing = useAiStatus(org.id, open).data?.routing;
+  const presences = usePresences();
+  const agentShown = useAgentsShown(() => false);
   const update = useUpdateChannel(org.id, channel.id);
   const editable = managesChannel(channel, me.user.id, org);
   const toast = useToast();
@@ -4986,15 +4991,132 @@ function ChannelDetails({
     setsReply: m.type === "agent" && setsAutoReply(channel, dir.agentById.get(m.id), me.user.id, org),
   }));
   const shown = all.filter((r) => !needle || `${r.name} ${r.handle} ${r.email}`.toLowerCase().includes(needle));
-  const agents = shown.filter((r) => r.kind === "agent");
-  const people = shown.filter((r) => r.kind === "person");
-  const agentCount = all.filter((r) => r.kind === "agent").length;
+  // Off for now, as in the members column: an agent out of office, paused or with no AI, a person not here.
+  const off = (r: (typeof all)[number]) => {
+    if (r.kind === "person") {
+      const presence = presences.get(r.id);
+      return presence !== undefined && !isConnected(presence);
+    }
+    const s = agentShown(r.id);
+    return s !== null && isAgentOff(s.presence, s.line);
+  };
+  const agents = shown.filter((r) => r.kind === "agent" && !off(r));
+  const people = shown.filter((r) => r.kind === "person" && !off(r));
+  const away = shown.filter(off).sort((a, b) => a.name.localeCompare(b.name));
+  const count = (kind: "agent" | "person" | "off") =>
+    all.filter((r) => (kind === "off" ? off(r) : r.kind === kind && !off(r))).length;
   const inChannel = new Set((roster.data ?? []).map((m) => `${m.type}:${m.id}` as PickKey));
-  const group = (label: string, count: number) => (
+  const group = (label: string, n: number) => (
     <p className="member-group">
       <span className="ac-eyebrow">{label}</span>
-      <span className="member-group__count">{count}</span>
+      <span className="member-group__count">{n}</span>
     </p>
+  );
+  const agentRow = (r: (typeof all)[number], gone = false) => {
+    const s = gone ? agentShown(r.id) : null;
+    return (
+      <div key={r.key} className={cx("member-row", gone && "member-row--off")}>
+        <OpensAgent agentId={r.id} onOpen={leave}>
+          <ActorAvatar actor={{ type: "agent", id: r.id }} size="sm" name={r.name} />
+        </OpensAgent>
+        <span className="list-col">
+          <span style={{ fontWeight: 600 }}>{r.name}</span>
+          <span className="small muted">
+            {s
+              ? agentOffLine(t, s, i18n.language)
+              : !r.autoReply
+                ? t("channelMembers.mentionLine", { handle: r.handle })
+                : !picksForMe(routing)
+                  ? t(replyAloneKey(routing), agentGrammar(r.name))
+                  : t("channelMembers.aloneLine", agentGrammar(r.name))}
+          </span>
+        </span>
+        {r.setsReply && (
+          <Menu
+            align="end"
+            label={t("channelMembers.actions", { name: r.name })}
+            trigger={
+              <Button
+                variant="ghost"
+                size="sm"
+                iconOnly
+                icon="more"
+                aria-label={t("channelMembers.actions", { name: r.name })}
+                disabled={autoReply.isPending && autoReply.variables?.agentId === r.id}
+              />
+            }
+          >
+            <MenuRadioGroup
+              label={t("channelMembers.replyHeading", agentGrammar(r.name))}
+              value={r.autoReply ? "alone" : "mention"}
+              onValueChange={(v) => autoReply.mutate({ agentId: r.id, on: v === "alone" })}
+              options={[
+                {
+                  value: "alone",
+                  label: (
+                    <>
+                      {t("channelMembers.replyAlone", agentGrammar(r.name))}
+                      <span className="ac-menu__desc">{t(replyAloneKey(routing), agentGrammar(r.name))}</span>
+                    </>
+                  ),
+                },
+                {
+                  value: "mention",
+                  label: (
+                    <>
+                      {t("channelMembers.replyMention")}
+                      <span className="ac-menu__desc">
+                        {t("channelMembers.replyMentionHelp", { handle: r.handle })}
+                      </span>
+                    </>
+                  ),
+                },
+              ]}
+            />
+            {editable && (
+              <>
+                <MenuSeparator />
+                <MenuItem icon="close" danger onSelect={() => setRemoving({ kind: "agent", id: r.id, name: r.name })}>
+                  {t("channelMembers.remove")}
+                </MenuItem>
+              </>
+            )}
+          </Menu>
+        )}
+      </div>
+    );
+  };
+  const personRow = (r: (typeof all)[number], gone = false) => (
+    <div key={r.key} className={cx("member-row", gone && "member-row--off")}>
+      <ActorAvatar actor={{ type: "person", id: r.id }} size="sm" name={r.name} />
+      <span className="list-col">
+        <span style={{ fontWeight: 600 }}>
+          {r.name}
+          {r.id === me.user.id && <span className="member-row__you">{t("common.you")}</span>}
+        </span>
+        <span className="small muted">{r.email}</span>
+      </span>
+      {/* Not on my own row: removing myself from my own list reads as a mistake. */}
+      {editable && r.id !== me.user.id && (
+        <Menu
+          align="end"
+          label={t("channelMembers.actions", { name: r.name })}
+          trigger={
+            <Button
+              variant="ghost"
+              size="sm"
+              iconOnly
+              icon="more"
+              aria-label={t("channelMembers.actions", { name: r.name })}
+            />
+          }
+        >
+          <MenuItem icon="close" danger onSelect={() => setRemoving({ kind: "person", id: r.id, name: r.name })}>
+            {t("channelMembers.remove")}
+          </MenuItem>
+        </Menu>
+      )}
+    </div>
   );
   const membersList = (
     <DialogSearchList
@@ -5009,109 +5131,12 @@ function ChannelDetails({
       <p className="member-caption">
         {t(channel.visibility === "public" ? "channelMembers.captionOpen" : "channelMembers.caption")}
       </p>
-      {agents.length > 0 && group(t("channelMembers.agents"), agentCount)}
-      {agents.map((r) => (
-        <div key={r.key} className="member-row">
-          <OpensAgent agentId={r.id} onOpen={leave}>
-            <ActorAvatar actor={{ type: "agent", id: r.id }} size="sm" name={r.name} />
-          </OpensAgent>
-          <span className="list-col">
-            <span style={{ fontWeight: 600 }}>{r.name}</span>
-            <span className="small muted">
-              {!r.autoReply
-                ? t("channelMembers.mentionLine", { handle: r.handle })
-                : !picksForMe(routing)
-                  ? t(replyAloneKey(routing), agentGrammar(r.name))
-                  : t("channelMembers.aloneLine", agentGrammar(r.name))}
-            </span>
-          </span>
-          {r.setsReply && (
-            <Menu
-              align="end"
-              label={t("channelMembers.actions", { name: r.name })}
-              trigger={
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  iconOnly
-                  icon="more"
-                  aria-label={t("channelMembers.actions", { name: r.name })}
-                  disabled={autoReply.isPending && autoReply.variables?.agentId === r.id}
-                />
-              }
-            >
-              <MenuRadioGroup
-                label={t("channelMembers.replyHeading", agentGrammar(r.name))}
-                value={r.autoReply ? "alone" : "mention"}
-                onValueChange={(v) => autoReply.mutate({ agentId: r.id, on: v === "alone" })}
-                options={[
-                  {
-                    value: "alone",
-                    label: (
-                      <>
-                        {t("channelMembers.replyAlone", agentGrammar(r.name))}
-                        <span className="ac-menu__desc">{t(replyAloneKey(routing), agentGrammar(r.name))}</span>
-                      </>
-                    ),
-                  },
-                  {
-                    value: "mention",
-                    label: (
-                      <>
-                        {t("channelMembers.replyMention")}
-                        <span className="ac-menu__desc">
-                          {t("channelMembers.replyMentionHelp", { handle: r.handle })}
-                        </span>
-                      </>
-                    ),
-                  },
-                ]}
-              />
-              {editable && (
-                <>
-                  <MenuSeparator />
-                  <MenuItem icon="close" danger onSelect={() => setRemoving({ kind: "agent", id: r.id, name: r.name })}>
-                    {t("channelMembers.remove")}
-                  </MenuItem>
-                </>
-              )}
-            </Menu>
-          )}
-        </div>
-      ))}
-      {people.length > 0 && group(t("channelMembers.people"), all.length - agentCount)}
-      {people.map((r) => (
-        <div key={r.key} className="member-row">
-          <ActorAvatar actor={{ type: "person", id: r.id }} size="sm" name={r.name} />
-          <span className="list-col">
-            <span style={{ fontWeight: 600 }}>
-              {r.name}
-              {r.id === me.user.id && <span className="member-row__you">{t("common.you")}</span>}
-            </span>
-            <span className="small muted">{r.email}</span>
-          </span>
-          {/* Not on my own row: removing myself from my own list reads as a mistake. */}
-          {editable && r.id !== me.user.id && (
-            <Menu
-              align="end"
-              label={t("channelMembers.actions", { name: r.name })}
-              trigger={
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  iconOnly
-                  icon="more"
-                  aria-label={t("channelMembers.actions", { name: r.name })}
-                />
-              }
-            >
-              <MenuItem icon="close" danger onSelect={() => setRemoving({ kind: "person", id: r.id, name: r.name })}>
-                {t("channelMembers.remove")}
-              </MenuItem>
-            </Menu>
-          )}
-        </div>
-      ))}
+      {agents.length > 0 && group(t("channelMembers.agents"), count("agent"))}
+      {agents.map((r) => agentRow(r))}
+      {people.length > 0 && group(t("channelMembers.people"), count("person"))}
+      {people.map((r) => personRow(r))}
+      {away.length > 0 && group(t("presence.offline"), count("off"))}
+      {away.map((r) => (r.kind === "agent" ? agentRow(r, true) : personRow(r, true)))}
       {editable && !needle && (
         <button type="button" className="member-row member-row--add" onClick={() => setAdding(true)}>
           <span className="member-row__plus" aria-hidden="true">

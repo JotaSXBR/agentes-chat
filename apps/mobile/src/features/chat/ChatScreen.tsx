@@ -165,7 +165,7 @@ import { FirstDay } from "./FirstDay";
 import { HeaderPill } from "./HeaderPill";
 import { composerSuggestions } from "./intent";
 import { IssueTakenLine } from "./issue-work";
-import { browsingRuns, LiveRowsProvider, TurnRow, useRowWatch, WorkingLine } from "./LiveRows";
+import { LiveRowsProvider, TurnRow, useRowWatch, WorkingLine } from "./LiveRows";
 import { useChatLive } from "./live";
 import {
   buildRows,
@@ -222,7 +222,7 @@ import {
   ThreadOptions,
 } from "./sheets";
 import { StoppedRunsContext, stoppedRunsKey, stoppedRunsOf } from "./stopped-runs";
-import { turnRuns, turnsInPlace, withOpacity } from "./turn";
+import { browsingRuns, turnRuns, turnsInPlace, withOpacity } from "./turn";
 import { JumpToMessageContext } from "./WorkLine";
 
 /** A run's messages this recent are asked whether a take over still holds the agent's browser. */

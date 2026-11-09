@@ -1,4 +1,4 @@
-import type { LiveRun, Message } from "@agenteschat/client";
+import { type LiveRun, type Message, usesBrowser } from "@agenteschat/client";
 import { waitsForWords } from "@agenteschat/client/lib/activity";
 import { holdsText } from "@agenteschat/client/lib/text";
 import { blockPlaces } from "@agenteschat/client/lib/timeline";
@@ -107,16 +107,28 @@ const TURN_STATUSES: ReadonlySet<string> = new Set(["thinking", "queued", "runni
 
 /**
  * The runs that draw as a block in the conversation: everything at work (a "pensando…" guessed on send
- * too), and a stopped one that wrote something. A run at work in its browser has its browser card instead,
- * until it writes.
+ * too), and a stopped one that wrote something. A run at work in its browser has its browser card instead
+ * until it has words of its own (written, said, or a message it read): then its block shows them, and the card
+ * stays (`browsingRuns`).
  */
-export function turnRuns<R extends Pick<LiveRun, "runId" | "status" | "text">>(
+export function turnRuns<R extends Pick<LiveRun, "runId" | "status" | "text" | "work">>(
   runs: readonly R[],
   browsing: ReadonlySet<string> = new Set(),
 ): R[] {
-  return runs.filter(
-    (r) => TURN_STATUSES.has(r.status) && !(browsing.has(r.runId) && r.text.length === 0 && r.status !== "canceled"),
-  );
+  return runs.filter((r) => TURN_STATUSES.has(r.status) && !(browsing.has(r.runId) && waitsForWords(r)));
+}
+
+/**
+ * The runs at work in their browser, one per agent: each gets its browser card. The card stays while the run writes or
+ * reads a message, so its page and its screen's view never open again for that (its block shows the words, `turnRuns`).
+ */
+export function browsingRuns(runs: LiveRun[]): LiveRun[] {
+  const seen = new Set<string>();
+  return runs.filter((r) => {
+    if (r.status === "failed" || r.status === "canceled" || !usesBrowser(r) || seen.has(r.agentId)) return false;
+    seen.add(r.agentId);
+    return true;
+  });
 }
 
 // ── Words fading in ───────────────────────────────────────────────────────────

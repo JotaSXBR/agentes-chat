@@ -61,6 +61,7 @@ import {
   workStepsOf,
 } from "../../src/features/chat/logic";
 import {
+  browsingRuns,
   fadeTail,
   outputTail,
   pruneMarks,
@@ -1158,6 +1159,24 @@ describe("an agent's turn as one block", () => {
       run({ runId: "b", status: "running" }),
     ];
     expect(turnRuns(runs, new Set(["b"])).map((r) => r.runId)).toEqual(["p", "q", "w", "s"]);
+  });
+
+  test("in its browser, its card stays while it writes or reads a message; its block shows those words", () => {
+    const browsing = run({ runId: "b", status: "running", work: [call("c1", "browser_open", true)] });
+    const writing = { ...browsing, text: "Achei o pedido." };
+    const reading = { ...browsing, work: [...(browsing.work ?? []), { kind: "steer" as const, messageId: "m-9" }] };
+    for (const r of [browsing, writing, reading]) expect(browsingRuns([r]).map((x) => x.runId)).toEqual(["b"]);
+    expect(turnRuns([browsing], new Set(["b"]))).toEqual([]);
+    expect(turnRuns([writing, reading], new Set(["b"])).map((r) => r.text)).toEqual(["Achei o pedido.", ""]);
+    // Stopped or failed, its block says so: no card.
+    expect(
+      browsingRuns([
+        { ...writing, status: "canceled" },
+        { ...browsing, status: "failed" },
+      ]),
+    ).toEqual([]);
+    // One card per agent.
+    expect(browsingRuns([browsing, { ...browsing, runId: "b2" }]).map((r) => r.runId)).toEqual(["b"]);
   });
 
   test("words fade in: the newest pieces are the tail, the rest solid", () => {

@@ -803,25 +803,54 @@ describe("a reply that names its own tools to a person", () => {
   test("in a plain chat it is written again in plain words, and only that reply is posted", async () => {
     f = await setup({
       toolSources: [secrets],
-      reply: (_request, call) => ({
-        chunks: [
-          call === 1
-            ? "Manda a senha do painel. Salve no Vault ou me envie por `request_secret`."
-            : "Vou te mandar um campo seguro para a senha do painel.",
-        ],
-      }),
+      // Told to, the next call uses the tool first, then says what it did.
+      reply: (_request, call): FakeReply =>
+        call === 1
+          ? { chunks: ["Manda a senha do painel. Salve no Vault ou me envie por `request_secret`."] }
+          : call === 2
+            ? { chunks: [], toolUses: [{ name: "request_secret", input: {} }] }
+            : { chunks: ["Te mandei um campo seguro para a senha do painel."] },
     });
+    const live = f.listen(f.general.id);
     await ask(f, "@dev entra no painel da Acme e baixa o relatório de outubro");
     await drainOutbox(f.db, f.handlers);
-    expect(f.provider.calls.length).toBe(2);
+    expect(f.provider.calls.length).toBe(3);
     expect(lastUserText(f.provider.calls[1]?.request as ModelRequest)).toContain(
       "Not posted: your reply names your tools (`request_secret`)",
     );
-    expect((await agentMessages(f)).map((m) => m.body)).toEqual([
-      "Vou te mandar um campo seguro para a senha do painel.",
-    ]);
+    expect((await agentMessages(f)).map((m) => m.body)).toEqual(["Te mandei um campo seguro para a senha do painel."]);
     const steps = await f.db.select().from(schema.agentRunSteps);
     expect(steps.filter((s) => s.data.nudged === "tool_names").length).toBe(1);
+    // It showed live as it was written: the next call opens with no text before its tool starts, so the apps drop it
+    // instead of keeping it as that call's narration.
+    const order = live.flatMap((e) =>
+      e.type === "agent.delta"
+        ? [`${e.turn}:${e.text ? "text" : "open"}`]
+        : e.type === "agent.tool" && e.tool
+          ? [String(e.tool)]
+          : [],
+    );
+    expect(order).toContain("1:text");
+    const opened = order.indexOf("2:open");
+    expect(opened).toBeGreaterThan(order.lastIndexOf("1:text"));
+    expect(order.indexOf("request_secret")).toBeGreaterThan(opened);
+  });
+
+  test("held, it is never posted later as the closing line of a turn that writes nothing", async () => {
+    f = await setup({
+      toolSources: [secrets],
+      reply: (_request, call): FakeReply =>
+        call === 1
+          ? { chunks: ["Me envie a senha do painel por `request_secret`."] }
+          : call === 2
+            ? { chunks: [], toolUses: [{ name: "request_secret", input: {} }] }
+            : { chunks: [] },
+    });
+    await ask(f, "@dev entra no painel da Acme");
+    await drainOutbox(f.db, f.handlers);
+    const bodies = (await agentMessages(f)).map((m) => m.body);
+    expect(bodies).toHaveLength(1);
+    expect(bodies[0]).not.toContain("request_secret");
   });
 
   test("a person who wrote the name, or chose technical replies, gets the reply as it is", async () => {

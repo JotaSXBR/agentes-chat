@@ -526,7 +526,7 @@ export interface Transcript {
   promptKey?: string;
   /** "Automático": the model tier and effort chosen for this run; a resume thinks with the same. */
   autoModel?: AutoModelRecord;
-  /** Assistant text before this index was already posted to the chat (or was history). */
+  /** Assistant text before this index was already posted to the chat (or was history, or a reply held unposted). */
   postedUpTo: number;
   /** Chat messages this run posted so far. */
   postedCount: number;
@@ -4923,6 +4923,20 @@ async function executeRunInner(
           decision.rule === "secret" ||
           decision.rule === "tool_names"
         ) {
+          if (said) {
+            // It showed live as it streamed: the next model call opens now with no text, so the apps take it away at
+            // once (a call coming first would keep it as the work's narration, the line its message opens with).
+            await publishChannelEvent(deps.pubsub, {
+              type: "agent.delta",
+              ...where,
+              seq: t.deltaSeq++,
+              turn: run.turns + 1,
+              text: "",
+              at: 0,
+            });
+            // Nor is it posted later: as the closing line of a turn that writes nothing, or what a stopped run wrote.
+            t.postedUpTo = t.messages.length;
+          }
           await saveTranscript(db, t);
           continue;
         }

@@ -1162,6 +1162,45 @@ describe("its browser on the agent's screen: the card shows the whole screen (AD
     expect(card.querySelector(".brw-mf__over")).not.toBeNull();
   });
 
+  test("it reads a message sent while it works, before any words: the same screen goes on, on the same socket", async () => {
+    const { socket, screens, card } = await working();
+    await act(async () => FakeRfb.all.at(-1)?.emit("connect"));
+    await settle(3);
+    const views = FakeRfb.all.length;
+    const ev = (event: Record<string, unknown>) =>
+      act(async () => socket.push({ type: "event", channelId: ENG_ID, event }));
+    await ev({
+      type: "message.created",
+      messageId: "m-steer",
+      message: {
+        id: "m-steer",
+        channelId: ENG_ID,
+        threadId: null,
+        author: { type: "person", id: "u-walter" },
+        body: "Olha também a fatura de outubro",
+        mentionedAgentIds: [],
+        agentRunId: null,
+        createdAt: new Date(Date.now() + 10_000).toISOString(),
+      },
+    });
+    // Read before its first words: its row no longer waits for them ("Leu seu recado").
+    await ev({
+      type: "agent.run.read",
+      channelId: ENG_ID,
+      threadId: null,
+      runId: "r-screen",
+      agentId: ADA_ID,
+      messageIds: ["m-steer"],
+    });
+    await settle(4);
+    const row = document.querySelector('[data-run-id="r-screen"]') as HTMLElement;
+    expect(row.querySelector(".live-work__steer")?.textContent).toContain("Leu seu recado");
+    expect(row.contains(card)).toBe(true);
+    expect(document.querySelector(".brw-ac")).toBe(card);
+    expect(screens).toHaveLength(1);
+    expect(FakeRfb.all).toHaveLength(views);
+  });
+
   test("a screen that can't show (not available, not running): the browser's frames, never its socket", async () => {
     for (const desktop of [{ available: false, reason: "offline" }, { running: false }]) {
       const { socket, screens, card } = await working(desktop);

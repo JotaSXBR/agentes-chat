@@ -1,6 +1,6 @@
 # 0155. Easy agent creation: two steps, then a setup checklist in the agent's chat
 
-- Status: §2 accepted (the checklist, merged with the first run of ADR 0137 §10). §1, §3, §4 and §5 proposed, not built: their code stays on `feat/agent-easy-create`.
+- Status: §2 accepted, then withdrawn on 2026-11-09 (see its amendment): §6, the right hand's first run, is the one checklist. §1, §3, §4 and §5 proposed, not built: their code stays on `feat/agent-easy-create`.
 - Date: 2026-11-05
 - Amends: ADR 0081 (creating an agent), ADR 0137 §6 (the right hand's start card opens the new dialog)
 - Extends: ADR 0059 (connecting an AI: one picker everywhere), ADR 0094 (what a new agent starts with)
@@ -65,3 +65,18 @@ While a row is open for an owner, the right hand's prompt names none of the setu
 ADR 0158: the onboarding asks what the workspace does and makes its team, so the card keeps an AI (for the whole
 team), apps and people. An invitation waiting for its answer finishes the people row, which invites one address in
 place. On a hold every row waits with no button, and "Agora não" says nothing.
+
+## Amendment (2026-11-09): one setup place, the right hand's (§2 withdrawn)
+
+A checklist at the top of every agent's chat was tiring: a team of four opened on four cards of rows, each asking
+for the same AI and apps. §2 is withdrawn on the web and the phone, its card on the agent's page included.
+
+- An agent's DM opens on the first-use state every agent's has: on the web the agent waving over "Diga oi" and its
+  role's first messages, on the phone its hello and three starts. No line asks for help over a card.
+- What it needs it asks for when it needs it, with the cards every agent already has (`setup:write` and
+  `request_secret`): an AI (`offer_connect_ai`, and the no-AI line over the composer, which every DM shows again), an
+  app (`offer_connect_app`), people (`offer_invites`), a secret (`request_secret`).
+- The right hand's first run (§6, ADR 0158) is the one setup checklist. Its rows, words and dialogs are unchanged.
+- `agents.setup` keeps the role an agent started from (the first run's apps row suggests by the team's roles) and
+  the right hand's skips. The confirm route still takes a new agent's steps, which the apps no longer send.
+- Gone with it: the step dialogs and screens, the greeting and its first tasks, and their words in every language.

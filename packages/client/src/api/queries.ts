@@ -902,7 +902,7 @@ export function useUpdateAgent(orgId: string, agentId: string) {
   });
 }
 
-/** Confirms a step of a new agent's setup checklist (ADR 0155 §2); the agent lists show it at once. */
+/** Keeps a row of the right hand's first run as skipped (ADR 0155 §6); the agent lists show it at once. */
 export function useConfirmSetup(orgId: string, agentId: string) {
   const api = useApi();
   const qc = useQueryClient();

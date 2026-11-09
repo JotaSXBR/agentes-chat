@@ -102,7 +102,6 @@ import {
 } from "./logic";
 import { MergeReposSection } from "./MergeReposSection";
 import { MonthPixels } from "./MonthPixels";
-import { AgentSetupCard } from "./setup/SetupCard";
 import { useMemoryOriginText } from "./useMemoryOriginText";
 import { agoShort, workTitle, workWhere } from "./work";
 
@@ -749,13 +748,6 @@ function Profile({ id }: { id: string }) {
           {agent ? <LetMeTalkButton agent={agent} /> : null}
         </View>
 
-        {/* A new agent's checklist (ADR 0155 §2), while something is left. */}
-        {agent && !rightHand ? (
-          <View style={styles.setup}>
-            <AgentSetupCard agent={agent} place="profile" />
-          </View>
-        ) : null}
-
         {rightHand && agent ? (
           <View style={styles.page}>
             {nowBlock}
@@ -1141,7 +1133,6 @@ const styles = StyleSheet.create({
   center: { textAlign: "center" },
   // Chat and Computador side by side, the same width (one primary); 16 under the words (8 of `prof` and 8 here).
   acts: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 8 },
-  setup: { paddingHorizontal: 16, marginTop: 22 },
   grow: { flex: 1, minWidth: 0 },
   bold: { fontWeight: "600" },
   pressed: { opacity: 0.6 },

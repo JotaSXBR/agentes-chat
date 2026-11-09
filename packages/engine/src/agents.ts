@@ -181,7 +181,7 @@ export async function createAgent(
   input: AgentInput & {
     autonomy?: CommandApproval;
     audienceMode?: Agent["audienceMode"];
-    /** The ready-made role it starts from, for its setup checklist's suggestions (ADR 0155 §2); null: none. */
+    /** The ready-made role it starts from, which the right hand's first run suggests apps by (ADR 0155); null: none. */
     setup?: { role: string | null };
   },
   defaults: { model: string },
@@ -231,7 +231,7 @@ export async function createAgent(
         machineId: home?.id ?? null,
         orgId,
         ownerUserId,
-        // Every new agent starts with its setup checklist, whichever way it was made (ADR 0155 §2).
+        // Every new agent keeps the role it was made from, whichever way it was made (ADR 0155).
         setup: newSetup(setup?.role),
         ...(autonomy ? { missionCommandApproval: autonomy } : {}),
         ...(audienceMode ? { audienceMode } : {}),
@@ -586,7 +586,7 @@ export const agentView = (a: Agent) => ({
   builtin: a.builtin ?? null,
   /** "Responde a" (ADR 0148 addendum): the agent it reports to; null = its owner, else its setor's lead. */
   reportsToAgentId: a.reportsToAgentId ?? null,
-  /** Its setup checklist (ADR 0155 §2): the role it started from and the steps confirmed; null = none. */
+  /** What it started with (ADR 0155): the role it was made from and the steps confirmed; null = none. */
   setup: setupOf(a.setup),
   /** Its autonomy brakes (ADR 0131), with the defaults filled in. */
   brakes: autonomySettings(a.autonomyBrakes),

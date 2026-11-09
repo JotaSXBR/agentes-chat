@@ -30,11 +30,11 @@ import {
   firstRunRowState,
   firstRunSteps,
 } from "@agenteschat/client/lib/setup-checklist";
-import { Button, type IconName, Input } from "@agenteschat/ui";
+import { Button, Dialog, DialogBody, DialogFooter, type IconName, Input } from "@agenteschat/ui";
 import { useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { SetupAsks, SetupCardView, StepDialog, useDoneSay } from "@/components/AgentSetup";
+import { SetupAsks, SetupCardView, useDoneSay } from "@/components/AgentSetup";
 import { usePlanHold } from "@/components/ai/ConnectAiSteps";
 import { useConnectAi } from "@/components/ConnectAi";
 import { ConnectFlow, type FlowState } from "@/components/ConnectFlow";
@@ -222,7 +222,6 @@ export function FirstRunCard({ agent }: { agent: Agent }) {
       }
       done={doneHere.length}
       total={steps.length}
-      place="dm"
       burstRef={burstRef}
       rows={rows}
       foot={asks.length > 0 && <SetupAsks lead={t("agentSetup.firstRun.asks.lead")} asks={asks} />}
@@ -317,39 +316,47 @@ function AppsDialog({ team, onClose }: { team: Agent[]; onClose: () => void }) {
   const list = firstRunAppList(catalog.data?.connectors ?? [], connected, team);
   return (
     <>
-      <StepDialog
+      <Dialog
+        open
+        onOpenChange={(o) => !o && onClose()}
         title={t("agentSetup.firstRun.apps.title")}
         description={t("agentSetup.firstRun.apps.desc")}
-        ok={t("common.close")}
-        cancel={false}
-        busy={false}
-        onOk={onClose}
-        onClose={onClose}
-        note={
-          <button
-            type="button"
-            className="ac-link"
-            onClick={() =>
-              void navigate({ to: "/org/$orgId/settings/$section", params: { orgId: org.id, section: "connectors" } })
-            }
-          >
-            {t("agentSetup.firstRun.apps.all")}
-          </button>
-        }
+        closeLabel={t("common.close")}
+        width={480}
+        className="setup-dlg"
       >
-        <ul className="setup-apps">
-          {list.map(({ def, suggested }) => (
-            <li key={def.id} className="setup-apps__row">
-              <ConnectorIcon def={def} label={connectorName(t, def)} />
-              <b>{connectorName(t, def)}</b>
-              {suggested && <small>{t("agentSetup.suggested")}</small>}
-              <Button size="sm" onClick={() => setFlow({ step: 0, def })}>
-                {t("agentSetup.firstRun.apps.connect")}
-              </Button>
-            </li>
-          ))}
-        </ul>
-      </StepDialog>
+        <DialogBody className="setup-dlg__body">
+          <ul className="setup-apps">
+            {list.map(({ def, suggested }) => (
+              <li key={def.id} className="setup-apps__row">
+                <ConnectorIcon def={def} label={connectorName(t, def)} />
+                <b>{connectorName(t, def)}</b>
+                {suggested && <small>{t("agentSetup.suggested")}</small>}
+                <Button size="sm" onClick={() => setFlow({ step: 0, def })}>
+                  {t("agentSetup.firstRun.apps.connect")}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </DialogBody>
+        <DialogFooter
+          note={
+            <button
+              type="button"
+              className="ac-link"
+              onClick={() =>
+                void navigate({ to: "/org/$orgId/settings/$section", params: { orgId: org.id, section: "connectors" } })
+              }
+            >
+              {t("agentSetup.firstRun.apps.all")}
+            </button>
+          }
+        >
+          <Button variant="primary" onClick={onClose}>
+            {t("common.close")}
+          </Button>
+        </DialogFooter>
+      </Dialog>
       <ConnectFlow flow={flow} onChange={setFlow} onClose={() => setFlow(null)} />
     </>
   );

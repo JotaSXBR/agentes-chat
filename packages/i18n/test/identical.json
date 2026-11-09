@@ -792,7 +792,6 @@
       "routines.setup.github.type",
       "routines.setup.github.url",
       "routines.setup.sentry.url",
-      "agentSetup.how.instructions",
       "share.agent"
     ],
     "de": [
@@ -1978,7 +1977,6 @@
       "team.chart.supervisor",
       "team.map.band",
       "team.sectors.supervisor",
-      "agentSetup.how.model",
       "share.agent"
     ],
     "ja": [
@@ -2583,7 +2581,6 @@
       "browser.live.emulated.desktop",
       "team.chart.supervisor",
       "team.sectors.supervisor",
-      "agentSetup.how.model",
       "share.fileRef"
     ],
     "tr": [
@@ -2723,8 +2720,7 @@
       "routines.setup.github.type",
       "routines.setup.github.url",
       "routines.setup.sentry.url",
-      "browser.live.emulated.tablet",
-      "agentSetup.how.model"
+      "browser.live.emulated.tablet"
     ],
     "pl": [
       "deleteAccount.agentCount",
@@ -2953,7 +2949,6 @@
       "routines.setup.github.url",
       "routines.setup.sentry.url",
       "browser.live.emulated.tablet",
-      "agentSetup.how.model",
       "share.agent"
     ],
     "ru": [

@@ -357,7 +357,7 @@ export const FormerAgent = z
   })
   .openapi("FormerAgent");
 
-/** The steps of a new agent's setup checklist (ADR 0155 §2). */
+/** The steps of an agent's setup (ADR 0155): a new agent's own (§2), or the right hand's first run (§6). */
 export const SetupStep = z.enum(["ai", "apps", "where", "who", "how", "about", "team", "people"]).openapi("SetupStep", {
   description:
     "A new agent's steps (`ai`, `apps`, `where`, `who`, `how`), or the right hand's first run (`about`, `team`, `ai`, `apps`, `people`, ADR 0155 §6), where only `apps` and `people` are stored (skipped).",
@@ -419,7 +419,7 @@ export const Agent = z
     brakes: AgentBrakes,
     setup: AgentSetupChecklist.nullable().openapi({
       description:
-        "Its setup checklist at the top of its chat (ADR 0155 §2): the ready-made role it started from and the steps a person confirmed. Null for agents made before it (none shows).",
+        "What it started with (ADR 0155): the ready-made role it was made from and the steps a person confirmed (on the right hand, its first run's skips). Null for agents made before it.",
     }),
     brain: z
       .object({

@@ -2156,7 +2156,7 @@ export function createFakeHttpApi(state: FakeState): Omit<HttpApi, FakedParts> {
           createdAt: NOW.toISOString(),
           audience: input.audience ?? { mode: "everyone", userIds: [] },
           ...(input.appearance ? { appearance: input.appearance } : {}),
-          // As the backend: every new agent starts with its setup checklist (ADR 0155 §2), who and how done.
+          // As the backend: every new agent keeps the role it was made from, who and how stored as done.
           setup: { role: input.setup?.role ?? null, done: ["who", "how"] },
         };
         state.agents.push(agent);

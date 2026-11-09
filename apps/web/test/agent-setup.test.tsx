@@ -3,117 +3,75 @@ import { setupDom } from "@agenteschat/ui/testing/dom";
 
 setupDom();
 
-import { act, cleanup, fireEvent, within } from "@testing-library/react";
+import { cleanup } from "@testing-library/react";
 import { ADA_ID, createFakeApi, type FakeState, ORG_ID, seedState } from "./fake-api";
-import { renderApp, screen, settle } from "./render";
+import { renderApp, settle } from "./render";
 
-/** A new agent's setup checklist (ADR 0155 §2): the top of its DM, in its voice, for whoever sets it up. */
+/*
+ * One setup place: the right hand's first run in its own DM (ADR 0155 §6). Any other agent, however new, shows no
+ * checklist in its DM nor on its page: when it needs an AI, an app, a person or a secret, it asks in the conversation.
+ */
 
 afterEach(() => {
   cleanup();
   localStorage.clear();
 });
 
-const withSetup = (state: FakeState, done: ("ai" | "apps" | "where" | "who" | "how")[] = []) => {
+/** Ada just made from a ready-made role, with nothing confirmed: everything a checklist would have listed. */
+const fresh = (state = seedState()): FakeState => {
   const ada = state.agents.find((a) => a.id === ADA_ID);
-  if (ada) ada.setup = { role: "dev", done };
+  if (ada) ada.setup = { role: "dev", done: [] };
   return state;
 };
-const openDm = async (state: FakeState) => {
-  await renderApp(`/org/${ORG_ID}/dm/agent/${ADA_ID}`, { api: createFakeApi(state) });
+const open = async (path: string, state: FakeState) => {
+  await renderApp(`/org/${ORG_ID}/${path}`, { api: createFakeApi(state) });
   await settle(8);
 };
-const card = () => document.body.querySelector<HTMLElement>(".setup-cl");
-const click = async (el: Element, rounds = 6) => {
-  await act(async () => fireEvent.click(el));
-  await settle(rounds);
-};
+/** A checklist card or row, by its class (a short line when a test fails, not the whole element). */
+const checklist = () => document.querySelector(".setup-cl, .setup-row")?.className ?? null;
 
-describe("the setup checklist in a new agent's DM", () => {
-  test("its greeting and the five steps; a step its data already says is done shows done", async () => {
-    const state = withSetup(seedState());
-    await openDm(state);
-    const c = card();
-    expect(c).toBeTruthy();
-    expect(document.body.textContent).toContain("Pra eu começar, me ajuda com estas coisas rápidas:");
-    expect(c?.querySelectorAll(".setup-row")).toHaveLength(5);
-    // It thinks already (the AI status says ready) and it is in #eng: two done.
-    expect(c?.querySelectorAll(".setup-row[data-done]")).toHaveLength(2);
-    expect(c?.textContent).toContain("Já tenho uma IA para pensar");
-    expect(c?.textContent).toContain("2 de 5");
-  });
-
-  test("a step's button opens its dialog; saving confirms the step", async () => {
-    const state = withSetup(seedState());
-    await openDm(state);
-    const who = [...(card()?.querySelectorAll<HTMLElement>(".setup-row") ?? [])].find((r) =>
-      r.textContent?.includes("Falar com todos da Acme"),
-    );
-    expect(who).toBeTruthy();
-    await click(within(who as HTMLElement).getByRole("button", { name: "Escolher" }));
-    const dialog = screen().getByRole("dialog");
-    await click(within(dialog).getByRole("button", { name: "Salvar" }));
-    expect(state.calls).toContainEqual({ method: "agents.confirmSetup", args: [ORG_ID, ADA_ID, "who"] });
-    // The workspace with the article the app gives it everywhere ("da Acme", as "o time da Acme").
-    expect(card()?.textContent).toContain("Falo com todos da Acme");
-  });
-
-  test("with nothing left, its greeting asks for no help over a card that is all done", async () => {
-    const state = withSetup(seedState(), ["apps", "who", "how"]);
-    await openDm(state);
-    expect(card()?.textContent).toContain("5 de 5");
-    expect(document.body.textContent).not.toContain("Pra eu começar");
-  });
-
-  test("an agent made before the checklist shows none: its empty conversation as before", async () => {
-    const state = seedState();
-    await openDm(state);
-    expect(card()).toBeNull();
-  });
-});
-
-describe("a template agent's greeting", () => {
-  test("in its own role, never 'Você me pediu', and never a doubled period", async () => {
-    const state = seedState();
-    const ada = state.agents.find((a) => a.id === ADA_ID);
-    if (ada) {
-      ada.setup = { role: null, done: [] };
-      ada.role = "Atendimento";
-      ada.instructions = "Responde os clientes no WhatsApp.";
-    }
-    await openDm(state);
+describe("a new agent has no setup checklist", () => {
+  test("its DM opens on its first-use state, the agent waving over what to say first", async () => {
+    await open(`dm/agent/${ADA_ID}`, fresh());
+    expect(checklist()).toBeNull();
     const text = document.body.textContent ?? "";
-    expect(text).not.toContain("Você me pediu");
-    expect(text).toContain("a nova de atendimento");
+    expect(text).not.toContain("Pra eu começar");
+    expect(text).toContain("Diga oi para a Ada");
   });
 
-  test("an agent with no role says back what it was asked, closing its sentence once", async () => {
-    const state = seedState();
-    const ada = state.agents.find((a) => a.id === ADA_ID);
-    if (ada) {
-      ada.setup = { role: null, done: [] };
-      ada.role = "";
-      ada.instructions = "Responde os clientes no WhatsApp.";
+  test("the worst case: a long name, or one unbroken word, stays whole in the first-use title", async () => {
+    for (const name of [
+      "Maximiliana Albuquerque Montenegro Vasconcelos Ferraz Quintanilha Barbosa",
+      "Assistentedeatendimentoaoclienteinternacionalpósvenda",
+    ]) {
+      const state = fresh();
+      const ada = state.agents.find((a) => a.id === ADA_ID);
+      if (ada) {
+        ada.name = name;
+        ada.role = "Atendimento ao cliente, pós-venda e devoluções internacionais";
+      }
+      await open(`dm/agent/${ADA_ID}`, state);
+      expect(checklist()).toBeNull();
+      expect(document.querySelector(".ac-empty__title")?.textContent).toContain(name);
+      cleanup();
     }
-    await openDm(state);
-    expect(document.body.textContent).toContain("Você me pediu: “Responde os clientes no WhatsApp”.");
-    expect(document.body.textContent).not.toContain(".”.");
   });
 
-  test("apps skipped on the right hand's card stay skipped for the team's agents", async () => {
-    const state = seedState();
-    const ada = state.agents.find((a) => a.id === ADA_ID);
-    if (ada) ada.setup = { role: "dev", done: [] };
-    if (ada)
-      state.agents.push({
-        ...ada,
-        id: "lodi-x",
-        name: "Lodi",
-        handle: "lodi",
-        builtin: "right_hand",
-        setup: { role: null, done: ["apps"] },
-      });
-    await openDm(state);
-    expect(card()?.textContent).toContain("Sem apps por enquanto");
+  test("with no AI, its DM says so above the composer, as every DM does", async () => {
+    await open(
+      `dm/agent/${ADA_ID}`,
+      fresh(seedState({ aiStatus: { any: true, agents: [{ agentId: ADA_ID, state: "no_ai", reason: "no_key" }] } })),
+    );
+    expect(checklist()).toBeNull();
+    expect(document.querySelector(".noai-banner")?.textContent).toContain(
+      "Ada não vai responder porque não tem uma IA",
+    );
+  });
+
+  test("its page shows none either", async () => {
+    await open(`agents/${ADA_ID}`, fresh());
+    expect(document.querySelector(".agp-overview")).toBeTruthy();
+    expect(checklist()).toBeNull();
+    expect(document.body.textContent).not.toContain("Para a Ada começar");
   });
 });

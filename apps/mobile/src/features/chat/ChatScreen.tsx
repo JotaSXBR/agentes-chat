@@ -118,7 +118,6 @@ import {
   useToast,
 } from "@/ui";
 import { router } from "@/ui/navigation";
-import { AgentSetupIntro, useSetupSteps } from "../agents/setup/SetupCard";
 import { usePlanHold } from "../ai/parts";
 import { BrowserCard, BrowserRunCard } from "../browser/BrowserCard";
 import { OpenHandoffProvider } from "../browser/open";
@@ -384,8 +383,6 @@ function Chat({
   const quiet = quietInset(rowLook);
   // The right hand (ADR 0137): its own line and composer hint, no computer, and its greeting on top.
   const rightHand = isRightHand(dmAgent) && !isThread;
-  // A new agent's setup checklist (ADR 0155 §2) for whoever sets it up: its greeting and the checklist on top.
-  const setupIntro = useSetupSteps(dmAgent).length > 0 && !rightHand && !isThread;
   // Its DM is open, from its row or any other way in: its row's "Novo" goes.
   useEffect(() => {
     if (rightHand && meId) rightHandSeen.mark(rightHandSeenKey(meId, orgId));
@@ -1785,7 +1782,7 @@ function Chat({
   const planHeld = usePlanHold(orgId, org) !== null;
   // The right hand's greeting says it itself (its Connect AI card).
   const banner =
-    member && !rightHand && !planHeld && !setupIntro
+    member && !rightHand && !planHeld
       ? noAiBanner(aiStatus.data, {
           agentIds: dmAgentId ? [dmAgentId] : channelAgents,
           dmAgentId,
@@ -2254,10 +2251,9 @@ function Chat({
                               contentInsetEndAdjustment={contentInsetEndAdjustment}
                               contentContainerStyle={listPad}
                               // At the conversation's start, once it is loaded: the pinned messages (pulling down past
-                              // the first message reveals them), then the right hand's greeting or a new agent's
-                              // checklist.
+                              // the first message reveals them), then the right hand's greeting.
                               ListHeaderComponent={
-                                atStart && (hasPins || (dmAgent && (rightHand || setupIntro))) ? (
+                                atStart && (hasPins || (dmAgent && rightHand)) ? (
                                   <>
                                     {hasPins ? (
                                       <PinnedLines
@@ -2269,8 +2265,6 @@ function Chat({
                                     ) : null}
                                     {dmAgent && rightHand ? (
                                       <RightHandIntro agent={dmAgent} channelId={channelId} waveFrom={waveFrom} />
-                                    ) : dmAgent && setupIntro ? (
-                                      <AgentSetupIntro agent={dmAgent} channelId={channelId} />
                                     ) : null}
                                   </>
                                 ) : undefined
@@ -2290,10 +2284,6 @@ function Chat({
                   {dmAgent && rightHand ? (
                     <ScrollView contentContainerStyle={{ paddingTop: headerHeight, paddingBottom: composerHeight }}>
                       <RightHandIntro agent={dmAgent} channelId={channelId} waveFrom={waveFrom} />
-                    </ScrollView>
-                  ) : dmAgent && setupIntro ? (
-                    <ScrollView contentContainerStyle={{ paddingTop: headerHeight, paddingBottom: composerHeight }}>
-                      <AgentSetupIntro agent={dmAgent} channelId={channelId} />
                     </ScrollView>
                   ) : dmAgent && !isThread ? (
                     <FirstDay agent={dmAgent} bottomInset={composerHeight} keyboardLift={lift} onAsk={onSend} />

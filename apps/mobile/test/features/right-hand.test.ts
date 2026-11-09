@@ -147,7 +147,7 @@ test("the phone's greeting draws the checklist and Conversas has one line back t
   // One first task, the team card's: the card's asks offer none.
   expect(card).not.toContain("firstTask");
   const steps = src("agents/setup/SetupStepScreen.tsx");
-  expect(steps).toContain("firstRun ? <FirstRunAppsStep /> : <AppsStep agent={agent} />");
+  expect(steps).toContain("return <FirstRunAppsStep />;");
   expect(steps).toContain("firstRunAppList(");
   expect(steps).toContain('router.push({ pathname: "/connectors", params: { connect: def.id } })');
 });

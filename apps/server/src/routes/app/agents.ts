@@ -933,7 +933,7 @@ export function agentRoutes(deps: AppDeps) {
               .optional()
               .openapi({
                 description:
-                  "The ready-made role it starts from (`support`), for its setup checklist's suggestions (ADR 0155 §2). Every new agent gets the checklist; without it, no role.",
+                  "The ready-made role it starts from (`support`), which the right hand's first run suggests apps by (ADR 0155 §6). Without it, no role.",
               }),
           }),
         ),
@@ -1507,9 +1507,9 @@ export function agentRoutes(deps: AppDeps) {
       path: "/organizations/{orgId}/agents/{agentId}/setup/{step}",
       tags,
       security,
-      summary: "Confirm a step of a new agent's setup checklist",
+      summary: "Confirm a step of an agent's setup",
       description:
-        "Its owner or whoever manages agents chose (or skipped) one step of the checklist at the top of its chat (ADR 0155 §2). Confirming twice changes nothing; an agent with no checklist keeps none.",
+        "Who may change the agent confirms or skips one step. On the right hand it is a first-run row skipped (`apps`, `people`, ADR 0155 §6). On another agent it is one of its own steps (§2), which the apps neither show nor send. Confirming twice changes nothing, and an agent with no setup keeps none.",
       request: { params: AgentParams.extend({ step: SetupStep }) },
       responses: { 200: json(Agent), ...errors },
     }),

@@ -4,9 +4,9 @@ import { NotFoundError } from "./errors";
 import { can, requirePermission } from "./organizations";
 
 /*
- * A new agent's setup checklist (ADR 0155 §2): the top of its chat lists what it still needs (an AI, apps, channels,
- * who talks to it, how it works). The apps draw it; this keeps the role it started from (for the suggestions) and the
- * steps a person confirmed. A step is also done when the agent's data says so, which the apps read themselves.
+ * What an agent started with (ADR 0155): the ready-made role it was made from and the steps a person confirmed. The
+ * one checklist the apps draw is the right hand's first run (§6), whose rows read done from the workspace's data and
+ * store only a skip. A new agent's own steps (§2) are still taken, though the apps neither show nor send them.
  */
 
 const { agents } = schema;

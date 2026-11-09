@@ -94,7 +94,8 @@ way out of the account stays one quiet "Sair".
   joining gets the welcome. The first task is offered once, on the team card ("Primeira tarefa"), never again among the
   card's asks. "Como prefere que eu fale com você?" waits until a team agent worked once (`teamAnswered`), so it never
   stands beside the first task.
-- **A new agent's greeting** asks for help only when something is left as its checklist first loads.
+- **A new agent's greeting** asked for help only when something was left as its checklist first loaded. Both went
+  later that day: the right hand's card is the one checklist (ADR 0155's amendment of 2026-11-09).
 - **The floating date** never floats over the conversation's start (the greeting and its cards): above the first day it
   shows nothing (`dayAtTop`, the phone's `dayInView`).
 - **The computer notice** says no line under its title before the provisioner names a step (`setupNoticeStatusKey`).

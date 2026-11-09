@@ -1,9 +1,11 @@
 import type { AgentAudience, AudienceMode, ForeignMailbox } from "@agenteschat/client";
 import { useRoles, useSetAudiences } from "@agenteschat/client";
 import {
+  audienceOf,
   audiencePatch,
   canEditAudience,
   opensOthersPlan,
+  severalAgentsReach,
   severalWidenQuestion,
   widenQuestion,
 } from "@agenteschat/client/lib/audience";
@@ -49,6 +51,8 @@ export function AgentsAudienceScreen() {
   const roleList = sortRoles((roles.data?.roles ?? []).filter((r) => !isEveryone(r)));
   const people = [...dir.memberById.values()];
   const all = mine.length > 0 && chosen.length === mine.length;
+  // Narrowed, whether it holds for other agents too (the web's line), as each one's own consultations switch says.
+  const reach = severalAgentsReach(audience.mode, chosen);
   const flipAgent = (id: string) => {
     tapHaptic();
     setPicked((now) => {
@@ -65,7 +69,8 @@ export function AgentsAudienceScreen() {
       return { ...a, [kind]: list.includes(id) ? list.filter((x) => x !== id) : [...list, id] };
     });
   };
-  const next = audiencePatch(audience);
+  // No consultations switch here: each agent keeps its own.
+  const next = { ...audiencePatch(audience), consultable: undefined };
   const ask = (losses: { agentId: string; mailboxes: ForeignMailbox[] }[]) =>
     confirmQuestion(
       t,
@@ -75,7 +80,7 @@ export function AgentsAudienceScreen() {
           const agent = chosen.find((a) => a.id === agentId);
           if (!agent) return [];
           const owner =
-            meId && opensOthersPlan(agent, next, meId)
+            meId && opensOthersPlan(agent, { ...next, consultable: audienceOf(agent).consultable }, meId)
               ? (dir.memberById.get(agent.ownerUserId ?? "")?.name ?? t("channel.unknownPerson"))
               : null;
           return widenQuestion(t, agent, owner, mailboxes) ?? [];
@@ -136,7 +141,9 @@ export function AgentsAudienceScreen() {
           />
         ))}
       </GroupedList>
-      <GroupedHeader>{t("audience.several.title", { count: chosen.length })}</GroupedHeader>
+      <GroupedHeader>
+        {chosen.length > 0 ? t("audience.several.title", { count: chosen.length }) : t("audience.section")}
+      </GroupedHeader>
       <GroupedList>
         {MODES.map((mode) => (
           <GroupedRow
@@ -155,7 +162,13 @@ export function AgentsAudienceScreen() {
           />
         ))}
       </GroupedList>
-      {valid ? null : <GroupedFooter>{t("audience.pickSomeone")}</GroupedFooter>}
+      {!valid ? (
+        <GroupedFooter>
+          {audience.mode === "owner" ? t("audience.modeText.noOwner") : t("audience.pickSomeone")}
+        </GroupedFooter>
+      ) : reach ? (
+        <GroupedFooter>{t(`audience.several.agents.${reach}`)}</GroupedFooter>
+      ) : null}
       {audience.mode === "people" ? (
         <>
           <GroupedHeader>{t("agentSetup.who.people")}</GroupedHeader>

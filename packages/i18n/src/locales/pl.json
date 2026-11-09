@@ -10619,7 +10619,8 @@
     "matrixTitle": "Dostęp agentów",
     "newAgents": {
       "title": "Nowi agenci",
-      "hint": "Dotyczy agentów utworzonych, zaimportowanych lub zaproponowanych od teraz. Aby zmienić istniejących, zaznacz kilku w Zespole."
+      "hint": "Dotyczy agentów utworzonych, zaimportowanych lub zaproponowanych od teraz.",
+      "existing": "Aby zmienić istniejących, zaznacz kilku w Zespole."
     },
     "matrixHint": "Wrażliwe akcje (merge, deploy, udostępnianie, płatności) zawsze proszą o zatwierdzenie, na każdym poziomie. Aby ustawić to narzędzie po narzędziu, otwórz Narzędzia konektora.",
     "matrixHow": "Kliknij komórkę, żeby ją zmienić:",

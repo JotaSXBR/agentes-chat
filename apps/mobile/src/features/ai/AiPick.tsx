@@ -19,6 +19,7 @@ import {
   aiRows,
   currentValue,
 } from "@agenteschat/client/lib/ai-select";
+import { pickOpensPlan, widenQuestion } from "@agenteschat/client/lib/audience";
 import { computerNameOf } from "@agenteschat/client/lib/computer";
 import { keyRefusal } from "@agenteschat/client/lib/errors";
 import { agentGrammar } from "@agenteschat/client/lib/grammar";
@@ -32,7 +33,7 @@ import { ActivityIndicator, Alert, ScrollView, StyleSheet, View } from "react-na
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GroupedFooter, GroupedHeader, GroupedList, GroupedRow, ProviderLogo, useToast } from "@/ui";
 import { router } from "@/ui/navigation";
-import { useColors, useDirectory } from "../shared/hooks";
+import { useColors, useDirectory, useMeId } from "../shared/hooks";
 import { PushedHeader } from "../shared/parts";
 import { openConnectAi } from "./NoAiCard";
 import { useAiOrg } from "./org";
@@ -114,6 +115,8 @@ export function useAiPick(agentId: string) {
   const toast = useToast();
   const models = useModels().data?.models ?? [];
   const { agent, view, credentials, defaultKey, agentKey, agentModel } = useAiRowsOf(agentId);
+  const dir = useDirectory();
+  const meId = useMeId();
   const [busy, setBusy] = useState(false);
   const refresh = () => {
     for (const key of [
@@ -199,8 +202,8 @@ export function useAiPick(agentId: string) {
     }
   };
   /**
-   * A tap on a row: a lent plan or a move asks first (its owner hears of it; the other agent stops), a row waiting for a
-   * sign-in opens its steps, anything else thinks at once. `done`: it thinks with it now.
+   * A tap on a row: a lent plan, a move or opening its owner's plan asks first (its owner hears of it; the other agent
+   * stops), a row waiting for a sign-in opens its steps, anything else thinks at once. `done`: it thinks with it now.
    */
   const pick = (row: AiRow, done?: () => void) => {
     if (!agent || !view || row.disabled || busy) return;
@@ -229,6 +232,17 @@ export function useAiPick(agentId: string) {
         { text: t("common.cancel"), style: "cancel" },
         { text: t("aiSelect.moveTo", agentGrammar(agent.name)), onPress: () => go(true) },
       ]);
+    }
+    if (meId && pickOpensPlan(row, view, agent, meId)) {
+      const owner = dir.memberById.get(agent.ownerUserId ?? "")?.name ?? t("channel.unknownPerson");
+      const brain = { kind: row.kind, provider: row.account?.provider };
+      const question = widenQuestion(t, { name: agent.name, brain }, owner, []);
+      if (question) {
+        return Alert.alert(question.title, question.description, [
+          { text: t("common.cancel"), style: "cancel" },
+          { text: t("aiSelect.useLent", { owner }), onPress: () => go() },
+        ]);
+      }
     }
     go();
   };

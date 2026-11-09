@@ -9486,7 +9486,8 @@
     "matrixTitle": "Akses agen",
     "newAgents": {
       "title": "Agen baru",
-      "hint": "Berlaku untuk agen yang dibuat, diimpor, atau diusulkan mulai sekarang. Untuk mengubah yang sudah ada, pilih beberapa di Tim."
+      "hint": "Berlaku untuk agen yang dibuat, diimpor, atau diusulkan mulai sekarang.",
+      "existing": "Untuk mengubah yang sudah ada, pilih beberapa di Tim."
     },
     "matrixHint": "Tindakan sensitif (merge, deploy, berbagi, bayar) selalu meminta persetujuan, di level apa pun. Untuk mengaturnya per alat, buka Alat milik konektor.",
     "matrixHow": "Klik sel untuk mengubahnya:",

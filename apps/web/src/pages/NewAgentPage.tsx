@@ -346,9 +346,11 @@ function NewAgentFlow({
   const asked = channelId ? [channelId] : [];
   const [channelIds, setChannelIds] = useState<Set<string>>(new Set(draft?.channelIds ?? asked));
   const [owner, setOwner] = useState(me.user.id);
-  // Until the person picks, whom the workspace's new agents answer (everyone, unless an admin narrowed it).
+  // Until the person picks, whom the workspace's new agents answer (everyone, unless an admin narrowed it). With no
+  // owner, "only its owner" would be nobody: everyone, as the server makes it.
   const [pickedAudience, setAudience] = useState<AgentAudience>();
-  const audience = pickedAudience ?? { mode: settings.data?.newAgentAudience ?? "everyone", userIds: [] };
+  const narrowed = owner !== NO_OWNER && settings.data?.newAgentAudience === "owner";
+  const audience = pickedAudience ?? { mode: narrowed ? "owner" : "everyone", userIds: [] };
   // "Automático" for every new agent: each task gets its model and effort; a fixed model is one click away.
   const [model, setModel] = useState<string>(AUTO);
   // Or a plan (Claude Code, Codex) on a computer: saved as its "Quem pensa" once the agent exists. A proposal
@@ -1458,7 +1460,9 @@ function NewAgentFlow({
               onChange={(v) => {
                 setOwner(v);
                 if (!aiPicked) startWith(startOf(v === NO_OWNER ? null : v));
-                if (v !== NO_OWNER) setAudience({ ...audience, userIds: audience.userIds.filter((id) => id !== v) });
+                // Its new owner leaves the people picked (they always can); unpicked, it follows the owner.
+                if (v !== NO_OWNER && pickedAudience)
+                  setAudience({ ...pickedAudience, userIds: pickedAudience.userIds.filter((id) => id !== v) });
               }}
             />
           ) : (

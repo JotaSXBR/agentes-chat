@@ -168,10 +168,11 @@ export function AiAccountsScreen() {
     const plan = planOf(a.provider);
     const out = offersSignInAgain(a);
     const toGive = meId ? agentsToGive({ account: a, agents: dir.agents, machine: machineOf(a), viewerId: meId }) : [];
-    // A sign-in that thinks for one agent: each agent signs in to it on its own, in Conectar uma IA.
+    // A sign-in that thinks for one agent: each agent signs in to it on its own, in Conectar uma IA, which the sheet's
+    // title says where "Usar para todos os agentes" would be.
     const each = perAgentSignIn(a);
     choose(
-      a.label,
+      each && toGive.length > 1 ? `${a.label} · ${t("connectAi.each")}` : a.label,
       [
         ...(toGive.length > 1 && !each
           ? [{ label: t("aiAccounts.page.useForAllAgents"), onPress: () => void give(a, toGive) }]

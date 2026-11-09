@@ -14,12 +14,20 @@ import {
   useSettings,
 } from "@agenteschat/client";
 import { signInPlan } from "@agenteschat/client/lib/ai-accounts";
-import { type AiRow, aiNote, aiRowGroupLabel, aiRows, currentValue } from "@agenteschat/client/lib/ai-select";
+import {
+  type AiNote,
+  type AiRow,
+  aiNote,
+  aiRowGroupLabel,
+  aiRows,
+  currentValue,
+} from "@agenteschat/client/lib/ai-select";
 import {
   answersOthers,
   audienceOf,
   EVERYONE_AUDIENCE,
   opensOthersPlan,
+  pickOpensPlan,
   widenQuestion,
 } from "@agenteschat/client/lib/audience";
 import {
@@ -415,7 +423,7 @@ export function AgentAiForm({
   onComputer?: () => void;
 }) {
   const { t, i18n } = useTranslation();
-  const { org } = useOrg();
+  const { org, me } = useOrg();
   const g = agentGrammar(agent.name);
   const { view, rows, computerRow, loading, failed, retry, computerName, cloud, hold, credentials, defaultKey } =
     useAiRows(agent);
@@ -455,12 +463,15 @@ export function AgentAiForm({
   const ownPlan = agentPlan(dir.agentById.get(agent.id)) ?? (choiceNow === "key" ? null : choiceNow);
   // Nothing to pick: the steps at once, with no way back to an empty list.
   const empty = rows.length === 0 && mayConnect;
-  /** Thinks with `r` now; `confirmed`: the person said yes to a lent plan or a move. */
+  const full = dir.agentById.get(agent.id);
+  const opensPlan = (r: AiRow) => pickOpensPlan(r, view, full, me.user.id);
+  /** Thinks with `r` now; `confirmed`: the person said yes to a lent plan, a move or opening its owner's plan. */
   const pick = (r: AiRow, confirmed = false) => {
     if (r.disabled) return;
     // Back on what it thinks with: whatever waited is dropped, nothing saved.
     if (r.value === current) return setPicked(null);
-    if (r.act === "signIn" || ((r.act === "lend" || r.act === "move") && !confirmed)) return setPicked(r.value);
+    const asks = r.act === "lend" || r.act === "move" || opensPlan(r);
+    if (r.act === "signIn" || (asks && !confirmed)) return setPicked(r.value);
     setPicked(null);
     if (r.group === "keys") return void pickKey(r.key ?? null);
     const before = snapshot(view, agent);
@@ -552,7 +563,26 @@ export function AgentAiForm({
     );
   }
 
-  const note = row ? aiNote(t, i18n.language, row, { rows, agentName: agent.name, computerName, cloud }) : null;
+  // A pick that opens its owner's plan waits for the same question as "Atende outras pessoas", with its one button.
+  const planOwner = dir.memberById.get(full?.ownerUserId ?? "")?.name ?? t("channel.unknownPerson");
+  const opening =
+    row && picked === row.value && opensPlan(row)
+      ? widenQuestion(
+          t,
+          { name: agent.name, brain: { kind: row.kind, provider: row.account?.provider } },
+          planOwner,
+          [],
+        )
+      : null;
+  const note: AiNote | null = opening
+    ? {
+        icon: "info",
+        text: opening.description,
+        action: { kind: "confirm", label: t("aiSelect.useLent", { owner: planOwner }) },
+      }
+    : row
+      ? aiNote(t, i18n.language, row, { rows, agentName: agent.name, computerName, cloud })
+      : null;
   const act = (n: NonNullable<typeof note>["action"]) => {
     if (!n || !row) return;
     if (n.kind === "confirm") return pick(row, true);
@@ -1518,8 +1548,10 @@ export function TeamAi({
     NAMES_SHOWN,
   );
   // A login of the person's own made for one agent can't think for several: picked, it signs each in to that account.
+  // Anyone else's such login thinks for one agent only, so it stays out.
   const perAgent = (r: AiRow) => r.account?.mine === true && r.account.shared !== true;
-  const fits = rows.map((r) => ({ ...r, disabled: r.disabled || (r.act !== "use" && !perAgent(r)) }));
+  const forAllOf = (r: AiRow) => r.act === "use" && (r.account === undefined || r.account.shared === true);
+  const fits = rows.map((r) => ({ ...r, disabled: r.disabled || !(forAllOf(r) || perAgent(r)) }));
   // The switch as it stands for them: on while every one of them answers other people.
   const answersAll = agents.every((a) => {
     const row = dir.agentById.get(a.id);

@@ -9852,7 +9852,8 @@
     "matrixTitle": "Zugriff der Agenten",
     "newAgents": {
       "title": "Neue Agenten",
-      "hint": "Gilt für Agenten, die ab jetzt erstellt, importiert oder vorgeschlagen werden. Um bestehende zu ändern, wähle mehrere im Team aus."
+      "hint": "Gilt für Agenten, die ab jetzt erstellt, importiert oder vorgeschlagen werden.",
+      "existing": "Um bestehende zu ändern, wähle mehrere im Team aus."
     },
     "matrixHint": "Sensible Aktionen (Merge, Deploy, Teilen, Bezahlen) fragen immer nach einer Freigabe, auf jeder Stufe. Um es pro Tool festzulegen, öffne die Tools des Konnektors.",
     "matrixHow": "Klicke auf eine Zelle, um sie zu ändern:",

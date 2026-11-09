@@ -23979,7 +23979,10 @@
     "value": "New agents"
   },
   "access.newAgents.hint": {
-    "value": "It applies to agents created, imported or proposed from now on. To change the ones you have, select several in Team."
+    "value": "It applies to agents created, imported or proposed from now on."
+  },
+  "access.newAgents.existing": {
+    "value": "To change the ones you have, select several in Team."
   },
   "access.matrixHint": {
     "value": "Sensitive actions (merge, deploy, share, pay) always ask for approval, at any level. To set it tool by tool, open the connector's Tools."

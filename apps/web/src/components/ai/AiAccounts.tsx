@@ -285,7 +285,10 @@ export function AiAccountsSection() {
                 <div className="ac-acts ac-mediarow__end ac-mediarow__end--wrap">
                   {give.length === 1 && give[0] ? (
                     <Button variant="ghost" size="sm" onClick={() => void giveTo(a, give)}>
-                      {t("aiAccounts.page.useFor", agentGrammar(give[0].name))}
+                      {t(
+                        perAgentSignIn(a) ? "connectAi.signInFor" : "aiAccounts.page.useFor",
+                        agentGrammar(give[0].name),
+                      )}
                     </Button>
                   ) : (
                     give.length > 1 && (

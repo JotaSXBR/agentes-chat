@@ -1,6 +1,12 @@
 import type { Agent, AgentAudience, ForeignMailbox } from "@agenteschat/client";
 import { useSetAudiences } from "@agenteschat/client";
-import { audiencePatch, opensOthersPlan, severalWidenQuestion, widenQuestion } from "@agenteschat/client/lib/audience";
+import {
+  audiencePatch,
+  offersConsultable,
+  opensOthersPlan,
+  severalWidenQuestion,
+  widenQuestion,
+} from "@agenteschat/client/lib/audience";
 import { errorText } from "@agenteschat/client/lib/errors";
 import { Button, Dialog, DialogBody, DialogFooter, Locked } from "@agenteschat/ui";
 import { useState } from "react";
@@ -36,7 +42,9 @@ export function BulkAudienceDialog({
   const picked = draft.userIds.length + (draft.roleIds?.length ?? 0);
   // "Só o responsável", or nobody picked, would leave one with no owner answering nobody.
   const valid = draft.mode === "everyone" || (draft.mode === "owner" ? !ownerless : picked > 0 || !ownerless);
-  const next = audiencePatch(draft);
+  // "Outros agentes podem consultá-los" goes only where its switch shows: anywhere else each one keeps its own.
+  const patch = audiencePatch(draft);
+  const next = offersConsultable(draft, false) ? patch : { ...patch, consultable: undefined };
   // Each agent's own question (`widenQuestion`), said once for all of them.
   const ask = (losses: { agentId: string; mailboxes: ForeignMailbox[] }[]) => {
     const questions = losses.flatMap(({ agentId, mailboxes }) => {
@@ -99,6 +107,7 @@ export function BulkAudienceDialog({
                 idPrefix="team-audience"
                 several={{ count: agents.length, ownerless }}
               />
+              {valid ? null : <span className="small muted">{t("audience.pickSomeone")}</span>}
             </Locked>
           </DialogBody>
           <DialogFooter>

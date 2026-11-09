@@ -544,4 +544,26 @@ describe("Contas de IA: a plan with a login per agent", () => {
     expect(dialog.textContent).toContain("Para Atlas e Iris");
     expect(dialog.textContent).toContain("ChatGPT");
   });
+
+  test("such a sign-in with one more agent to give: its button signs that one in, as the phone's", async () => {
+    const state = seedState();
+    for (const a of state.agents) a.ownerUserId = "u-walter";
+    const api = createFakeApi(state);
+    const machines = fakeMachinesOf.get(api);
+    machines?.pair({
+      id: "machine_1",
+      name: "MacBook",
+      mode: "system",
+      agents: state.agents.slice(0, 2).map((a) => ({ id: a.id, name: a.name, handle: a.handle })),
+    });
+    const login = { ...base, id: "acct_x", kind: "codex" as const, label: "Conta", email: null, shared: false };
+    machines?.setAiAccounts({ accounts: [{ ...login, usedBy: ["Ada"], usedByIds: [ADA_ID] }], computers: [MAC] });
+    await renderApp(`/org/${ORG_ID}/settings/keys`, { api });
+    await settle(6);
+    const row = document.querySelector(".ai-accounts__row") as HTMLElement;
+    await click(within(row).getByRole("button", { name: "Fazer login para o Atlas" }));
+    await settle(4);
+    expect(state.calls.some((c) => c.method === "agents.setBrain")).toBe(false);
+    expect(screen().getByRole("dialog", { name: "Conectar uma IA para o Atlas" })).toBeTruthy();
+  });
 });

@@ -632,6 +632,29 @@ describe("Usar planos de outras pessoas (ADR 0059 §3, amended 2026-11-04)", () 
     expect(done?.doneAt).not.toBeNull();
   });
 
+  test("a plan changing hands on the same brain opens to whom its agent answers: that plan's owner hears it", async () => {
+    const { fx, deps, bia, caio, account } = await world();
+    await account(ANAS, fx.owner.id);
+    await account(BIAS, bia.id);
+    const opened = async () =>
+      (await fx.db.select().from(schema.outbox).where(eq(schema.outbox.kind, PLAN_OPENED_JOB))).map((j) => j.payload);
+    // Ana puts Dev on her own Claude: her own choice, nobody to tell.
+    await setAgentBrain(deps, fx.owner.id, fx.org.id, fx.agent.id, { brain: "claude_code", account: ANAS });
+    expect(await opened()).toEqual([]);
+    // Caio gives it Bia's Claude, the same brain: Bia's plan now answers the whole workspace.
+    expect((await setAgentBrain(deps, caio.id, fx.org.id, fx.agent.id, { account: BIAS })).onlyOwner).toBe(false);
+    expect(await opened()).toEqual([
+      expect.objectContaining({
+        agentId: fx.agent.id,
+        actorId: caio.id,
+        from: expect.objectContaining({ mode: "owner" }),
+      }),
+    ]);
+    // And back on Ana's own: Caio opens hers to them, so she hears it too.
+    await setAgentBrain(deps, caio.id, fx.org.id, fx.agent.id, { account: ANAS });
+    expect(await opened()).toHaveLength(2);
+  });
+
   test("a plan given back leaves whom its agent answers as it was", async () => {
     const { fx, deps, bia, caio, account, row } = await world();
     await account(BIAS, bia.id);

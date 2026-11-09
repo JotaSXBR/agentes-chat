@@ -78,10 +78,33 @@ describe("who can talk to agents: many at once, and the workspace's default for 
     const card = screen().getByRole("region", { name: "Novos agentes" });
     const select = within(card).getByRole("combobox", { name: "Quem pode falar" });
     expect(select.textContent).toContain("Todos do workspace");
+    const AGENTS = "Vale só para pessoas. Outros agentes ainda podem consultá-los por quem não está na lista.";
+    expect(card.textContent).not.toContain(AGENTS);
     select.focus();
     await act(async () => fireEvent.keyDown(select, { key: "Enter" }));
     await click(screen().getByRole("option", { name: "Só o responsável" }), 4);
     expect(calls(state, "orgs.updateSettings").map(([, input]) => input)).toEqual([{ newAgentAudience: "owner" }]);
     expect(state.newAgentAudience).toBe("owner");
+    // Narrowed, it says whether it holds for other agents too.
+    expect(card.textContent).toContain(AGENTS);
+  });
+
+  test("everyone for several agents keeps each one's own consultations switch, which shows only where it applies", async () => {
+    const state = await go("team");
+    const table = screen().getByRole("table");
+    await click(within(table).getByRole("checkbox", { name: "Selecionar todos" }));
+    await click(
+      within(screen().getByRole("toolbar", { name: "Agentes selecionados" })).getByRole("button", {
+        name: "Quem pode falar",
+      }),
+    );
+    const dialog = screen().getByRole("dialog", { name: "Quem pode falar com 2 agentes" });
+    expect(within(dialog).queryByRole("switch", { name: "Outros agentes podem consultá-los" })).toBeNull();
+    await click(within(dialog).getByRole("button", { name: "Salvar" }), 6);
+    const sent = calls(state, "agents.update").map(([, , input]) => (input as AgentInput).audience);
+    expect(sent.map((a) => [a?.mode, a?.consultable])).toEqual([
+      ["everyone", undefined],
+      ["everyone", undefined],
+    ]);
   });
 });

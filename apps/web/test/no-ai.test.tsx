@@ -914,6 +914,12 @@ describe("Conectar uma IA for an agent with no AI: one select of what the person
     expect(rows.some((r) => r.title === "Claude da Acme")).toBe(true);
     await chooseBrain(box, /^Claude Max/);
     await settle(6);
+    // She answers the workspace: João's plan opens to them, so the note asks first, as turning Atende outras pessoas
+    // on would (ADR 0059 §5).
+    expect(calls(state, "agents.setBrain")).toHaveLength(0);
+    expect(box.textContent).toContain("João vai receber um email avisando.");
+    await act(async () => fireEvent.click(within(box).getByRole("button", { name: "Usar o plano de João" })));
+    await settle(6);
     expect(calls(state, "agents.setBrain").map((c) => c.args)).toEqual([
       [ORG_ID, ADA_ID, { brain: "claude_code", account: "acct_joao" }],
     ]);

@@ -1169,7 +1169,10 @@ export async function setAgentBrain(
         const plan = { id: row.id, brain: row.brain, ownerUserId: agent.ownerUserId };
         opened = await planOpened(tx, orgId, userId, plan, OWNER_ONLY, audienceOf(row));
       }
-    } else if (row && changed) opened = await planOpened(tx, orgId, userId, row, planFrom, audienceOf(row));
+    } else if (row && (changed || ownerSwitch)) {
+      // A plan changing hands on the same brain (someone else's given, or back from one) opens as a switch onto it does.
+      opened = await planOpened(tx, orgId, userId, row, planFrom, audienceOf(row));
+    }
     if (opened) options.onPlanOpened?.();
     return { row, released };
   });

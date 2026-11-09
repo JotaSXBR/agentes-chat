@@ -9792,7 +9792,8 @@
     "matrixTitle": "Ajan erişimi",
     "newAgents": {
       "title": "Yeni ajanlar",
-      "hint": "Bundan sonra oluşturulan, içe aktarılan veya önerilen ajanlar için geçerli. Mevcut olanları değiştirmek için Ekip'te birkaçını seçin."
+      "hint": "Bundan sonra oluşturulan, içe aktarılan veya önerilen ajanlar için geçerli.",
+      "existing": "Mevcut olanları değiştirmek için Ekip'te birkaçını seçin."
     },
     "matrixHint": "Hassas işlemler (birleştirme, dağıtım, paylaşım, ödeme) hangi düzeyde olursa olsun her zaman onay ister. Araç araç ayarlamak için bağlayıcının Araçlar bölümünü açın.",
     "matrixHow": "Değiştirmek için bir hücreye tıklayın:",

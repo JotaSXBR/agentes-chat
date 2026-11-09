@@ -9910,7 +9910,8 @@
     "matrixTitle": "Toegang van agents",
     "newAgents": {
       "title": "Nieuwe agenten",
-      "hint": "Dit geldt voor agenten die vanaf nu worden gemaakt, geïmporteerd of voorgesteld. Om bestaande te wijzigen, selecteer je er meerdere in Team."
+      "hint": "Dit geldt voor agenten die vanaf nu worden gemaakt, geïmporteerd of voorgesteld.",
+      "existing": "Om bestaande te wijzigen, selecteer je er meerdere in Team."
     },
     "matrixHint": "Gevoelige acties (merge, deploy, delen, betalen) vragen altijd om goedkeuring, op elk niveau. Wil je het per tool instellen? Open dan Tools bij de connector.",
     "matrixHow": "Klik op een cel om het te wijzigen:",

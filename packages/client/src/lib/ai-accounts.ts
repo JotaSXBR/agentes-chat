@@ -178,7 +178,7 @@ export function agentsToGive<A extends { id: string; ownerUserId: string | null 
 /**
  * An account whose sign-in thinks for one agent (`shared` false): one more agent needs its own login of it. Where each
  * agent is its own OS user, Cursor's, Grok's, Gemini's and OpenCode's sign-ins are one per agent, and ChatGPT's on a
- * computer program before protocol 38.
+ * computer program before protocol 38; on one before protocol 29, every plan's.
  */
 export const perAgentSignIn = (account: Pick<MachineAccount, "shared">) => account.shared !== true;
 

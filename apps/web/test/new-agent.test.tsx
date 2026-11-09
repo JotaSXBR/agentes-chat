@@ -1436,6 +1436,24 @@ describe("Criar agente: what gets created", () => {
     expect(channels.map((c) => c.channelId).sort()).toEqual([ENG_ID, GENERAL_ID].sort());
   });
 
+  test("a workspace that narrowed new agents: it starts on its owner alone, on everyone with nobody responsible", async () => {
+    const state = seedState();
+    state.newAgentAudience = "owner";
+    await open(state);
+    await startAs("QA");
+    await proceed(3);
+    const audience = screen().getByRole("radiogroup", { name: "Quem pode falar com a Iris" });
+    const on = (name: RegExp) => within(audience).getByRole("radio", { name }).getAttribute("aria-checked");
+    expect(on(/^Só o responsável/)).toBe("true");
+    await pick(screen().getByRole("combobox", { name: "Responsável" }), /Sem responsável/);
+    expect(on(/^Todos do workspace/)).toBe("true");
+    // Someone responsible again: the workspace's choice comes back, nothing picked meanwhile.
+    await pick(screen().getByRole("combobox", { name: "Responsável" }), /^João/);
+    expect(on(/^Só o responsável/)).toBe("true");
+    await proceed();
+    expect(title()).toBe("Modelo e orçamento");
+  });
+
   test("'Só o responsável' needs an owner", async () => {
     await open();
     await startAs("QA");

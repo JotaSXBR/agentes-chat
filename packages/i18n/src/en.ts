@@ -9823,7 +9823,9 @@ export const en = {
     /** Who can talk to the workspace's new agents (`newAgentAudience`), for who configures it. */
     newAgents: {
       title: "New agents",
-      hint: "It applies to agents created, imported or proposed from now on. To change the ones you have, select several in Team.",
+      hint: "It applies to agents created, imported or proposed from now on.",
+      /** The web's way to the agents that exist: Equipe's selection (the phone's is in Agentes' bar). */
+      existing: "To change the ones you have, select several in Team.",
     },
     matrixHint:
       "Sensitive actions (merge, deploy, share, pay) always ask for approval, at any level. To set it tool by tool, open the connector's Tools.",

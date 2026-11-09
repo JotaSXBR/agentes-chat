@@ -10224,7 +10224,8 @@
     "matrixTitle": "Accès des agents",
     "newAgents": {
       "title": "Nouveaux agents",
-      "hint": "Cela vaut pour les agents créés, importés ou proposés à partir de maintenant. Pour changer ceux qui existent déjà, sélectionnez-en plusieurs dans Équipe."
+      "hint": "Cela vaut pour les agents créés, importés ou proposés à partir de maintenant.",
+      "existing": "Pour changer ceux qui existent déjà, sélectionnez-en plusieurs dans Équipe."
     },
     "matrixHint": "Les actions sensibles (merge, déploiement, partage, paiement) demandent toujours une approbation, quel que soit le niveau. Pour régler outil par outil, ouvrez les Outils du connecteur.",
     "matrixHow": "Cliquez sur une case pour la modifier :",

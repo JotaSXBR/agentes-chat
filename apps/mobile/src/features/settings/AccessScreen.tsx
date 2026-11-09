@@ -1,4 +1,4 @@
-import { type Agent, useAgents } from "@agenteschat/client";
+import { type Agent, type OrgSettings, useAgents, useSettings, useUpdateSettings } from "@agenteschat/client";
 import {
   type AccessResource,
   asksAt,
@@ -23,13 +23,16 @@ import { useColors } from "../shared/hooks";
 import { errorHaptic, tapHaptic } from "../shared/parts";
 import { resourceName, useAgentsAccess, useConnectedById, useSetLevels } from "./hooks";
 import { type AccessKind, AREA_ICON, accessColumns } from "./logic";
-import { SettingsPage } from "./parts";
+import { chooseAction, SettingsPage } from "./parts";
+
+type NewAgentAudience = NonNullable<OrgSettings["newAgentAudience"]>;
+const NEW_AGENT_AUDIENCES: NewAgentAudience[] = ["everyone", "owner"];
 
 /**
- * Agentes e acesso (admins), as the web's matrix: agents × the connected services (or the built-in areas), each a
- * level. On the phone each agent is a group and each service a row: a tap moves its level on (Sem acesso → Ler →
- * Ler e escrever) and saves right away. Sensitive actions keep asking at any level (the row says so); fine-tuning
- * tool by tool is the connector's Ferramentas.
+ * Agentes e acesso (admins), as the web's: who can talk to new agents (for who configures the workspace), then the
+ * matrix, agents × the connected services (or the built-in areas), each a level. On the phone each agent is a group and
+ * each service a row: a tap moves its level on (Sem acesso → Ler → Ler e escrever) and saves right away. Sensitive
+ * actions keep asking at any level (the row says so); fine-tuning tool by tool is the connector's Ferramentas.
  */
 export function AccessScreen() {
   const { t } = useTranslation();
@@ -42,6 +45,30 @@ export function AccessScreen() {
   const access = useAgentsAccess(list, admin);
   const items = useConnectedById();
   const set = useSetLevels();
+  const settings = useSettings(orgId);
+  const update = useUpdateSettings(orgId);
+  const newAudience =
+    (update.isPending ? update.variables?.newAgentAudience : undefined) ??
+    settings.data?.newAgentAudience ??
+    "everyone";
+  const chooseNewAudience = () =>
+    chooseAction(
+      t("audience.section"),
+      NEW_AGENT_AUDIENCES.map((mode) => ({
+        label: t(`audience.mode.${mode}`),
+        onPress: () =>
+          update.mutate(
+            { newAgentAudience: mode },
+            {
+              onError: () => {
+                errorHaptic();
+                toast({ title: t("mobile.app.failed"), icon: "x" });
+              },
+            },
+          ),
+      })),
+      t("mobile.common.cancel"),
+    );
   const [kind, setKind] = useState<AccessKind>("connector");
   const [pending, setPending] = useState<Record<string, Level>>({});
   const first = list.map((a) => access.byAgent.get(a.id)).find((x) => x !== undefined);
@@ -84,6 +111,25 @@ export function AccessScreen() {
   return (
     <SettingsPage title={t("settings.section.access")}>
       <GroupedFooter>{t("settings.sectionText.access")}</GroupedFooter>
+      {can(org, "configure") && settings.data ? (
+        <>
+          <GroupedHeader>{t("access.newAgents.title")}</GroupedHeader>
+          <GroupedList>
+            <GroupedRow
+              icon="members"
+              label={t("audience.section")}
+              value={t(`audience.mode.${newAudience}`)}
+              disabled={update.isPending}
+              onPress={chooseNewAudience}
+            />
+          </GroupedList>
+          <GroupedFooter>
+            {newAudience === "owner"
+              ? t("common.joinSentences", { a: t("access.newAgents.hint"), b: t("audience.several.agents.consulted") })
+              : t("access.newAgents.hint")}
+          </GroupedFooter>
+        </>
+      ) : null}
       <View style={styles.head}>
         <InfoHint
           name={t("common.about", { label: t("access.matrixTitle") })}

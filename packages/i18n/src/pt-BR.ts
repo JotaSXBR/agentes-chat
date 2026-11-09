@@ -9947,7 +9947,9 @@ export const ptBR = {
     /** Who can talk to the workspace's new agents (`newAgentAudience`), for who configures it. */
     newAgents: {
       title: "Novos agentes",
-      hint: "Vale para os agentes criados, importados ou propostos daqui em diante. Para mudar os que já existem, selecione vários em Equipe.",
+      hint: "Vale para os agentes criados, importados ou propostos daqui em diante.",
+      /** The web's way to the agents that exist: Equipe's selection (the phone's is in Agentes' bar). */
+      existing: "Para mudar os que já existem, selecione vários em Equipe.",
     },
     matrixHint:
       "Ações sensíveis (merge, deploy, compartilhar, pagar) sempre pedem aprovação, em qualquer nível. Para ajustar ferramenta por ferramenta, abra Ferramentas no conector.",

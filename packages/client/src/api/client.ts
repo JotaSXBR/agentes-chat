@@ -181,6 +181,7 @@ import type {
   Memory,
   Message,
   MessageCard,
+  MessageCards,
   MessagePin,
   Mission,
   MissionBrain,
@@ -839,7 +840,13 @@ export interface ApiClient {
     messages(
       orgId: string,
       channelId: string,
-      options?: { threadId?: string; before?: string; limit?: number },
+      options?: {
+        threadId?: string;
+        before?: string;
+        limit?: number;
+        /** Also what the page's cards show (`include=cards`), handed here before the messages return. */
+        onCards?: (cards: MessageCards) => void;
+      },
     ): Promise<Message[]>;
     post(
       orgId: string,

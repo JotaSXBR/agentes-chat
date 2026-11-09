@@ -15,6 +15,7 @@ import {
   type ReplyRef,
   type RunConsultation,
   type SearchHit,
+  seedCards,
   sendHelpers,
   typingIn,
   useAgentsBrowserHandoffs,
@@ -411,6 +412,7 @@ function Chat({
   const mentionMembers = useMentionMembers(channelId, !dm && Boolean(channel?.isMember));
 
   // ── Messages ──
+  const qc = useQueryClient();
   const top = useMessages(orgId, channelId, readable && !isThread);
   const threadMessages = useThreadMessages(orgId, isThread && readable ? channelId : undefined, threadId ?? "");
   const channelThreads = useChannelThreads(orgId, channelId, "all", readable && !isThread);
@@ -901,7 +903,11 @@ function Chat({
     fetchingOlder.current = true;
     setLoadingOlder(true);
     api.chat
-      .messages(orgId, channelId, { before: oldest.createdAt, limit: MESSAGES_PAGE })
+      .messages(orgId, channelId, {
+        before: oldest.createdAt,
+        limit: MESSAGES_PAGE,
+        onCards: (c) => seedCards(qc, orgId, c),
+      })
       .then((page) => {
         setOlder((prev) => [...page, ...prev]);
         if (page.length < MESSAGES_PAGE) setOlderDone(true);
@@ -911,7 +917,7 @@ function Chat({
         fetchingOlder.current = false;
         setLoadingOlder(false);
       });
-  }, [api, orgId, channelId, isThread, olderDone, loadingOlder, top.data, older]);
+  }, [api, qc, orgId, channelId, isThread, olderDone, loadingOlder, top.data, older]);
 
   // ── Sending ──
   // Without a connection (no internet, or the server restarting) a message isn't "failed": it waits with a
@@ -949,7 +955,6 @@ function Chat({
     setQuote(null);
     return localMeta(quote, dir.nameOf(quote.author), files);
   };
-  const qc = useQueryClient();
   const voiceRefused = useCallback(
     (reason: VoiceRefusal) => toast({ title: t(reason === "limit" ? "voice.limit" : "voice.notSent"), icon: "x" }),
     [t, toast],

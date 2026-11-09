@@ -1541,10 +1541,13 @@ html:not([data-pointer]) .artifact-tile:has(.artifact-tile__open:focus-visible) 
   --tile-w: 320px;
   --tile-cover: 180px;
 }
+/* Its own parts, empty (`TilePlaceholder`): the size it keeps once it loads. */
 .artifact-tile--loading {
-  height: calc(var(--tile-cover) + 52px);
   background: var(--sunken);
   box-shadow: none;
+}
+.artifact-tile--loading .artifact-tile__cover {
+  border-bottom-color: transparent;
 }
 /* The whole tile opens the viewer; its corner actions sit above this button. */
 .artifact-tile__open {
@@ -1816,6 +1819,20 @@ html:not([data-pointer]) .artifact-tile__open:focus-visible {
   height: 100%;
   object-fit: cover;
 }
+/* A picture whose size is known: an empty canvas of that size takes the place the picture will (the same rules size
+   it, before and after it loads), and the picture lies over it. */
+.artifact-tile__picture[data-sized] {
+  position: relative;
+}
+.artifact-tile__picture[data-sized] img {
+  position: absolute;
+  inset: 0;
+}
+.artifact-tile__picture canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
 .artifact-tile[data-media] {
   box-shadow: 0 0 0 1px var(--line);
 }
@@ -1834,7 +1851,8 @@ html:not([data-pointer]) .artifact-tile__open:focus-visible {
 .artifact-cards > .artifact-tile[data-media]:only-child .artifact-tile__foot {
   display: none;
 }
-.artifact-cards > .artifact-tile[data-media]:only-child .artifact-tile__picture img {
+.artifact-cards > .artifact-tile[data-media]:only-child .artifact-tile__picture:not([data-sized]) img,
+.artifact-cards > .artifact-tile[data-media]:only-child .artifact-tile__picture canvas {
   width: auto;
   min-width: 140px;
   max-width: 100%;
@@ -1842,8 +1860,8 @@ html:not([data-pointer]) .artifact-tile__open:focus-visible {
   min-height: 140px;
   max-height: 320px;
 }
-/* Its loading size (the lone tile's `height: auto` would collapse it until the picture decodes). */
-.artifact-cards > .artifact-tile[data-media]:only-child .artifact-tile__picture[data-loading] {
+/* An older picture's loading size, its own unknown (the lone tile's `height: auto` would collapse it until it decodes). */
+.artifact-cards > .artifact-tile[data-media]:only-child .artifact-tile__picture[data-loading]:not([data-sized]) {
   width: 240px;
   height: 180px;
 }

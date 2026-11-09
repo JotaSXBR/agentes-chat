@@ -38,6 +38,7 @@ import {
   QUIET_AFTER_MS,
   runsInChannel,
   type StreamsState,
+  seedCards,
   sendHelpers,
   typingIn,
   useAddChannelMember,
@@ -1161,7 +1162,7 @@ function ChannelView({
     }
     setOlderState("loading");
     api.chat
-      .messages(org.id, channel.id, { before: oldest.createdAt, limit })
+      .messages(org.id, channel.id, { before: oldest.createdAt, limit, onCards: (c) => seedCards(qc, org.id, c) })
       .then((page) => {
         // Keep what's on screen where it is: remember the distance from the bottom.
         const el = scroller.current;

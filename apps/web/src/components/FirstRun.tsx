@@ -323,9 +323,8 @@ function AppsDialog({ team, onClose }: { team: Agent[]; onClose: () => void }) {
         description={t("agentSetup.firstRun.apps.desc")}
         closeLabel={t("common.close")}
         width={480}
-        className="setup-dlg"
       >
-        <DialogBody className="setup-dlg__body">
+        <DialogBody>
           <ul className="setup-apps">
             {list.map(({ def, suggested }) => (
               <li key={def.id} className="setup-apps__row">

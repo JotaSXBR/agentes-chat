@@ -216,13 +216,6 @@ html:not([data-pointer]) .setup-task:focus-visible {
   box-shadow: var(--field-ring);
 }
 
-/* The small dialog behind a row: that row's control and nothing else. */
-.setup-dlg__body {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
 /* The right hand's first run (ADR 0155 §6): a row that waits for the plan, or for the team card in the chat. */
 .setup-row[data-dim] .setup-row__title,
 .setup-row[data-dim] > .ac-mediarow__face > .ac-icon {

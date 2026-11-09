@@ -32,10 +32,7 @@ export interface SetupChecklist {
 /** The role ids the apps offer are short lower-case words; anything else is no role. */
 const ROLE_ID = /^[a-z][a-z_-]{0,31}$/;
 
-/**
- * What a new agent's checklist starts with: who talks to it and how it works have good defaults, so they start done
- * (their rows keep Mudar) and a new agent asks only for its AI, apps and channels.
- */
+/** What a new agent starts with: the role it was made from, and who talks to it and how it works stored as done. */
 export const newSetup = (role: string | null | undefined): SetupChecklist => ({
   role: role && ROLE_ID.test(role) ? role : null,
   done: ["who", "how"],
@@ -53,10 +50,10 @@ export function setupOf(stored: { role?: unknown; done?: unknown } | null | unde
 }
 
 /**
- * A person confirmed one step of the agent's checklist (they chose in its dialog, or skipped it). Who may change the
- * agent may: its owner or whoever manages agents. On the right hand's first run only "Agora não" is stored, on apps
- * (who connects apps) and people (who invites). Confirming twice changes nothing; an agent with no checklist keeps
- * none.
+ * A person confirmed or skipped one step of an agent's setup. On the right hand's first run only "Agora não" is
+ * stored, on apps (who connects apps) and people (who invites). A new agent's own steps are still taken from who may
+ * change it (its owner or whoever manages agents), though the apps no longer send them. Confirming twice changes
+ * nothing, and an agent with no setup keeps none.
  */
 export async function confirmSetupStep(db: Database, actorId: string, orgId: string, agentId: string, step: SetupStep) {
   const membership = await requirePermission(db, actorId, orgId, "read");

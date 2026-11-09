@@ -62,6 +62,10 @@ test("the cards in a message share one width: the tools, a lone call's line, eve
     expect([selector, value(selector, "max-width")]).toEqual([selector, "var(--msg-card-w)"]);
 });
 
+test("a row waiting for words opens with its browser card: in the person's control, the row's bar stays off its buttons", () => {
+  expect(value(".ac-msg--waiting:has(.brw-ac.is-control) .ac-msg__actions", "display")).toBe("none");
+});
+
 test("nothing in a message wears the hover plate's own gray: cards a step up, wells a tint that darkens with it", () => {
   // The row's hover is the soft plate; what sits on it never is.
   expect(value(".ac-msg:hover", "background")).toBe("var(--plate-soft)");

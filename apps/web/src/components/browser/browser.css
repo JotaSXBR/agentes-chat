@@ -1631,6 +1631,11 @@ html:not([data-pointer]) .brw-mf__now:focus-visible {
   gap: 6px;
   flex: none;
 }
+/* An agent's row waiting for words opens with this frame, no name line above it: the row's bar (its actions off until
+   the reply is saved) would sit on these buttons while the person is in control, so it stays away. */
+.ac-msg--waiting:has(.brw-ac.is-control) .ac-msg__actions {
+  display: none;
+}
 /* The page and what goes under it, inside the frame. */
 .brw-mf > :not(.brw-mf__top) {
   background: var(--raised);

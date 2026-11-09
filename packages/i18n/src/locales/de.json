@@ -2321,6 +2321,36 @@
     "receipt": "Niemand wird antworten: keine KI verbunden",
     "chip": "Keine KI"
   },
+  "aiSelect": {
+    "placeholder": "Wähle eine KI",
+    "groupOthers": "Abos anderer Personen",
+    "groupKeys": "API-Schlüssel",
+    "connect": "Eine andere KI verbinden",
+    "connectLine": "Ein anderes Konto, Abo oder ein API-Schlüssel",
+    "ownOn": "Angemeldet auf {{computer}}",
+    "keyRefused": "Schlüssel abgelehnt",
+    "unknown": "Anmeldung nicht bestätigt",
+    "inUse": "Genutzt von {{agents}}",
+    "keyDefault": "Standard des Workspace · endet auf {{hint}}",
+    "serverKey": "Claude-Schlüssel dieses Servers",
+    "serverKeyLine": "Auf dem Server festgelegt",
+    "signedOut": "{{label}} ist abgemeldet. Melde dich erneut an, damit {{name}} es nutzen kann.",
+    "limited": "Mit diesem Konto antwortet {{name}} erst wieder {{when}}.",
+    "limitedUnknown": "Mit diesem Konto antwortet {{name}} erst wieder, wenn sich das Abo erneuert.",
+    "move": "{{agent}} denkt dann nicht mehr damit.",
+    "moveTo": "Zu {{name}} verschieben",
+    "lent": "{{owner}} bekommt eine E-Mail und kann es zurücknehmen.",
+    "useLent": "Das Abo von {{owner}} nutzen",
+    "signInAgain": "Erneut bei {{label}} anmelden",
+    "for": "Für {{names}}",
+    "plans": "Dein KI-Abo",
+    "endpointLine": "Dein eigenes Gateway oder dein Server",
+    "keyLocked": "Nur ein Admin kann einen hinzufügen",
+    "preparing": "Computer wird vorbereitet",
+    "geminiTiers": "Google AI Pro, Ultra oder Enterprise",
+    "cursorTiers": "Pro, Pro+, Ultra oder Teams",
+    "undo": "Rückgängig"
+  },
   "connectAi": {
     "title": {
       "any": "Eine KI verbinden",
@@ -2333,22 +2363,10 @@
       "api_key": "API-Schlüssel hinzufügen"
     },
     "titleFor": "Eine KI für {{name}} verbinden",
-    "have": {
-      "title": "Bereits verbunden",
-      "titleFor": "Bereits verbunden, für {{name}}",
-      "other": "Oder eine andere verbinden",
-      "manageKeys": "Schlüssel verwalten oder löschen"
-    },
     "billing": "Ein Abo meldet sich auf dem Computer des Workspace an, und den Computer gibt es mit einem aktiven agentes.chat-Abo.",
     "billingWeb": "Wähle eines im Web, auf agentes.chat.",
     "orPayGo": "Oder nach Verbrauch zahlen",
-    "pay": {
-      "label": "Wie zahlst du?",
-      "plan": "Mit einem Abo",
-      "key": "Mit API-Schlüssel"
-    },
     "pick": {
-      "plan": "Abo",
       "placeholder": "Abo auswählen",
       "search": "Anbieter suchen",
       "searchPlaceholder": "Name des Anbieters",
@@ -2421,9 +2439,7 @@
       "shared": "Das Konto, das deine Agenten teilen",
       "sharedLower": "das Konto, das deine Agenten teilen",
       "free": "Die kostenlosen Modelle von OpenCode",
-      "freeLower": "die kostenlosen Modelle von OpenCode",
-      "one": "Ein Konto nur für {{name}}",
-      "each": "Ein eigenes Konto für jeden"
+      "freeLower": "die kostenlosen Modelle von OpenCode"
     },
     "popup": {
       "title": "{{name}} wird verbunden",
@@ -2445,14 +2461,11 @@
         "next": "Wartet"
       }
     },
-    "for": "Für",
-    "all": "Alle Agenten",
     "agentAria": "Agenten, die dieses Abo nutzen",
     "each": "Eine Anmeldung pro Agent, mit demselben Konto.",
     "eachHint": "Jeder Agent behält seine eigene Anmeldung. Alle teilen sich die Limits deines Abos.",
     "once": "Eine Anmeldung für alle.",
     "onceHint": "Alle teilen sich die Limits deines Abos.",
-    "use": "{{label}} nutzen",
     "another": "Anderes Konto",
     "reuse": {
       "active": "Du hast {{label}} hier schon. Melde dich erneut an oder nimm ein anderes Konto.",
@@ -4318,7 +4331,6 @@
         "label_female": "So arbeitet sie",
         "computer": "Arbeitet auf",
         "brain": "Denkt mit",
-        "brainWith": "Denkt mit {{plan}}",
         "browser": "Browser",
         "effort": "Aufwand {{level}}"
       },
@@ -4354,13 +4366,7 @@
         "sub": "Gilt nur für {{name}}, in jeder Unterhaltung.",
         "model": "API-Schlüssel",
         "modelText": "Bezahlt nach Nutzung. Zählt zum Budget von {{name}}.",
-        "planText": "Nutzt dein {{plan}}-Abo",
-        "planTextOf": "Nutzt das {{plan}}-Abo von {{owner}}",
-        "moves": "Wechselt zu {{computer}}",
-        "off": "{{computer}} ist offline",
-        "none": "Kein Computer hat es",
         "planModel": "Modell",
-        "account": "Konto",
         "accountWho": "Nur Konten von {{owner}}, verantwortlich für {{name}}: Ein Plan denkt nur für die Agenten seines Inhabers.",
         "accountSignedOut": "Abgemeldet, melde dich erneut an",
         "accountUnknown": "Anmeldung nicht bestätigt, wird bald erneut geprüft",
@@ -4369,18 +4375,14 @@
         "accountAlso": "Auch genutzt von {{agents}}",
         "accountOf": "Von {{name}}",
         "accountOthers": "Abos anderer Personen zeigen, wem sie gehören. Der Inhaber bekommt eine E-Mail und kann es zurücknehmen.",
-        "addAccount": "Konto hinzufügen",
         "signInAgain": "Erneut anmelden",
-        "connectPlan": "Weiteres Abo verbinden",
-        "keyLabel": "API-Schlüssel",
-        "fallbackTitle": "Wenn {{computer}} nicht mehr antwortet, über die API antworten",
-        "fallbackHint": "Die Antwort kommt dann über die API und zählt zum Budget von {{name}}. Sonst sagt {{name}} der Person, die gefragt hat, Bescheid und wartet, bis der Computer zurück ist.",
         "effort": "Aufwand",
         "efforts": {
           "auto": "Automatisch",
           "low": "Niedrig",
           "medium": "Mittel",
           "high": "Hoch",
+          "xhigh": "Sehr hoch",
           "max": "Maximal"
         },
         "effortsLower": {
@@ -4388,6 +4390,7 @@
           "low": "niedrig",
           "medium": "mittel",
           "high": "hoch",
+          "xhigh": "sehr hoch",
           "max": "maximal"
         },
         "effortText": {
@@ -4395,6 +4398,7 @@
           "low": "Antwortet schnell. Gut für einfache Fragen.",
           "medium": "Der Standard. Denkt meistens genug nach.",
           "high": "Denkt bei schweren Aufgaben mehr nach. Langsamer und teurer.",
+          "xhigh": "Denkt bei langen, schweren Aufgaben viel mehr nach. Langsamer und teurer.",
           "max": "Denkt so viel wie möglich nach. Viel langsamer und teurer."
         },
         "speed": "Geschwindigkeit",
@@ -4417,41 +4421,19 @@
         },
         "advanced": {
           "title": "Erweiterte Einstellungen",
-          "sub": "{{brain}}. Gilt für jede Unterhaltung.",
-          "think": "Wie er denkt",
-          "answers": "Wem er antwortet",
           "defaults": "Auf Standard zurücksetzen",
-          "done": "Fertig",
-          "contents": {
-            "model": "Kontextfenster",
-            "auto": "Kontextfenster und wem er antwortet",
-            "fixed": "Aufwand, Kontextfenster und wem er antwortet",
-            "autoSpeed": "Geschwindigkeit, Kontextfenster und wem er antwortet",
-            "fixedSpeed": "Aufwand, Geschwindigkeit, Kontextfenster und wem er antwortet"
-          },
           "allDefault": "Alles Standard",
           "effort": "Aufwand: {{level}}",
           "speed": "Geschwindigkeit: schnell",
-          "context": "Kontext: {{size}}",
-          "sharing": "Antwortet anderen Personen",
-          "waits": "Wartet auf den Computer"
+          "context": "Kontext: {{size}}"
         },
         "copy": {
-          "row": "Für andere Agenten verwenden",
-          "rowLine": "Dieselbe KI, dasselbe Modell, derselbe Aufwand und dieselbe Autonomie",
-          "title": "Für andere Agenten verwenden",
-          "sub": "Sie denken dann mit {{setup}}.",
-          "all": "Alle",
-          "allLine_one": "{{count}} Agent kann es übernehmen",
-          "allLine_other": "{{count}} Agenten können es übernehmen",
-          "none": "Gerade kann kein anderer Agent es übernehmen.",
           "now": "Jetzt: {{brain}}",
           "same": "Denkt schon so",
           "keeps": "Behält {{account}}",
           "keepsOwn": "Behält das Konto seines Computers",
           "autonomy": "Autonomie: {{from}} → {{to}}",
           "withAutonomy": "Autonomie übernehmen",
-          "withAutonomyLine": "{{value}}, wie bei diesem Agenten. Aus: Jeder behält seine eigene.",
           "reasons": {
             "not_allowed": "Nur Admins und {{owner}} können es ändern",
             "not_allowedNobody": "Nur Admins können es ändern",
@@ -4464,15 +4446,6 @@
             "model_missing": "{{plan}} hat kein {{model}}",
             "failed": "Konnte es gerade nicht ändern"
           },
-          "search": "Agent suchen",
-          "noMatch": "Kein Agent namens „{{q}}“",
-          "pick": "Agenten wählen",
-          "use_one": "Für {{count}} Agenten verwenden",
-          "use_other": "Für {{count}} Agenten verwenden",
-          "done_one": "{{count}} Agent denkt jetzt mit {{setup}}.",
-          "done_other": "{{count}} Agenten denken jetzt mit {{setup}}.",
-          "autonomyOnly_one": "Bei {{count}} Agenten wurde nur die Autonomie geändert.",
-          "autonomyOnly_other": "Bei {{count}} Agenten wurde nur die Autonomie geändert.",
           "missed_one": "{{count}} Agent wurde nicht geändert.",
           "missed_other": "{{count}} Agenten wurden nicht geändert."
         },
@@ -4535,10 +4508,8 @@
             "opencode": "Dieser OpenCode-Schlüssel ist schon als {{account}} verbunden."
           },
           "startFailed": "Keine Antwort von {{computer}}. Versuch es gleich noch einmal.",
-          "sendFailed": "Der Code konnte nicht gesendet werden. Prüf ihn und versuch es noch einmal.",
-          "done": "Das Konto {{account}} ist auf {{computer}}. Klicke auf Verwenden, um zu speichern."
-        },
-        "offCloud": "{{computer}} antwortet nicht"
+          "sendFailed": "Der Code konnte nicht gesendet werden. Prüf ihn und versuch es noch einmal."
+        }
       },
       "computer": {
         "title": "Wo arbeitet {{name}}?",
@@ -8627,7 +8598,6 @@
       },
       "savedEveryone": "{{name}} antwortet jetzt anderen Personen.",
       "savedOwner": "{{name}} antwortet jetzt nur dir.",
-      "savedOwnerOf": "{{name}} antwortet jetzt nur {{owner}}.",
       "backOnApi": "{{name}} ist zurück auf der API und antwortet weiterhin nur dir.",
       "letEveryone": "{{name}} allen antworten lassen",
       "letPeople": "{{name}} anderen Personen antworten lassen",
@@ -12098,7 +12068,7 @@
       "takeOverNoAccess": "Tritt der Unterhaltung der Routine bei, bevor du sie übernimmst.",
       "agentNotInChannel": "Füg den Agent zuerst zur Unterhaltung hinzu.",
       "webhookPaused": "Schalte die Routine ein, um sie zu testen.",
-      "continueExtraOff": "Das Zeitfenster dieses Abos ist aufgebraucht, und die lange Arbeit dieses Agenten nutzt keine bezahlte Zusatznutzung. Schalte sie in seinen KI-Einstellungen ein, um jetzt weiterzumachen, sonst geht es nach dem Zurücksetzen weiter.",
+      "continueExtraOff": "Das Zeitfenster dieses Abos ist aufgebraucht, und die lange Arbeit dieses Agenten nutzt nicht die bezahlte Zusatznutzung des Abos. Es geht nach dem Zurücksetzen weiter.",
       "continueExtraUsedUp": "Das Zeitfenster dieses Abos ist aufgebraucht, und seine bezahlte Zusatznutzung ist aufgebraucht oder nicht verfügbar. Es geht nach dem Zurücksetzen weiter.",
       "actionsNeedApprover": "Nur der Inhaber des Agenten oder wer seine Aktionen genehmigt, kann eine Routine selbstständig handeln lassen.",
       "editorOnly": "Nur wer die Routine erstellt hat, der Inhaber des Agenten oder ein Admin kann sie ändern.",

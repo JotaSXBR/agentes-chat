@@ -311,11 +311,14 @@
     height: auto;
     min-height: 76px;
   }
+  /* Beside the name the face sits whole in the middle of its scene, never cut by the card's edge. */
   .newag__pv-cover .newag__pv-agent,
   .newag__pv[data-big] .newag__pv-agent {
-    bottom: -7px;
+    top: 50%;
+    bottom: auto;
     width: 46px;
     height: 46px;
+    transform: translate(-50%, -50%);
   }
   .newag__pv-body {
     flex: 1;

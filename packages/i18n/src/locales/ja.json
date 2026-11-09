@@ -2223,6 +2223,36 @@
     "receipt": "誰も返信しません: AIが接続されていません",
     "chip": "AIなし"
   },
+  "aiSelect": {
+    "placeholder": "AIを選択",
+    "groupOthers": "他の人のプラン",
+    "groupKeys": "APIキー",
+    "connect": "別のAIを接続",
+    "connectLine": "別のアカウント、プラン、またはAPIキー",
+    "ownOn": "{{computer}}でログイン済み",
+    "keyRefused": "キーが拒否されました",
+    "unknown": "ログインを確認できていません",
+    "inUse": "{{agents}}が使用中",
+    "keyDefault": "ワークスペースのデフォルト · 末尾{{hint}}",
+    "serverKey": "このサーバーのClaudeキー",
+    "serverKeyLine": "サーバーで設定済み",
+    "signedOut": "{{label}}はログアウトしています。{{name}}が使えるように、もう一度ログインしてください。",
+    "limited": "このアカウントでは、{{name}}は{{when}}にまた返信します。",
+    "limitedUnknown": "このアカウントでは、{{name}}はプランの更新後にまた返信します。",
+    "move": "{{agent}}はこのアカウントで考えなくなります。",
+    "moveTo": "{{name}}に移動",
+    "lent": "{{owner}}さんにメールが届き、取り戻すこともできます。",
+    "useLent": "{{owner}}さんのプランを使う",
+    "signInAgain": "{{label}}にもう一度ログイン",
+    "for": "{{names}}用",
+    "plans": "あなたのAIプラン",
+    "endpointLine": "自分のゲートウェイまたはサーバー",
+    "keyLocked": "追加できるのは管理者だけです",
+    "preparing": "コンピューターを準備中",
+    "geminiTiers": "Google AI Pro、Ultra、またはEnterprise",
+    "cursorTiers": "Pro、Pro+、Ultra、またはTeams",
+    "undo": "元に戻す"
+  },
   "connectAi": {
     "title": {
       "any": "AIを接続",
@@ -2235,22 +2265,10 @@
       "api_key": "APIキーを追加"
     },
     "titleFor": "{{name}}のAIを接続",
-    "have": {
-      "title": "接続済み",
-      "titleFor": "接続済み（{{name}}用）",
-      "other": "または別のものを接続",
-      "manageKeys": "キーを管理または削除"
-    },
     "billing": "プランはワークスペースのコンピューターにサインインします。そのコンピューターには有効なagentes.chatプランが必要です。",
     "billingWeb": "Webのagentes.chatで選んでください。",
     "orPayGo": "または従量課金で",
-    "pay": {
-      "label": "支払い方法は？",
-      "plan": "プランで",
-      "key": "APIキーで"
-    },
     "pick": {
-      "plan": "プラン",
       "placeholder": "プランを選ぶ",
       "search": "プロバイダーを検索",
       "searchPlaceholder": "プロバイダー名",
@@ -2323,9 +2341,7 @@
       "shared": "エージェントが共有するアカウント",
       "sharedLower": "エージェントが共有するアカウント",
       "free": "OpenCode の無料モデル",
-      "freeLower": "OpenCode の無料モデル",
-      "one": "{{name}}専用のアカウント",
-      "each": "それぞれ専用のアカウント"
+      "freeLower": "OpenCode の無料モデル"
     },
     "popup": {
       "title": "{{name}} に接続しています",
@@ -2347,14 +2363,11 @@
         "next": "待機中"
       }
     },
-    "for": "対象",
-    "all": "すべてのエージェント",
     "agentAria": "このプランを使うエージェント",
     "each": "同じアカウントで、エージェントごとにログインします。",
     "eachHint": "各エージェントが自分のログインを持ちます。プランの上限はみんなで共有します。",
     "once": "全員まとめて1回ログインします。",
     "onceHint": "プランの上限はみんなで共有します。",
-    "use": "{{label}}を使う",
     "another": "別のアカウント",
     "reuse": {
       "active": "{{label}}はすでにここにあります。もう一度ログインするか、別のアカウントを使ってください。",
@@ -4156,7 +4169,6 @@
         "label_female": "働き方",
         "computer": "作業場所",
         "brain": "考えるAI",
-        "brainWith": "{{plan}}で考える",
         "browser": "ブラウザ",
         "effort": "思考レベル: {{level}}"
       },
@@ -4192,13 +4204,7 @@
         "sub": "{{name}}のすべての会話にだけ適用されます。",
         "model": "APIキー",
         "modelText": "使った分だけ支払います。{{name}}の予算から差し引かれます。",
-        "planText": "あなたの{{plan}}プランを使います",
-        "planTextOf": "{{owner}}の{{plan}}プランを使います",
-        "moves": "{{computer}}に移動します",
-        "off": "{{computer}}はオフラインです",
-        "none": "このAIを持つコンピューターはありません",
         "planModel": "モデル",
-        "account": "アカウント",
         "accountWho": "{{name}}の担当者である{{owner}}さんのアカウントだけです。プランはその持ち主のエージェントのためにだけ考えます。",
         "accountSignedOut": "ログアウトされています。もう一度ログインしてください",
         "accountUnknown": "ログインを確認できていません。まもなくもう一度確認します",
@@ -4207,18 +4213,14 @@
         "accountAlso": "{{agents}}も使用中",
         "accountOf": "{{name}}のもの",
         "accountOthers": "他の人のプランには持ち主の名前が表示されます。持ち主にはメールが届き、取り戻すこともできます。",
-        "addAccount": "アカウントを追加",
         "signInAgain": "もう一度ログイン",
-        "connectPlan": "別のプランを接続",
-        "keyLabel": "APIキー",
-        "fallbackTitle": "{{computer}}が応答しなくなったら、API経由で返信する",
-        "fallbackHint": "API経由で返信し、{{name}}の予算から差し引かれます。オフにすると、{{name}}は依頼した人に知らせて、コンピューターが戻るのを待ちます。",
         "effort": "思考レベル",
         "efforts": {
           "auto": "自動",
           "low": "低",
           "medium": "中",
           "high": "高",
+          "xhigh": "超高",
           "max": "最大"
         },
         "effortsLower": {
@@ -4226,6 +4228,7 @@
           "low": "低",
           "medium": "中",
           "high": "高",
+          "xhigh": "超高",
           "max": "最大"
         },
         "effortText": {
@@ -4233,6 +4236,7 @@
           "low": "すばやく返信します。簡単な質問に向いています。",
           "medium": "デフォルトです。たいていは十分に考えます。",
           "high": "難しいタスクでより深く考えます。時間とコストがかかります。",
+          "xhigh": "長く難しいタスクでさらに深く考えます。時間とコストがかかります。",
           "max": "できる限り深く考えます。かなり時間とコストがかかります。"
         },
         "speed": "速度",
@@ -4255,40 +4259,19 @@
         },
         "advanced": {
           "title": "詳細設定",
-          "sub": "{{brain}}。すべての会話に適用されます。",
-          "think": "考え方",
-          "answers": "返信する相手",
           "defaults": "デフォルトに戻す",
-          "done": "完了",
-          "contents": {
-            "model": "コンテキストウィンドウ",
-            "auto": "コンテキストウィンドウと返信する相手",
-            "fixed": "思考レベル、コンテキストウィンドウ、返信する相手",
-            "autoSpeed": "速度、コンテキストウィンドウ、返信する相手",
-            "fixedSpeed": "思考レベル、速度、コンテキストウィンドウ、返信する相手"
-          },
           "allDefault": "すべてデフォルト",
           "effort": "思考レベル: {{level}}",
           "speed": "速度: 高速",
-          "context": "コンテキスト: {{size}}",
-          "sharing": "他の人にも返信します",
-          "waits": "コンピューターを待ちます"
+          "context": "コンテキスト: {{size}}"
         },
         "copy": {
-          "row": "他のエージェントにも使う",
-          "rowLine": "同じAI、モデル、思考レベル、自律性",
-          "title": "他のエージェントにも使う",
-          "sub": "{{setup}}で考えるようになります。",
-          "all": "すべて",
-          "allLine_other": "{{count}}体のエージェントに適用できます",
-          "none": "今は適用できるエージェントがほかにいません。",
           "now": "現在: {{brain}}",
           "same": "すでにこの設定です",
           "keeps": "{{account}}をそのまま使います",
           "keepsOwn": "自分のコンピューターのアカウントをそのまま使います",
           "autonomy": "自律性: {{from}} → {{to}}",
           "withAutonomy": "自律性も含める",
-          "withAutonomyLine": "このエージェントと同じ{{value}}にします。オフにすると、それぞれの設定のままです。",
           "reasons": {
             "not_allowed": "変更できるのは管理者と{{owner}}だけです",
             "not_allowedNobody": "変更できるのは管理者だけです",
@@ -4301,12 +4284,6 @@
             "model_missing": "{{plan}}には{{model}}がありません",
             "failed": "今は変更できませんでした"
           },
-          "search": "エージェントを検索",
-          "noMatch": "「{{q}}」という名前のエージェントはいません",
-          "pick": "エージェントを選択",
-          "use_other": "{{count}}体のエージェントに適用",
-          "done_other": "{{count}}体のエージェントが{{setup}}で考えるようになりました。",
-          "autonomyOnly_other": "{{count}}体のエージェントは自律性だけが変更されました。",
           "missed_other": "{{count}}体のエージェントは変更されませんでした。"
         },
         "add": {
@@ -4368,10 +4345,8 @@
             "opencode": "そのOpenCodeキーは{{account}}としてすでに接続されています。"
           },
           "startFailed": "{{computer}}から応答がありません。少し待ってからもう一度お試しください。",
-          "sendFailed": "コードを送信できませんでした。確認してもう一度お試しください。",
-          "done": "{{account}}アカウントが{{computer}}に追加されました。「使う」をクリックして保存してください。"
-        },
-        "offCloud": "{{computer}}が応答していません"
+          "sendFailed": "コードを送信できませんでした。確認してもう一度お試しください。"
+        }
       },
       "computer": {
         "title": "{{name}}はどこで作業しますか？",
@@ -8276,7 +8251,6 @@
       },
       "savedEveryone": "{{name}}は他の人にも返信するようになりました。",
       "savedOwner": "{{name}}はあなたにだけ返信するようになりました。",
-      "savedOwnerOf": "{{name}}は{{owner}}さんにだけ返信するようになりました。",
       "backOnApi": "{{name}}はAPIに戻りましたが、引き続きあなたにだけ返信します。",
       "letEveryone": "{{name}}が全員に返信できるようにする",
       "letPeople": "{{name}}が他の人にも返信できるようにする",
@@ -11623,7 +11597,7 @@
       "takeOverNoAccess": "引き継ぐ前に、ルーティンの会話に参加してください。",
       "agentNotInChannel": "先にエージェントを会話に追加してください。",
       "webhookPaused": "テストするにはルーティンをオンにしてください。",
-      "continueExtraOff": "このプランの利用枠を使い切りました。このエージェントの長い作業には有料の追加利用が使われません。今すぐ続けるにはAI設定で有効にしてください。有効にしない場合は、リセット後に再開します。",
+      "continueExtraOff": "このプランの利用枠を使い切りました。このエージェントの長い作業には、プランの有料の追加利用が使われません。リセット後に再開します。",
       "continueExtraUsedUp": "このプランの利用枠を使い切り、有料の追加利用も使い切ったか利用できません。リセット後に再開します。",
       "actionsNeedApprover": "ルーティンに自動で実行させられるのは、エージェントのオーナーか、そのアクションを承認する人だけです。",
       "editorOnly": "変更できるのは、ルーティンを作成した人、エージェントのオーナー、または管理者だけです。",

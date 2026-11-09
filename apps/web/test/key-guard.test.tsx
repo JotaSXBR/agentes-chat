@@ -65,7 +65,7 @@ describe("an API key in a message: nothing goes out until the person chooses", (
       provider: "anthropic",
     });
     expect(add.textContent).toContain("Salva. Todo agente sem plano pensa com ela.");
-    await click(within(add).getByRole("button", { name: "Pronto" }));
+    await click(within(add).getByRole("button", { name: "Fechar" }));
     expect(composer().value).toBe("minha chave");
     expect(posts(state)).toEqual([]);
   });

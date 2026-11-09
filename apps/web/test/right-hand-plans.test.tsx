@@ -5,7 +5,7 @@ setupDom();
 
 import type { Message } from "@agenteschat/client";
 import { act, cleanup, fireEvent, within } from "@testing-library/react";
-import { chooseAi, openAiSelect, payWith } from "./ai-picker";
+import { brainTitle, chooseAi, openAiSelect } from "./ai-picker";
 import { createFakeApi, fakeAgentBrain, LODI_ID, NOW, ORG_ID, seedDm, seedState, withRightHand } from "./fake-api";
 import { renderApp, screen, settle } from "./render";
 
@@ -53,9 +53,7 @@ test("its plan's computer away: one plain line in its DM, and Usar uma chave de 
   await settle(6);
   const dialog = screen().getByRole("dialog", { name: /Lodi/ });
   // Every plan, as for any agent: Codex's and Cursor's too (ADR 0137 §4, the owner's accepted risk).
-  await act(async () => fireEvent.click(payWith(dialog, "Com um plano")));
-  await settle(4);
-  const plans = (await openAiSelect(dialog)).map((o) => o.textContent);
+  const plans = (await openAiSelect(dialog)).map(brainTitle);
   expect(plans).toEqual(expect.arrayContaining(["Claude", "ChatGPT", "Cursor", "OpenCode"]));
 });
 

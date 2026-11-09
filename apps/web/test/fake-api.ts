@@ -2625,7 +2625,6 @@ export function createFakeHttpApi(state: FakeState): Omit<HttpApi, FakedParts> {
           brain,
           model,
           effectiveModel: brain === "model" ? null : (model ?? option?.defaultModel ?? null),
-          fallback: input.fallback ?? b.fallback,
           // ADR 0041: another brain kind starts on the computer's own account.
           account: input.account !== undefined ? input.account : changed ? null : b.account,
           effort: input.effort !== undefined ? input.effort : b.effort,
@@ -4037,8 +4036,6 @@ export function fakeAgentBrain(agentId: string, patch: Partial<AgentBrain> = {})
     brain: "model",
     model: null,
     effectiveModel: null,
-    fallback: true,
-    extraUsage: true,
     computer: { machineId: "machine_1", name: "MacBook", online: true },
     options: [
       { kind: "model", available: true, models: [], defaultModel: null },

@@ -6,7 +6,7 @@ setupDom();
 import type { AgentBrain, AiStatus, MachineAccount, MachineAccountKind, Message } from "@agenteschat/client";
 import { ApiError } from "@agenteschat/client";
 import { act, cleanup, fireEvent, within } from "@testing-library/react";
-import { aiSelect, chooseAi, closeAiSelect, openAiSelect, payWith } from "./ai-picker";
+import { aiSelect, brainTitle, chooseAi, chooseBrain, closeAiSelect, openAiSelect } from "./ai-picker";
 import { ADA_ID, ATLAS_ID, createFakeApi, ENG_ID, fakeMachinesOf, NOW, ORG_ID, seedState } from "./fake-api";
 import { hintOf, shownText } from "./hint";
 import { renderApp, screen, settle } from "./render";
@@ -125,12 +125,14 @@ describe("no AI connected: above the composer", () => {
     );
     await click(within(shown as HTMLElement).getByRole("button", { name: "Conectar uma IA" }), 6);
     const first = dialog("Conectar uma IA") as HTMLElement;
-    expect((await openAiSelect(first)).map((o) => o.textContent)).toEqual(
+    const providers = await openAiSelect(first);
+    expect(providers.map(brainTitle)).toEqual(
       expect.arrayContaining(["Claude", "ChatGPT", "GLM Coding", "Kimi Code", "MiniMax", "OpenCode Go"]),
     );
+    // The keys to pay as you go in the same list.
+    expect(providers.some((o) => o.closest('[role="group"]')?.textContent?.startsWith("Ou pague pelo uso"))).toBe(true);
     await closeAiSelect();
-    expect(payWith(first, "Com chave de API")).toBeTruthy();
-    expect(aiSelect(first).textContent).toBe("Claude");
+    expect(aiSelect(first).textContent).toContain("Claude");
     // Ada is Walter's and has no AI: the plan is for her (Atlas isn't his), on the MacBook he connected.
     const panel = within(first).getByRole("region", { name: "Seu plano do Claude" });
     expect(within(panel).queryByRole("combobox", { name: "Agentes que usam este plano" })).toBeNull();
@@ -177,7 +179,6 @@ describe("no AI connected: above the composer", () => {
     await open(seedState({ aiStatus: aiStatus(false, ADA_ID, ATLAS_ID) }));
     await click(within(banner() as HTMLElement).getByRole("button", { name: "Conectar uma IA" }));
     const first = dialog("Conectar uma IA") as HTMLElement;
-    expect(payWith(first, "Com chave de API").getAttribute("aria-checked")).toBe("true");
     expect(within(first).getByRole("region", { name: "Chave de API" })).toBeTruthy();
     // Every option stays in view, never locked: with no computer yet, the plan's panel offers connecting one.
     await chooseAi(first, "Claude");
@@ -241,7 +242,7 @@ describe("no AI connected: above the composer", () => {
     // No agent to move onto it: the account waits for the agents they create.
     expect(calls(state, "agents.setBrain")).toEqual([]);
     expect(box.textContent).toContain("Claude está conectado. Os agentes que você criar pensam com ele.");
-    await click(within(box).getByRole("button", { name: "Pronto" }));
+    await click(within(box).getByRole("button", { name: "Fechar" }));
     expect(dialog("Conectar uma IA")).toBeNull();
   });
 
@@ -294,7 +295,7 @@ describe("no AI connected: above the composer", () => {
     const panel = within(box).getByRole("region", { name: "Seu plano do Claude" });
     expect(panel.textContent).toContain("Claude está conectado. Os agentes que você criar pensam com ele.");
     expect(within(panel).queryByRole("button", { name: "Entrar com Claude" })).toBeNull();
-    await click(within(box).getByRole("button", { name: "Pronto" }));
+    await click(within(box).getByRole("button", { name: "Fechar" }));
     expect(dialog("Conectar uma IA")).toBeNull();
     expect(calls(state, "machines.beginAccountLogin")).toEqual([]);
   });
@@ -405,8 +406,7 @@ describe("the agent's no-AI card", () => {
     await click(within(row).getByRole("button", { name: "Conectar" }));
     const add = dialog("Conectar uma IA para a Ada") as HTMLElement;
     // The key, on the maker the message named.
-    expect(payWith(add, "Com chave de API").getAttribute("aria-checked")).toBe("true");
-    expect(aiSelect(add, "Provedor").textContent).toBe("OpenAI");
+    expect(aiSelect(add).textContent).toContain("OpenAI");
     expect(within(add).getByRole("link", { name: "Abrir platform.openai.com" }).getAttribute("href")).toBe(
       "https://platform.openai.com/api-keys",
     );
@@ -613,7 +613,7 @@ describe("the agent's no-AI card", () => {
     );
     expect(panel.textContent?.split("pronto")).toHaveLength(2);
     expect((within(panel).getByRole("button", { name: "Entrar com Claude" }) as HTMLButtonElement).disabled).toBe(true);
-    await click(payWith(plan, "Com chave de API"));
+    await chooseAi(plan, "Chave de API");
     expect(within(plan).getByRole("region", { name: "Chave de API" })).toBeTruthy();
   });
 
@@ -685,7 +685,7 @@ describe("the agent's no-AI card", () => {
   });
 });
 
-describe("Conectar uma IA for an agent with no AI: what the person already has, first", () => {
+describe("Conectar uma IA for an agent with no AI: one select of what the person has", () => {
   /** An account on Ada's computer, as her view lists it: Walter's, unless said otherwise. */
   const acct = (over: Partial<MachineAccount> & { id: string }): MachineAccount => ({
     kind: "claude_code",
@@ -707,7 +707,7 @@ describe("Conectar uma IA for an agent with no AI: what the person already has, 
     id: "acct_pessoal",
     label: "Claude Pessoal",
     plan: "max",
-    email: "walter@acme.com.br",
+    email: "walter@example.com",
     usedBy: ["Atlas"],
   });
   const plus = acct({
@@ -715,7 +715,7 @@ describe("Conectar uma IA for an agent with no AI: what the person already has, 
     kind: "codex",
     label: "ChatGPT Plus",
     plan: "plus",
-    email: "walt@gmail.com",
+    email: "walt@example.org",
     usedBy: ["Atlas"],
   });
 
@@ -737,8 +737,7 @@ describe("Conectar uma IA for an agent with no AI: what the person already has, 
     await renderApp(`/org/${ORG_ID}/c/${ENG_ID}`, { api });
     await settle(5);
     await click(within(cardRow()).getByRole("button", { name: "Conectar" }), 8);
-    const box = dialog("Conectar uma IA para a Ada") as HTMLElement;
-    return { api, box, picker: within(box).getByRole("group", { name: "Qual IA eles vão usar?" }) };
+    return { api, box: dialog("Conectar uma IA para a Ada") as HTMLElement };
   };
   /** "Entrar com Claude" in the dialog's Claude panel, its sign-in window stubbed. */
   const signInWithClaude = async (box: HTMLElement) => {
@@ -751,39 +750,50 @@ describe("Conectar uma IA for an agent with no AI: what the person already has, 
       window.open = realOpen;
     }
   };
+  /** The select's rows: each one's name and its line. */
+  const rowsOf = async (box: HTMLElement) => {
+    const rows = (await openAiSelect(box, "Quem pensa")).map((o) => ({
+      title: brainTitle(o),
+      line: o.querySelector(".ac-menu__desc")?.textContent ?? "",
+      disabled: o.getAttribute("aria-disabled") === "true",
+    }));
+    await closeAiSelect();
+    return rows;
+  };
+  /** The one button of the note under the select. */
+  const noteButton = (box: HTMLElement) =>
+    box.querySelector(".ai-form > .agp-acct + .ac-setnote button") as HTMLButtonElement;
 
-  test("the free account first, then those other agents use and the workspace's key, then the plans; one click and she thinks with it, no sign-in", async () => {
+  test("her plans with their email, those other agents use, the workspace's key, then Conectar outra IA; one pick and she thinks with it", async () => {
     const state = walters(withCard(), ADA_ID);
-    const { box, picker } = await connectAda(state, { accounts: [pessoal, plus, team] });
-    expect(picker.firstElementChild?.textContent).toBe("Já conectadas");
-    const rows = [...picker.querySelectorAll(":scope > .ac-option")].map((o) => shownText(o));
-    expect(rows.slice(0, 5)).toEqual([
-      "Claude Teamteam@example.com",
-      "Claude Pessoal · MaxTambém usada por Atlas",
-      "ChatGPT PlusTambém usada por Atlas",
-      "Claude da AcmeClaude · termina em 7f2aPago por uso. Conta no orçamento da Ada.",
+    const { box } = await connectAda(state, { accounts: [pessoal, plus, team] });
+    expect((await rowsOf(box)).map((r) => [r.title, r.line])).toEqual([
+      ["Claude Pessoal · Max", "walter@example.com · Também usada por Atlas"],
+      ["Claude Team", "team@example.com"],
+      ["ChatGPT Plus", "walt@example.org · Também usada por Atlas"],
+      ["Claude da Acme", "Padrão do workspace · termina em 7f2a"],
+      ["Conectar outra IA", "Outra conta, plano ou chave de API"],
     ]);
-    expect(within(picker).getByText("Ou conecte outra")).toBeTruthy();
-    await click(within(picker).getByRole("button", { name: /^Claude Team/ }), 8);
+    await chooseBrain(box, /^Claude Team/);
+    await settle(6);
     expect(calls(state, "agents.setBrain").map((c) => c.args)).toEqual([
       [ORG_ID, ADA_ID, { brain: "claude_code", account: "acct_team" }],
     ]);
     expect(calls(state, "machines.beginAccountLogin")).toHaveLength(0);
-    expect(box.textContent).toContain("Ada agora pensa com Claude Team.");
+    expect(document.body.textContent).toContain("A Ada agora pensa com Claude Team e só atende você.");
     // On his plan she answers only him until he lets everyone in (ADR 0059 §5).
     expect(within(box).getByRole("switch", { name: "Atende outras pessoas" }).getAttribute("aria-checked")).toBe(
       "false",
     );
     expect(calls(state, "chat.answerNow").map((c) => c.args)).toEqual([[ORG_ID, "m-noai"]]);
-    await click(within(box).getByRole("button", { name: "Pronto" }));
-    expect(dialog("Conectar uma IA para a Ada")).toBeNull();
   });
 
-  test("Só algumas pessoas with nobody picked: Atende outras pessoas lets nobody in, so it goes back off and says why", async () => {
+  test("Só algumas pessoas with nobody picked: Atende outras pessoas lets nobody in, so it stays off and says why", async () => {
     const state = walters(withCard(), ADA_ID);
     for (const a of state.agents) if (a.id === ADA_ID) a.audience = { mode: "people", userIds: [] };
-    const { box, picker } = await connectAda(state, { accounts: [team] });
-    await click(within(picker).getByRole("button", { name: /^Claude Team/ }), 8);
+    const { box } = await connectAda(state, { accounts: [team] });
+    await chooseBrain(box, /^Claude Team/);
+    await settle(6);
     const replies = () => within(box).getByRole("switch", { name: "Atende outras pessoas" });
     await click(replies(), 6);
     expect(calls(state, "agents.setBrain").at(-1)?.args).toEqual([ORG_ID, ADA_ID, { onlyOwner: false }]);
@@ -793,59 +803,40 @@ describe("Conectar uma IA for an agent with no AI: what the person already has, 
     );
   });
 
-  test("an account another agent thinks with: used here too, a sign-in of that account for her, its email Claude's hint", async () => {
+  test("an account another agent thinks with: the note's one button signs that account in for her, its email Claude's hint", async () => {
     const state = walters(withCard(), ADA_ID);
-    const { box, picker } = await connectAda(state, { accounts: [pessoal] });
-    const also = within(picker).getByRole("button", { name: /^Claude Pessoal/ });
-    await click(also);
-    expect(also.getAttribute("aria-pressed")).toBe("true");
+    const { box } = await connectAda(state, { accounts: [pessoal] });
+    await chooseBrain(box, /^Claude Pessoal/);
     expect(calls(state, "agents.setBrain")).toHaveLength(0);
-    // Its plan's panel right under it, nothing chosen in the select: nothing comes between a row and its steps.
-    expect(aiSelect(box).textContent).toBe("Escolha um plano");
-    expect(also.nextElementSibling?.getAttribute("aria-label")).toBe("Seu plano do Claude");
+    expect(noteButton(box).textContent).toBe("Fazer login para a Ada");
+    await click(noteButton(box));
     await signInWithClaude(box);
     expect(calls(state, "machines.beginAccountLogin").map((c) => c.args)).toEqual([
-      [ORG_ID, "machine_1", "claude_code", { email: "walter@acme.com.br" }],
+      [ORG_ID, "machine_1", "claude_code", { email: "walter@example.com" }],
     ]);
   });
 
-  test("a row's sign-in is that sign-in, even with an account of the plan there for all of her owner's agents", async () => {
+  test("that sign-in is that account's, even with an account of the plan there for all of her owner's agents", async () => {
     const state = walters(withCard(), ADA_ID);
     const forAll = acct({ id: "acct_all", label: "Claude Max", plan: "max", shared: true, usedBy: ["Atlas"] });
-    const { box, picker } = await connectAda(state, { accounts: [pessoal, forAll] });
-    await click(within(picker).getByRole("button", { name: /^Claude Pessoal/ }));
+    const { box } = await connectAda(state, { accounts: [pessoal, forAll] });
+    await chooseBrain(box, /^Claude Pessoal/);
+    await click(noteButton(box));
     const panel = within(box).getByRole("region", { name: "Seu plano do Claude" });
     expect(within(panel).queryByRole("button", { name: /^Usar Claude Max/ })).toBeNull();
-    expect(within(panel).queryByRole("button", { name: "Outra conta" })).toBeNull();
     await signInWithClaude(box);
     expect(calls(state, "machines.beginAccountLogin").map((c) => c.args)).toEqual([
-      [ORG_ID, "machine_1", "claude_code", { email: "walter@acme.com.br" }],
+      [ORG_ID, "machine_1", "claude_code", { email: "walter@example.com" }],
     ]);
   });
 
-  test("its computer off: the row's panel says so, and Usar uma chave de API agora opens the key under its own row", async () => {
-    const state = walters(withCard(), ADA_ID);
-    const { box, picker } = await connectAda(state, {
-      accounts: [pessoal],
-      computer: { machineId: "machine_1", name: "MacBook", online: false },
-    });
-    const also = within(picker).getByRole("button", { name: /^Claude Pessoal/ });
-    await click(also);
-    await click(within(box).getByRole("button", { name: "Usar uma chave de API agora" }));
-    expect(also.getAttribute("aria-pressed")).toBe("false");
-    expect(payWith(box, "Com chave de API").getAttribute("aria-checked")).toBe("true");
-    expect(aiSelect(box, "Provedor").closest(".ac-select")?.nextElementSibling?.getAttribute("aria-label")).toBe(
-      "Chave de API",
-    );
-  });
-
-  test("a free login signed out, signed in again under its row: once she thinks with it, it leaves the list and the panel stays, saying so", async () => {
+  test("a free login signed out: Entrar de novo signs that login in again, and she thinks with it", async () => {
     const state = walters(withCard(), ADA_ID);
     const out = acct({ id: "acct_out", label: "Claude 08", email: "it@example.org", status: "signed_out" });
-    const { api, box, picker } = await connectAda(state, { accounts: [out] });
-    const row = within(picker).getByRole("button", { name: /^Claude 08/ });
-    await click(row);
-    expect(row.nextElementSibling?.getAttribute("aria-label")).toBe("Seu plano do Claude");
+    const { api, box } = await connectAda(state, { accounts: [out] });
+    await chooseBrain(box, /^Claude 08/);
+    expect(noteButton(box).textContent).toBe("Entrar de novo");
+    await click(noteButton(box));
     fakeMachinesOf.get(api)?.endLogin("login_1", { state: "done", account: { ...out, status: "active" } });
     await signInWithClaude(box);
     expect(calls(state, "machines.beginAccountLogin").map((c) => c.args)).toEqual([
@@ -854,54 +845,55 @@ describe("Conectar uma IA for an agent with no AI: what the person already has, 
     expect(calls(state, "agents.setBrain").map((c) => c.args)).toEqual([
       [ORG_ID, ADA_ID, { brain: "claude_code", account: "acct_out" }],
     ]);
-    expect(within(picker).queryByRole("button", { name: /^Claude 08/ })).toBeNull();
-    expect(within(box).getByRole("region", { name: "Seu plano do Claude" }).textContent).toContain(
-      "Ada agora pensa com Claude 08.",
-    );
   });
 
-  test("on Claude Code with no sign-in left she has no AI either: the list shows, the free account hers in one click", async () => {
+  test("on Claude Code with no sign-in left she has no AI either: the free account hers in one pick", async () => {
     const state = onClaudeCode(walters(withCard(), ADA_ID));
-    const { box, picker } = await connectAda(state, { brain: "claude_code", accounts: [team] });
-    expect(picker.firstElementChild?.textContent).toBe("Já conectadas");
-    await click(within(picker).getByRole("button", { name: /^Claude Team/ }), 8);
+    const { box } = await connectAda(state, { brain: "claude_code", accounts: [team] });
+    await chooseBrain(box, /^Claude Team/);
+    await settle(6);
     expect(calls(state, "agents.setBrain").map((c) => c.args)).toEqual([
       [ORG_ID, ADA_ID, { brain: "claude_code", account: "acct_team" }],
     ]);
     expect(calls(state, "machines.beginAccountLogin")).toHaveLength(0);
-    expect(box.textContent).toContain("Ada agora pensa com Claude Team.");
   });
 
-  test("the workspace's API key: one click and she thinks with it on the workspace's model, the budget line under it", async () => {
+  test("the workspace's API key: one pick and she thinks with it on the workspace's model, what it costs under it", async () => {
     const state = onClaudeCode(walters(withCard(), ADA_ID));
-    const { box, picker } = await connectAda(state, { brain: "claude_code" });
-    const key = within(picker).getByRole("button", { name: /^Claude da Acme/ });
-    expect(shownText(key)).toBe("Claude da AcmeClaude · termina em 7f2aPago por uso. Conta no orçamento da Ada.");
-    await click(key, 8);
+    const { box } = await connectAda(state, { brain: "claude_code" });
+    await chooseBrain(box, /^Claude da Acme/);
+    await settle(6);
     expect(calls(state, "agents.setBrain").map((c) => c.args)).toEqual([[ORG_ID, ADA_ID, { brain: "model" }]]);
     // Her model runs on that key: it stays.
-    expect(calls(state, "agents.update").map((c) => c.args)).toEqual([[ORG_ID, ADA_ID, { credentialId: "cred-1" }]]);
-    expect(box.textContent).toContain("Ada agora pensa com Claude da Acme.");
-    expect(within(box).queryByRole("switch", { name: "Atende outras pessoas" })).toBeNull();
+    expect(calls(state, "agents.update").map((c) => c.args)).toEqual([[ORG_ID, ADA_ID, { credentialId: null }]]);
+    expect(document.body.textContent).toContain("A Ada agora pensa com Claude da Acme.");
   });
 
-  test("a stored key out of credit: the provider's reason and the page that fixes it, and she doesn't move to it", async () => {
+  test("a stored key out of credit: the provider's reason, and she doesn't move to it", async () => {
     const state = onClaudeCode(walters(withCard(), ADA_ID));
-    const { api, box, picker } = await connectAda(state, { brain: "claude_code" });
+    state.credentials.push({
+      id: "cred-2",
+      provider: "anthropic",
+      label: "Claude reserva",
+      keyHint: "9b1c",
+      createdAt: new Date().toISOString(),
+      revokedAt: null,
+    });
+    const { api, box } = await connectAda(state, { brain: "claude_code" });
     api.agents.checkCredential = async () => {
       throw new ApiError(400, "provider_key_no_credit", "refused", {
         provider: "Claude",
         said: "Your credit balance is too low",
       });
     };
-    await click(within(picker).getByRole("button", { name: /^Claude da Acme/ }), 8);
-    expect(box.textContent).toContain("Your credit balance is too low");
-    expect(within(box).getByRole("link", { name: "platform.claude.com" })).toBeTruthy();
+    await chooseBrain(box, /^Claude reserva/);
+    await settle(6);
+    expect(document.body.textContent).toContain("Your credit balance is too low");
     expect(calls(state, "agents.update")).toHaveLength(0);
-    expect(box.textContent).not.toContain("agora pensa com");
+    expect(document.body.textContent).not.toContain("agora pensa com");
   });
 
-  test("someone else's agent: its owner's account shows, locked, his alone to pick; an admin may still give her a key", async () => {
+  test("someone else's agent: an admin picks among its owner's accounts, said whose, or gives her a key", async () => {
     const joao = acct({
       id: "acct_joao",
       label: "Claude Max",
@@ -912,21 +904,19 @@ describe("Conectar uma IA for an agent with no AI: what the person already has, 
     });
     // Ada is João's; Walter owns the workspace.
     const state = withCard();
-    const { box, picker } = await connectAda(state, { accounts: [joao], canUsePlans: false, canManageAccounts: false });
-    const locked = within(picker).getByRole("button", { name: /^Claude Max/ }) as HTMLButtonElement;
-    expect(shownText(locked)).toBe("Claude MaxDe João");
-    expect(locked.disabled).toBe(true);
-    await click(locked);
-    expect(calls(state, "agents.setBrain")).toHaveLength(0);
-    expect(within(picker).getByRole("button", { name: /^Claude da Acme/ })).toBeTruthy();
-    // A plan for her is João's to connect, as his account is his to pick.
-    await chooseAi(box, "Claude");
-    expect(box.textContent).toContain(
-      "Quem conecta a IA de Ada: um admin, com uma chave de API, ou João, com o próprio plano.",
-    );
+    const { box } = await connectAda(state, { accounts: [joao], canUsePlans: false, canManageAccounts: false });
+    const rows = await rowsOf(box);
+    expect(rows.find((r) => r.title === "Claude Max")).toMatchObject({ disabled: false });
+    expect(rows.find((r) => r.title === "Claude Max")?.line).toContain("De João");
+    expect(rows.some((r) => r.title === "Claude da Acme")).toBe(true);
+    await chooseBrain(box, /^Claude Max/);
+    await settle(6);
+    expect(calls(state, "agents.setBrain").map((c) => c.args)).toEqual([
+      [ORG_ID, ADA_ID, { brain: "claude_code", account: "acct_joao" }],
+    ]);
   });
 
-  test("who may use other people's plans picks a teammate's in one click; one another agent has stays locked", async () => {
+  test("who may use other people's plans gives her a teammate's after the note's one button; one another agent has stays off", async () => {
     const bia = acct({
       id: "acct_bia",
       label: "Claude Max",
@@ -945,24 +935,21 @@ describe("Conectar uma IA for an agent with no AI: what the person already has, 
       usedBy: ["Atlas"],
     });
     const state = withCard();
-    const { box, picker } = await connectAda(state, {
+    const { box } = await connectAda(state, {
       accounts: [bia, busy],
       canUsePlans: false,
       canManageAccounts: false,
       canUseOthersPlans: true,
     });
-    const theirs = within(picker).getByRole("button", { name: /^Claude Max/ }) as HTMLButtonElement;
-    expect(shownText(theirs)).toBe("Claude MaxDe Bia");
-    expect(theirs.disabled).toBe(false);
-    expect((within(picker).getByRole("button", { name: /^Claude Pro/ }) as HTMLButtonElement).disabled).toBe(true);
-    expect(picker.textContent).toContain(
-      "Os planos de outras pessoas mostram de quem são. O dono recebe um e-mail e pode tirar de volta.",
-    );
-    await click(theirs, 8);
+    const rows = await rowsOf(box);
+    expect(rows.find((r) => r.title === "Claude Pro")?.disabled).toBe(true);
+    await chooseBrain(box, /^Claude Max/);
+    expect(calls(state, "agents.setBrain")).toHaveLength(0);
+    expect(box.textContent).toContain("Bia recebe um e-mail e pode tirar de volta.");
+    await click(noteButton(box), 8);
     expect(calls(state, "agents.setBrain").map((c) => c.args)).toEqual([
       [ORG_ID, ADA_ID, { brain: "claude_code", account: "acct_bia" }],
     ]);
-    expect(box.textContent).toContain("Ada agora pensa com Claude Max.");
   });
 });
 
@@ -1141,7 +1128,7 @@ describe("the dialog opens by itself only when Jev is sure, for the author, once
     }
     await created("c-mine", { intent: "api_key", autoOpen: true });
     const key = dialog("Conectar uma IA para a Ada") as HTMLElement;
-    expect(payWith(key, "Com chave de API").getAttribute("aria-checked")).toBe("true");
+    expect(within(key).getByRole("region", { name: "Chave de API" })).toBeTruthy();
   });
 });
 

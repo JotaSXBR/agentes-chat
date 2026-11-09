@@ -2405,6 +2405,36 @@
     "receipt": "Nadie responderá: no hay una IA conectada",
     "chip": "Sin IA"
   },
+  "aiSelect": {
+    "placeholder": "Elige una IA",
+    "groupOthers": "Planes de otras personas",
+    "groupKeys": "Claves de API",
+    "connect": "Conectar otra IA",
+    "connectLine": "Otra cuenta, plan o clave de API",
+    "ownOn": "Sesión iniciada en {{computer}}",
+    "keyRefused": "Clave rechazada",
+    "unknown": "Inicio de sesión sin confirmar",
+    "inUse": "En uso por {{agents}}",
+    "keyDefault": "Predeterminada del espacio de trabajo · termina en {{hint}}",
+    "serverKey": "Clave de Claude de este servidor",
+    "serverKeyLine": "Definida en el servidor",
+    "signedOut": "{{label}} cerró sesión. Vuelve a iniciar sesión para que {{name}} la use.",
+    "limited": "Con esta cuenta, {{name}} vuelve a responder {{when}}.",
+    "limitedUnknown": "Con esta cuenta, {{name}} vuelve a responder cuando se renueve el plan.",
+    "move": "{{agent}} deja de pensar con ella.",
+    "moveTo": "Mover a {{name}}",
+    "lent": "{{owner}} recibe un correo y puede recuperarlo.",
+    "useLent": "Usar el plan de {{owner}}",
+    "signInAgain": "Volver a iniciar sesión en {{label}}",
+    "for": "Para {{names}}",
+    "plans": "Tu plan de IA",
+    "endpointLine": "Tu propio gateway o servidor",
+    "keyLocked": "Solo un admin puede agregar una",
+    "preparing": "Preparando la computadora",
+    "geminiTiers": "Google AI Pro, Ultra o Enterprise",
+    "cursorTiers": "Pro, Pro+, Ultra o Teams",
+    "undo": "Deshacer"
+  },
   "connectAi": {
     "title": {
       "any": "Conecta una IA",
@@ -2418,23 +2448,10 @@
     },
     "titleFor": "Conecta una IA para {{name}}",
     "titleFor_female": "Conecta una IA para {{name}}",
-    "have": {
-      "title": "Ya conectadas",
-      "titleFor": "Ya conectadas, para {{name}}",
-      "titleFor_female": "Ya conectadas, para {{name}}",
-      "other": "O conecta otra",
-      "manageKeys": "Gestionar o eliminar claves"
-    },
     "billing": "Un plan inicia sesión en el ordenador del workspace, y el ordenador viene con un plan activo de agentes.chat.",
     "billingWeb": "Elige uno en la web, en agentes.chat.",
     "orPayGo": "O paga por uso",
-    "pay": {
-      "label": "¿Cómo pagas?",
-      "plan": "Con un plan",
-      "key": "Con clave de API"
-    },
     "pick": {
-      "plan": "Plan",
       "placeholder": "Elige un plan",
       "search": "Buscar proveedores",
       "searchPlaceholder": "Nombre del proveedor",
@@ -2507,10 +2524,7 @@
       "shared": "La cuenta que comparten tus agentes",
       "sharedLower": "la cuenta que comparten tus agentes",
       "free": "Modelos gratis de OpenCode",
-      "freeLower": "los modelos gratis de OpenCode",
-      "one": "Una cuenta solo para {{name}}",
-      "one_female": "Una cuenta solo para {{name}}",
-      "each": "Una cuenta solo para ellos"
+      "freeLower": "los modelos gratis de OpenCode"
     },
     "popup": {
       "title": "Conectando {{name}}",
@@ -2532,14 +2546,11 @@
         "next": "En espera"
       }
     },
-    "for": "Para",
-    "all": "Todos los agentes",
     "agentAria": "Agentes que usan este plan",
     "each": "Un inicio de sesión por agente, con la misma cuenta.",
     "eachHint": "Cada agente mantiene su propio inicio de sesión. Todos comparten los límites de tu plan.",
     "once": "Un solo inicio de sesión para todos.",
     "onceHint": "Todos comparten los límites de tu plan.",
-    "use": "Usar {{label}}",
     "another": "Otra cuenta",
     "reuse": {
       "active": "Ya tienes {{label}} aquí. Vuelve a iniciar sesión en ella o usa otra cuenta.",
@@ -4448,7 +4459,6 @@
         "label_female": "Cómo trabaja",
         "computer": "Trabaja en",
         "brain": "Piensa con",
-        "brainWith": "Piensa con {{plan}}",
         "browser": "Navegador",
         "effort": "Esfuerzo {{level}}"
       },
@@ -4484,13 +4494,7 @@
         "sub": "Se aplica solo a {{name}}, en todas las conversaciones.",
         "model": "Clave de API",
         "modelText": "Se paga por uso. Cuenta para el presupuesto de {{name}}.",
-        "planText": "Usa tu plan de {{plan}}",
-        "planTextOf": "Usa el plan de {{plan}} de {{owner}}",
-        "moves": "Se mueve a {{computer}}",
-        "off": "{{computer}} está desconectada",
-        "none": "Ninguna computadora lo tiene",
         "planModel": "Modelo",
-        "account": "Cuenta",
         "accountWho": "Solo cuentas de {{owner}}, responsable de {{name}}: un plan solo piensa para los agentes de su dueño.",
         "accountSignedOut": "Sesión cerrada, vuelve a iniciar sesión",
         "accountUnknown": "Inicio de sesión sin confirmar, se vuelve a comprobar pronto",
@@ -4499,18 +4503,14 @@
         "accountAlso": "También la usa {{agents}}",
         "accountOf": "De {{name}}",
         "accountOthers": "Los planes de otras personas muestran de quién son. Su dueño recibe un correo y puede recuperarlo.",
-        "addAccount": "Agregar cuenta",
         "signInAgain": "Volver a iniciar sesión",
-        "connectPlan": "Conectar otro plan",
-        "keyLabel": "Clave de API",
-        "fallbackTitle": "Si {{computer}} deja de responder, responder a través de la API",
-        "fallbackHint": "Responde a través de la API y cuenta para el presupuesto de {{name}}. Si no, {{name}} le avisa a quien preguntó y espera a que la computadora vuelva.",
         "effort": "Esfuerzo",
         "efforts": {
           "auto": "Automático",
           "low": "Bajo",
           "medium": "Medio",
           "high": "Alto",
+          "xhigh": "Muy alto",
           "max": "Máximo"
         },
         "effortsLower": {
@@ -4518,6 +4518,7 @@
           "low": "bajo",
           "medium": "medio",
           "high": "alto",
+          "xhigh": "muy alto",
           "max": "máximo"
         },
         "effortText": {
@@ -4525,6 +4526,7 @@
           "low": "Responde rápido. Bueno para preguntas simples.",
           "medium": "El predeterminado. Piensa lo suficiente casi siempre.",
           "high": "Piensa más en las tareas difíciles. Más lento y más caro.",
+          "xhigh": "Piensa mucho más en las tareas largas y difíciles. Más lento y caro.",
           "max": "Piensa todo lo posible. Mucho más lento y caro."
         },
         "speed": "Velocidad",
@@ -4547,42 +4549,19 @@
         },
         "advanced": {
           "title": "Configuración avanzada",
-          "sub": "{{brain}}. Se aplica a todas las conversaciones.",
-          "think": "Cómo piensa",
-          "answers": "A quién responde",
           "defaults": "Volver a los valores predeterminados",
-          "done": "Listo",
-          "contents": {
-            "model": "Ventana de contexto",
-            "auto": "Ventana de contexto y a quién responde",
-            "fixed": "Esfuerzo, ventana de contexto y a quién responde",
-            "autoSpeed": "Velocidad, ventana de contexto y a quién responde",
-            "fixedSpeed": "Esfuerzo, velocidad, ventana de contexto y a quién responde"
-          },
           "allDefault": "Todo predeterminado",
           "effort": "Esfuerzo: {{level}}",
           "speed": "Velocidad: rápida",
-          "context": "Contexto: {{size}}",
-          "sharing": "Responde a otras personas",
-          "waits": "Espera a la computadora"
+          "context": "Contexto: {{size}}"
         },
         "copy": {
-          "row": "Usar en otros agentes",
-          "rowLine": "La misma IA, modelo, esfuerzo y autonomía",
-          "title": "Usar en otros agentes",
-          "sub": "Pensarán con {{setup}}.",
-          "all": "Todos",
-          "allLine_one": "{{count}} agente puede usarlo",
-          "allLine_many": "{{count}} agentes pueden usarlo",
-          "allLine_other": "{{count}} agentes pueden usarlo",
-          "none": "Ningún otro agente puede usarlo ahora.",
           "now": "Ahora: {{brain}}",
           "same": "Ya piensa así",
           "keeps": "Mantiene {{account}}",
           "keepsOwn": "Mantiene la cuenta de su computadora",
           "autonomy": "Autonomía: {{from}} → {{to}}",
           "withAutonomy": "Incluir la autonomía",
-          "withAutonomyLine": "{{value}}, como en este agente. Desactivado: cada uno mantiene la suya.",
           "reasons": {
             "not_allowed": "Solo los admins y {{owner}} lo cambian",
             "not_allowedNobody": "Solo los admins lo cambian",
@@ -4595,18 +4574,6 @@
             "model_missing": "{{plan}} no tiene {{model}}",
             "failed": "No se pudo cambiar ahora"
           },
-          "search": "Buscar un agente",
-          "noMatch": "Ningún agente se llama “{{q}}”",
-          "pick": "Elige los agentes",
-          "use_one": "Usar en {{count}} agente",
-          "use_many": "Usar en {{count}} agentes",
-          "use_other": "Usar en {{count}} agentes",
-          "done_one": "{{count}} agente ahora piensa con {{setup}}.",
-          "done_many": "{{count}} agentes ahora piensan con {{setup}}.",
-          "done_other": "{{count}} agentes ahora piensan con {{setup}}.",
-          "autonomyOnly_one": "{{count}} agente cambió solo su autonomía.",
-          "autonomyOnly_many": "{{count}} agentes cambiaron solo su autonomía.",
-          "autonomyOnly_other": "{{count}} agentes cambiaron solo su autonomía.",
           "missed_one": "{{count}} agente no cambió.",
           "missed_many": "{{count}} agentes no cambiaron.",
           "missed_other": "{{count}} agentes no cambiaron."
@@ -4670,10 +4637,8 @@
             "opencode": "Esa clave de OpenCode ya está conectada como {{account}}."
           },
           "startFailed": "{{computer}} no respondió. Inténtalo de nuevo en un momento.",
-          "sendFailed": "No se pudo enviar el código. Revísalo e inténtalo de nuevo.",
-          "done": "La cuenta {{account}} está en {{computer}}. Haz clic en Usar para guardar."
-        },
-        "offCloud": "{{computer}} no responde"
+          "sendFailed": "No se pudo enviar el código. Revísalo e inténtalo de nuevo."
+        }
       },
       "computer": {
         "title": "¿Dónde trabaja {{name}}?",
@@ -8897,7 +8862,6 @@
       },
       "savedEveryone": "Ahora {{name}} responde a otras personas.",
       "savedOwner": "{{name}} ahora responde solo a ti.",
-      "savedOwnerOf": "{{name}} ahora responde solo a {{owner}}.",
       "backOnApi": "{{name}} volvió a la API y sigue respondiendo solo a ti.",
       "letEveryone": "Dejar que {{name}} responda a todos",
       "letPeople": "Dejar que {{name}} responda a otras personas",
@@ -12465,7 +12429,7 @@
       "takeOverNoAccess": "Únete a la conversación de la rutina antes de hacerte cargo de ella.",
       "agentNotInChannel": "Primero agrega el agente a la conversación.",
       "webhookPaused": "Activa la rutina para probarla.",
-      "continueExtraOff": "La ventana de este plan se agotó y el trabajo largo de este agente no usa uso extra pagado. Actívalo en su configuración de IA para continuar ahora, o seguirá después del reinicio.",
+      "continueExtraOff": "La ventana de este plan se agotó y el trabajo largo de este agente no usa el uso extra pagado del plan. Seguirá después del reinicio.",
       "continueExtraUsedUp": "La ventana de este plan se agotó y su uso extra pagado se agotó o no está disponible. Seguirá después del reinicio.",
       "actionsNeedApprover": "Solo el dueño del agente o quien aprueba sus acciones puede dejar que una rutina actúe por su cuenta.",
       "editorOnly": "Solo quien creó la rutina, el dueño del agente o un admin puede cambiarla.",

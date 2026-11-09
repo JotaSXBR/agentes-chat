@@ -7,7 +7,7 @@ setupDom();
 
 import { act, cleanup, fireEvent, within } from "@testing-library/react";
 import i18next from "i18next";
-import { brainTitle, openAiSelect, payWith } from "./ai-picker";
+import { brainTitle, chooseAi, openAiSelect } from "./ai-picker";
 import { ADA_ID, createFakeApi, fakeMachinesOf, ORG_ID, seedState, withRightHand } from "./fake-api";
 import { shownText } from "./hint";
 import { renderApp, screen, settle } from "./render";
@@ -112,7 +112,7 @@ describe("a plan with no agentes.chat plan in force", () => {
     expect(shownText(dialog)).toContain(WHY);
     expect(buttonNamed(dialog, PAY)).not.toBeNull();
     expect(buttonNamed(dialog, KEY)).toBeNull();
-    expect(within(dialog).queryByRole("combobox", { name: "Plano" })).toBeNull();
+    expect(within(dialog).queryByRole("combobox", { name: "Conectar outra IA" })).toBeNull();
     expect(dialog.querySelector(".ai-picker")).toBeNull();
   });
 
@@ -142,7 +142,7 @@ describe("a plan with no agentes.chat plan in force", () => {
       expect(shownText(panel)).not.toContain("agentes.chat");
       expect(buttonNamed(panel, PAY)).toBeNull();
     }
-    await click(payWith(dialog, "Com chave de API"));
+    await chooseAi(dialog, "Chave de API");
     expect(shownText(dialog)).not.toContain(HELD);
     expect(shownText(dialog)).toContain("Todo agente sem plano pensa com ela.");
   });
@@ -265,8 +265,6 @@ describe("what a plan's panel never says on the Cloud", () => {
     await renderApp(`/org/${ORG_ID}?connect=ai`, { api });
     await settle(8);
     const dialog = screen().getByRole("dialog", { name: /Conectar uma IA/ });
-    if (within(dialog).queryByRole("combobox", { name: "Plano" }) === null)
-      await click(payWith(dialog, "Com um plano"));
     return planPanel(dialog, "chatgpt");
   }
 

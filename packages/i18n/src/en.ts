@@ -2366,6 +2366,45 @@ export const en = {
     receipt: "Nobody will answer: no\u00a0AI connected",
     chip: "No AI",
   },
+  /**
+   * The AI select (one list wherever an agent's AI is chosen): the viewer's plans, other people's plans, the workspace's
+   * API keys, and the last row to connect another; the notes under it and the provider list of "Connect another AI".
+   */
+  aiSelect: {
+    placeholder: "Choose an AI",
+    groupOthers: "Other people's plans",
+    groupKeys: "API keys",
+    connect: "Connect another AI",
+    connectLine: "Another account, plan or API key",
+    /** The computer's own sign-in, on line 2 ("Signed in on MacBook · 5h 20%"). */
+    ownOn: "Signed in on {{computer}}",
+    keyRefused: "Key refused",
+    unknown: "Sign-in not confirmed",
+    inUse: "In use by {{agents}}",
+    keyDefault: "Workspace default · ends in {{hint}}",
+    serverKey: "This server's Claude key",
+    serverKeyLine: "Set on the server",
+    signedOut: "{{label}} is signed out. Sign in again so {{name}} can use it.",
+    limited: "On this account, {{name}} answers again {{when}}.",
+    limitedUnknown: "On this account, {{name}} answers again when the plan renews.",
+    /** A login that thinks for one agent, picked for another: who stops thinking with it. */
+    move: "{{agent}} stops thinking with it.",
+    moveTo: "Move to {{name}}",
+    lent: "{{owner}} gets an email and can take it back.",
+    useLent: "Use {{owner}}'s plan",
+    /** The head of the steps that sign a signed-out account in again. */
+    signInAgain: "Sign in to {{label}} again",
+    /** Above the select for several agents. */
+    for: "For {{names}}",
+    plans: "Your AI plan",
+    endpointLine: "Your own gateway or server",
+    keyLocked: "Only an admin adds one",
+    preparing: "Getting the computer ready",
+    /** A plan's tiers on one line of the provider list (the steps keep the full ones). */
+    geminiTiers: "Google AI Pro, Ultra or Enterprise",
+    cursorTiers: "Pro, Pro+, Ultra or Teams",
+    undo: "Undo",
+  },
   connectAi: {
     title: {
       any: "Connect an AI",
@@ -2378,26 +2417,12 @@ export const en = {
       api_key: "Add an API key",
     },
     titleFor: "Connect an AI for {{name}}",
-    /** What the person already has, before the new sign-ins: accounts on the agent's computer, the workspace's keys. */
-    have: {
-      title: "Already connected",
-      titleFor: "Already connected, for {{name}}",
-      other: "Or connect another",
-      manageKeys: "Manage or delete keys",
-    },
     /** The Cloud's workspace on a billing hold, where a plan would sign in. */
     billing: "A plan signs in on the workspace's computer, and the computer comes with an active agentes.chat plan.",
     /** After `billing`, on the phone, where paying isn't offered. */
     billingWeb: "Choose one on the web, at agentes.chat.",
     orPayGo: "Or pay as you go",
-    /** The two ways to pay, on a control the width of a phone: keep them short. */
-    pay: {
-      label: "How do you pay?",
-      plan: "With a plan",
-      key: "With an API key",
-    },
     pick: {
-      plan: "Plan",
       placeholder: "Choose a plan",
       search: "Search providers",
       searchPlaceholder: "Provider name",
@@ -2456,8 +2481,6 @@ export const en = {
       sharedLower: "the account your agents share",
       free: "OpenCode's free models",
       freeLower: "OpenCode's free models",
-      one: "An account just for {{name}}",
-      each: "An account just for them",
     },
     popup: {
       title: "Connecting {{name}}",
@@ -2475,15 +2498,11 @@ export const en = {
       keyFor: "API key for {{names}}",
       state: { done: "Done", now: "Signing in", next: "Waiting" },
     },
-    for: "For",
-    all: "All agents",
     agentAria: "Agents that use this plan",
     each: "One sign-in per agent, with the same account.",
     eachHint: "Each agent keeps its own sign-in. They all share your plan's limits.",
     once: "One sign-in for all of them.",
     onceHint: "They all share your plan's limits.",
-    /** An account of this plan the person already has on that computer, for all of their agents there. */
-    use: "Use {{label}}",
     another: "Another account",
     /** Before a new sign-in, where the person already has an account of that plan on that computer (`reusableAccount`). */
     reuse: {
@@ -4411,7 +4430,6 @@ export const en = {
         label_female: "How she works",
         computer: "Works on",
         brain: "Thinks with",
-        brainWith: "Thinks with {{plan}}",
         browser: "Browser",
         effort: "{{level}} effort",
       },
@@ -4448,15 +4466,7 @@ export const en = {
         sub: "Applies only to {{name}}, in every conversation.",
         model: "API key",
         modelText: "Paid per use. It counts against {{name}}'s budget.",
-        /** A plan's card: `plan` is its name ("Claude", "ChatGPT", "OpenCode Go"). */
-        planText: "Uses your {{plan}} plan",
-        /** To anyone but the agent's owner: whose plan it is. */
-        planTextOf: "Uses {{owner}}'s {{plan}} plan",
-        moves: "Moves to {{computer}}",
-        off: "{{computer}} is offline",
-        none: "No computer has it",
         planModel: "Model",
-        account: "Account",
         /** To an admin: the accounts are the agent's owner's, since a plan thinks only for its owner's agents. */
         accountWho:
           "Only accounts of {{owner}}, who is responsible for {{name}}: a plan thinks only for its owner's agents.",
@@ -4469,21 +4479,23 @@ export const en = {
         accountOf: "{{name}}'s",
         /** Under the account for someone who may use other people's plans (`use_others_plans`). */
         accountOthers: "Other people's plans show whose they are. Their owner gets an email and can take it back.",
-        addAccount: "Add account",
         signInAgain: "Sign in again",
-        connectPlan: "Connect another plan",
-        keyLabel: "API key",
-        fallbackTitle: "If {{computer}} stops answering, answer through the API",
-        fallbackHint:
-          "It answers through the API and counts against {{name}}'s budget. Otherwise {{name}} tells whoever asked and waits for the computer to come back.",
         effort: "Effort",
-        efforts: { auto: "Automatic", low: "Low", medium: "Medium", high: "High", max: "Maximum" },
-        effortsLower: { auto: "automatic", low: "low", medium: "medium", high: "high", max: "maximum" },
+        efforts: { auto: "Automatic", low: "Low", medium: "Medium", high: "High", xhigh: "Extra high", max: "Maximum" },
+        effortsLower: {
+          auto: "automatic",
+          low: "low",
+          medium: "medium",
+          high: "high",
+          xhigh: "extra high",
+          max: "maximum",
+        },
         effortText: {
           auto: "The Automatic model picks each task's effort. Pick a model to set the effort yourself.",
           low: "Answers fast. Good for simple questions.",
           medium: "The default. Thinks enough most of the time.",
           high: "Thinks more on hard tasks. Slower and costs more.",
+          xhigh: "Thinks a lot more on long, hard tasks. Slower and pricier.",
           max: "Thinks as much as possible. Much slower and pricier.",
         },
         speed: "Speed",
@@ -4504,41 +4516,19 @@ export const en = {
         },
         advanced: {
           title: "Advanced settings",
-          sub: "{{brain}}. Applies to every conversation.",
-          think: "How it thinks",
-          answers: "Who it answers",
           defaults: "Back to defaults",
-          done: "Done",
-          contents: {
-            model: "Context window",
-            auto: "Context window and who it answers",
-            fixed: "Effort, context window and who it answers",
-            autoSpeed: "Speed, context window and who it answers",
-            fixedSpeed: "Effort, speed, context window and who it answers",
-          },
           allDefault: "All defaults",
           effort: "Effort: {{level}}",
           speed: "Fast speed",
           context: "Context: {{size}}",
-          sharing: "Answers other people",
-          waits: "Waits for the computer",
         },
         copy: {
-          row: "Use on other agents",
-          rowLine: "The same AI, model, effort and autonomy",
-          title: "Use on other agents",
-          sub: "They'll think with {{setup}}.",
-          all: "All",
-          allLine_one: "{{count}} agent can take it",
-          allLine_other: "{{count}} agents can take it",
-          none: "No other agent can take it now.",
           now: "Now: {{brain}}",
           same: "Already thinks this way",
           keeps: "Keeps {{account}}",
           keepsOwn: "Keeps its computer's account",
           autonomy: "Autonomy: {{from}} → {{to}}",
           withAutonomy: "Include the autonomy",
-          withAutonomyLine: "{{value}}, as on this agent. Off: each keeps its own.",
           reasons: {
             not_allowed: "Only admins and {{owner}} change it",
             not_allowedNobody: "Only admins change it",
@@ -4551,15 +4541,6 @@ export const en = {
             model_missing: "{{plan}} has no {{model}}",
             failed: "Couldn't change it now",
           },
-          search: "Find an agent",
-          noMatch: "No agent named “{{q}}”",
-          pick: "Pick the agents",
-          use_one: "Use on {{count}} agent",
-          use_other: "Use on {{count}} agents",
-          done_one: "{{count}} agent now thinks with {{setup}}.",
-          done_other: "{{count}} agents now think with {{setup}}.",
-          autonomyOnly_one: "{{count}} agent changed only its autonomy.",
-          autonomyOnly_other: "{{count}} agents changed only their autonomy.",
           missed_one: "{{count}} agent didn't change.",
           missed_other: "{{count}} agents didn't change.",
         },
@@ -4633,9 +4614,7 @@ export const en = {
           },
           startFailed: "No answer from {{computer}}. Try again in a moment.",
           sendFailed: "Couldn't send the code. Check it and try again.",
-          done: "The {{account}} account is on {{computer}}. Click Use to save.",
         },
-        offCloud: "{{computer}} isn't answering",
       },
       computer: {
         title: "Where does {{name}} work?",
@@ -8556,7 +8535,6 @@ export const en = {
       },
       savedEveryone: "Now {{name}} answers other people.",
       savedOwner: "{{name}} now answers only you.",
-      savedOwnerOf: "{{name}} now answers only {{owner}}.",
       backOnApi: "{{name}} is back on the API and still answers only you.",
       letEveryone: "Let {{name}} answer everyone",
       letPeople: "Let {{name}} answer other people",
@@ -11832,7 +11810,7 @@ export const en = {
       agentNotInChannel: "Add the agent to the conversation first.",
       webhookPaused: "Turn the routine on to test it.",
       continueExtraOff:
-        "This plan's window is used up and this agent's long work doesn't use paid extra usage. Turn that on in its AI settings to continue now, or it picks up after the reset.",
+        "This plan's window is used up and this agent's long work doesn't use the plan's paid extra usage. It picks up after the reset.",
       continueExtraUsedUp:
         "This plan's window is used up and its paid extra usage is used up or unavailable. It picks up after the reset.",
       actionsNeedApprover:

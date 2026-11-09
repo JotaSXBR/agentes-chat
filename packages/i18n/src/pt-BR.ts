@@ -2374,6 +2374,49 @@ export const ptBR = {
     chip: "Sem IA",
   },
   /** The Connect dialog: its first step and the plan sign-in around the existing flows. */
+  /**
+   * The AI select (one list wherever an agent's AI is chosen): the viewer's plans, other people's plans, the workspace's
+   * API keys, and the last row to connect another; the notes under it and the provider list of "Conectar outra IA".
+   */
+  aiSelect: {
+    placeholder: "Escolha uma IA",
+    groupOthers: "Planos de outras pessoas",
+    groupKeys: "Chaves de API",
+    connect: "Conectar outra IA",
+    connectLine: "Outra conta, plano ou chave de API",
+    /** The computer's own sign-in, on line 2 ("Login no MacBook · 5h 20%"). */
+    ownOn: "Login no {{computer}}",
+    keyRefused: "Chave recusada",
+    unknown: "Login não confirmado",
+    inUse: "Em uso por {{agents}}",
+    keyDefault: "Padrão do workspace · termina em {{hint}}",
+    serverKey: "Chave do Claude deste servidor",
+    serverKeyLine: "Definida no servidor",
+    signedOut: "{{label}} saiu da conta. Entre de novo para o {{name}} usar.",
+    signedOut_female: "{{label}} saiu da conta. Entre de novo para a {{name}} usar.",
+    limited: "Com esta conta, o {{name}} só volta a responder {{when}}.",
+    limited_female: "Com esta conta, a {{name}} só volta a responder {{when}}.",
+    limitedUnknown: "Com esta conta, o {{name}} só volta a responder quando o plano renovar.",
+    limitedUnknown_female: "Com esta conta, a {{name}} só volta a responder quando o plano renovar.",
+    /** A login that thinks for one agent, picked for another: who stops thinking with it. */
+    move: "{{agent}} deixa de pensar com ela.",
+    moveTo: "Mover para o {{name}}",
+    moveTo_female: "Mover para a {{name}}",
+    lent: "{{owner}} recebe um e-mail e pode tirar de volta.",
+    useLent: "Usar o plano de {{owner}}",
+    /** The head of the steps that sign a signed-out account in again. */
+    signInAgain: "Entrar de novo em {{label}}",
+    /** Above the select for several agents. */
+    for: "Para {{names}}",
+    plans: "Seu plano de IA",
+    endpointLine: "Um gateway ou servidor seu",
+    keyLocked: "Só um admin adiciona",
+    preparing: "Preparando o computador",
+    /** A plan's tiers on one line of the provider list (the steps keep the full ones). */
+    geminiTiers: "Google AI Pro, Ultra ou Enterprise",
+    cursorTiers: "Pro, Pro+, Ultra ou Teams",
+    undo: "Desfazer",
+  },
   connectAi: {
     title: {
       any: "Conectar uma IA",
@@ -2387,25 +2430,10 @@ export const ptBR = {
     },
     titleFor: "Conectar uma IA para o {{name}}",
     titleFor_female: "Conectar uma IA para a {{name}}",
-    /** What the person already has, before the new sign-ins: accounts on the agent's computer, the workspace's keys. */
-    have: {
-      title: "Já conectadas",
-      titleFor: "Já conectadas, para o {{name}}",
-      titleFor_female: "Já conectadas, para a {{name}}",
-      other: "Ou conecte outra",
-      manageKeys: "Gerenciar ou apagar chaves",
-    },
     billing: "Um plano entra no computador do workspace, e o computador vem com um plano ativo do agentes.chat.",
     billingWeb: "Escolha um na web, em agentes.chat.",
     orPayGo: "Ou pague pelo uso",
-    /** The two ways to pay, on a control the width of a phone: keep them short. */
-    pay: {
-      label: "Como você paga?",
-      plan: "Com um plano",
-      key: "Com chave de API",
-    },
     pick: {
-      plan: "Plano",
       placeholder: "Escolha um plano",
       search: "Buscar provedores",
       searchPlaceholder: "Nome do provedor",
@@ -2460,10 +2488,6 @@ export const ptBR = {
       sharedLower: "a conta que os seus agentes dividem",
       free: "Modelos grátis do OpenCode",
       freeLower: "os modelos grátis do OpenCode",
-      one: "Uma conta só para o {{name}}",
-      one_female: "Uma conta só para a {{name}}",
-      /** For "Todos os agentes": one sign-in each, with the same account. */
-      each: "Uma conta só para eles",
     },
     popup: {
       title: "Conectando {{name}}",
@@ -2481,15 +2505,11 @@ export const ptBR = {
       keyFor: "Chave de API para {{names}}",
       state: { done: "Pronto", now: "Entrando", next: "Esperando" },
     },
-    /** The plan panel's head: whom the plan thinks for. */
-    for: "Para",
-    all: "Todos os agentes",
     agentAria: "Agentes que usam este plano",
     each: "Um login por agente, com a mesma conta.",
     eachHint: "Cada agente tem o próprio login. Todos dividem os limites do seu plano.",
     once: "Um login só para todos.",
     onceHint: "Todos dividem os limites do seu plano.",
-    use: "Usar {{label}}",
     another: "Outra conta",
     /** Before a new sign-in, where the person already has an account of that plan on that computer (`reusableAccount`). */
     reuse: {
@@ -4409,8 +4429,6 @@ export const ptBR = {
         label: "Como trabalha",
         computer: "Trabalha no",
         brain: "Pensa com",
-        /** On a plan: the plan in the label, the model and its effort on the line under it. */
-        brainWith: "Pensa com {{plan}}",
         browser: "Navegador",
         effort: "esforço {{level}}",
       },
@@ -4454,15 +4472,7 @@ export const ptBR = {
         model: "Chave de API",
         modelText: "Pago por uso. Conta no orçamento do {{name}}.",
         modelText_female: "Pago por uso. Conta no orçamento da {{name}}.",
-        /** A plan's card: `plan` is its name ("Claude", "ChatGPT", "OpenCode Go"). */
-        planText: "Usa o seu plano do {{plan}}",
-        /** To anyone but the agent's owner: whose plan it is. */
-        planTextOf: "Usa o plano do {{plan}} de {{owner}}",
-        moves: "Vai para o {{computer}}",
-        off: "O {{computer}} está offline",
-        none: "Nenhum computador tem",
         planModel: "Modelo",
-        account: "Conta",
         /** To an admin: the accounts are the agent's owner's, since a plan thinks only for its owner's agents. */
         accountWho: "Só contas de {{owner}}, responsável pelo {{name}}: um plano só pensa pelos agentes do seu dono.",
         accountWho_female:
@@ -4476,24 +4486,30 @@ export const ptBR = {
         /** Under the account for someone who may use other people's plans (`use_others_plans`). */
         accountOthers:
           "Os planos de outras pessoas mostram de quem são. O dono recebe um e-mail e pode tirar de volta.",
-        addAccount: "Adicionar conta",
         signInAgain: "Entrar de novo",
-        connectPlan: "Conectar outro plano",
-        keyLabel: "Chave da API",
-        fallbackTitle: "Se o {{computer}} parar de responder, responder pela API",
-        /** The switch's ⓘ: the same in both states. */
-        fallbackHint:
-          "Responde pela API e conta no orçamento do {{name}}. Se não, o {{name}} avisa quem chamou e espera o computador voltar.",
-        fallbackHint_female:
-          "Responde pela API e conta no orçamento da {{name}}. Se não, a {{name}} avisa quem chamou e espera o computador voltar.",
         effort: "Esforço",
-        efforts: { auto: "Automático", low: "Baixo", medium: "Médio", high: "Alto", max: "Máximo" },
-        effortsLower: { auto: "automático", low: "baixo", medium: "médio", high: "alto", max: "máximo" },
+        efforts: {
+          auto: "Automático",
+          low: "Baixo",
+          medium: "Médio",
+          high: "Alto",
+          xhigh: "Muito alto",
+          max: "Máximo",
+        },
+        effortsLower: {
+          auto: "automático",
+          low: "baixo",
+          medium: "médio",
+          high: "alto",
+          xhigh: "muito alto",
+          max: "máximo",
+        },
         effortText: {
           auto: "O modelo Automático escolhe o esforço de cada tarefa. Escolha um modelo para fixar o esforço.",
           low: "Responde rápido. Bom para perguntas simples.",
           medium: "O padrão. Pensa o suficiente na maioria das vezes.",
           high: "Pensa mais em tarefas difíceis. Demora e gasta mais.",
+          xhigh: "Pensa bem mais em tarefas longas e difíceis. Mais lento e caro.",
           max: "Pensa o máximo que puder. Bem mais lento e caro.",
         },
         /** Velocidade (ADR 0149): shown on a ChatGPT plan with a model that has Fast mode. `2,5×` is OpenAI's rate. */
@@ -4518,37 +4534,15 @@ export const ptBR = {
         /** "Configuração avançada": a row in the brain's card that opens a smaller dialog over "Quem pensa". */
         advanced: {
           title: "Configuração avançada",
-          sub: "{{brain}}. Vale para todas as conversas.",
-          think: "Como pensa",
-          answers: "Quem atende",
           defaults: "Voltar ao padrão",
-          done: "Pronto",
-          /** The row's line: what the dialog holds. The effort shows only with a fixed model on a plan. */
-          contents: {
-            model: "Janela de contexto",
-            auto: "Janela de contexto e quem atende",
-            fixed: "Esforço, janela de contexto e quem atende",
-            autoSpeed: "Velocidade, janela de contexto e quem atende",
-            fixedSpeed: "Esforço, velocidade, janela de contexto e quem atende",
-          },
           /** After a save: nothing changed from the defaults, else only what did. */
           allDefault: "Tudo no padrão",
           effort: "Esforço {{level}}",
           speed: "Velocidade rápida",
           context: "Contexto de {{size}}",
-          sharing: "Atende outras pessoas",
-          waits: "Espera o computador voltar",
         },
         /** "Usar em outros agentes" (ADR 0094): the same setup on the agents picked, each by its own rules. */
         copy: {
-          row: "Usar em outros agentes",
-          rowLine: "A mesma IA, o modelo, o esforço e a autonomia",
-          title: "Usar em outros agentes",
-          sub: "Eles passam a pensar com {{setup}}.",
-          all: "Todos",
-          allLine_one: "{{count}} agente pode usar",
-          allLine_other: "{{count}} agentes podem usar",
-          none: "Nenhum outro agente pode usar agora.",
           now: "Hoje: {{brain}}",
           same: "Já pensa assim",
           keeps: "Fica com {{account}}",
@@ -4556,7 +4550,6 @@ export const ptBR = {
           autonomy: "Autonomia: {{from}} → {{to}}",
           /** A switch over the agents: off, the setup leaves each agent's Autonomia as it is. */
           withAutonomy: "Levar a autonomia",
-          withAutonomyLine: "{{value}}, como neste agente. Desligado, cada um fica com a sua.",
           reasons: {
             not_allowed: "Só admins e {{owner}} mudam",
             not_allowedNobody: "Só admins mudam",
@@ -4569,15 +4562,6 @@ export const ptBR = {
             model_missing: "O {{plan}} não tem o {{model}}",
             failed: "Não deu para mudar agora",
           },
-          search: "Buscar agente",
-          noMatch: "Nenhum agente com “{{q}}”",
-          pick: "Escolha os agentes",
-          use_one: "Usar em {{count}} agente",
-          use_other: "Usar em {{count}} agentes",
-          done_one: "{{count}} agente agora pensa com {{setup}}.",
-          done_other: "{{count}} agentes agora pensam com {{setup}}.",
-          autonomyOnly_one: "{{count}} agente mudou só a autonomia.",
-          autonomyOnly_other: "{{count}} agentes mudaram só a autonomia.",
           missed_one: "{{count}} agente não mudou.",
           missed_other: "{{count}} agentes não mudaram.",
         },
@@ -4652,9 +4636,7 @@ export const ptBR = {
           },
           startFailed: "O {{computer}} não respondeu. Tente de novo em instantes.",
           sendFailed: "Não deu para enviar o código. Confira e tente de novo.",
-          done: "A conta {{account}} entrou no {{computer}}. Clique em Usar para salvar.",
         },
-        offCloud: "O {{computer}} não está respondendo",
       },
       computer: {
         title: "Onde o {{name}} trabalha?",
@@ -8656,8 +8638,6 @@ export const ptBR = {
       savedEveryone_female: "Agora a {{name}} atende outras pessoas.",
       savedOwner: "O {{name}} agora só atende você.",
       savedOwner_female: "A {{name}} agora só atende você.",
-      savedOwnerOf: "O {{name}} agora só atende {{owner}}.",
-      savedOwnerOf_female: "A {{name}} agora só atende {{owner}}.",
       backOnApi: "O {{name}} voltou a pensar pela API e ainda só atende você.",
       backOnApi_female: "A {{name}} voltou a pensar pela API e ainda só atende você.",
       letEveryone: "Deixar o {{name}} atender todos",
@@ -11941,7 +11921,7 @@ export const ptBR = {
       agentNotInChannel: "Adicione o agente à conversa antes.",
       webhookPaused: "Ligue a rotina para testar.",
       continueExtraOff:
-        "A janela deste plano acabou e o trabalho longo deste agente não usa o uso extra pago. Ligue isso nas configurações de IA dele para continuar agora, ou ele retoma depois que o limite renovar.",
+        "A janela deste plano acabou e o trabalho longo deste agente não usa o uso extra pago do plano. Ele retoma depois que o limite renovar.",
       continueExtraUsedUp:
         "A janela deste plano acabou e o uso extra pago dele acabou ou não está disponível. Ele retoma depois que o limite renovar.",
       actionsNeedApprover: "Só o dono do agente ou quem aprova as ações dele pode deixar uma rotina agir sozinha.",

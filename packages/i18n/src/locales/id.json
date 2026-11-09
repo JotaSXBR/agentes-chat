@@ -2229,6 +2229,36 @@
     "receipt": "Tidak ada yang akan menjawab: belum ada AI yang terhubung",
     "chip": "Tanpa AI"
   },
+  "aiSelect": {
+    "placeholder": "Pilih AI",
+    "groupOthers": "Paket orang lain",
+    "groupKeys": "Kunci API",
+    "connect": "Hubungkan AI lain",
+    "connectLine": "Akun, paket, atau kunci API lain",
+    "ownOn": "Masuk di {{computer}}",
+    "keyRefused": "Kunci ditolak",
+    "unknown": "Masuk belum dikonfirmasi",
+    "inUse": "Dipakai oleh {{agents}}",
+    "keyDefault": "Bawaan ruang kerja · berakhiran {{hint}}",
+    "serverKey": "Kunci Claude server ini",
+    "serverKeyLine": "Diatur di server",
+    "signedOut": "{{label}} sudah keluar. Masuk lagi agar {{name}} bisa memakainya.",
+    "limited": "Dengan akun ini, {{name}} baru menjawab lagi {{when}}.",
+    "limitedUnknown": "Dengan akun ini, {{name}} baru menjawab lagi saat paketnya diperbarui.",
+    "move": "{{agent}} berhenti berpikir dengan akun ini.",
+    "moveTo": "Pindahkan ke {{name}}",
+    "lent": "{{owner}} menerima email dan bisa menariknya kembali.",
+    "useLent": "Pakai paket {{owner}}",
+    "signInAgain": "Masuk lagi ke {{label}}",
+    "for": "Untuk {{names}}",
+    "plans": "Paket AI-mu",
+    "endpointLine": "Gateway atau server milikmu",
+    "keyLocked": "Hanya admin yang bisa menambahkan",
+    "preparing": "Menyiapkan komputer",
+    "geminiTiers": "Google AI Pro, Ultra, atau Enterprise",
+    "cursorTiers": "Pro, Pro+, Ultra, atau Teams",
+    "undo": "Urungkan"
+  },
   "connectAi": {
     "title": {
       "any": "Hubungkan AI",
@@ -2242,23 +2272,10 @@
     },
     "titleFor": "Hubungkan AI untuk {{name}}",
     "titleFor_female": "Hubungkan AI untuk {{name}}",
-    "have": {
-      "title": "Sudah terhubung",
-      "titleFor": "Sudah terhubung, untuk {{name}}",
-      "titleFor_female": "Sudah terhubung, untuk {{name}}",
-      "other": "Atau hubungkan yang lain",
-      "manageKeys": "Kelola atau hapus kunci"
-    },
     "billing": "Paket masuk di komputer workspace, dan komputer itu datang dengan paket agentes.chat yang aktif.",
     "billingWeb": "Pilih satu di web, di agentes.chat.",
     "orPayGo": "Atau bayar sesuai pemakaian",
-    "pay": {
-      "label": "Bagaimana kamu membayar?",
-      "plan": "Dengan paket",
-      "key": "Dengan kunci API"
-    },
     "pick": {
-      "plan": "Paket",
       "placeholder": "Pilih paket",
       "search": "Cari penyedia",
       "searchPlaceholder": "Nama penyedia",
@@ -2331,10 +2348,7 @@
       "shared": "Akun yang dipakai bersama agenmu",
       "sharedLower": "akun yang dipakai bersama agenmu",
       "free": "Model gratis OpenCode",
-      "freeLower": "model gratis OpenCode",
-      "one": "Akun khusus untuk {{name}}",
-      "one_female": "Akun khusus untuk {{name}}",
-      "each": "Akun khusus untuk mereka"
+      "freeLower": "model gratis OpenCode"
     },
     "popup": {
       "title": "Menghubungkan {{name}}",
@@ -2356,14 +2370,11 @@
         "next": "Menunggu"
       }
     },
-    "for": "Untuk",
-    "all": "Semua agen",
     "agentAria": "Agen yang memakai paket ini",
     "each": "Satu proses masuk per agen, dengan akun yang sama.",
     "eachHint": "Tiap agen punya sesi masuknya sendiri. Semuanya berbagi batas paketmu.",
     "once": "Satu proses masuk untuk semuanya.",
     "onceHint": "Semuanya berbagi batas paketmu.",
-    "use": "Pakai {{label}}",
     "another": "Akun lain",
     "reuse": {
       "active": "Kamu sudah punya {{label}} di sini. Masuk lagi ke akun itu, atau pakai akun lain.",
@@ -4171,7 +4182,6 @@
         "label_female": "Cara kerjanya",
         "computer": "Bekerja di",
         "brain": "Berpikir dengan",
-        "brainWith": "Berpikir dengan {{plan}}",
         "browser": "Browser",
         "effort": "Upaya {{level}}"
       },
@@ -4207,13 +4217,7 @@
         "sub": "Hanya berlaku untuk {{name}}, di setiap percakapan.",
         "model": "Kunci API",
         "modelText": "Bayar per pemakaian. Dihitung dari anggaran {{name}}.",
-        "planText": "Memakai paket {{plan}} kamu",
-        "planTextOf": "Memakai paket {{plan}} milik {{owner}}",
-        "moves": "Pindah ke {{computer}}",
-        "off": "{{computer}} sedang offline",
-        "none": "Tidak ada komputer yang memilikinya",
         "planModel": "Model",
-        "account": "Akun",
         "accountWho": "Hanya akun {{owner}}, penanggung jawab {{name}}: paket hanya berpikir untuk agen milik pemiliknya.",
         "accountSignedOut": "Keluar, masuk lagi",
         "accountUnknown": "Login belum dipastikan, segera dicek lagi",
@@ -4222,18 +4226,14 @@
         "accountAlso": "Juga dipakai oleh {{agents}}",
         "accountOf": "Milik {{name}}",
         "accountOthers": "Paket orang lain menunjukkan milik siapa. Pemiliknya menerima email dan bisa menariknya kembali.",
-        "addAccount": "Tambah akun",
         "signInAgain": "Masuk lagi",
-        "connectPlan": "Hubungkan paket lain",
-        "keyLabel": "Kunci API",
-        "fallbackTitle": "Jika {{computer}} berhenti merespons, jawab lewat API",
-        "fallbackHint": "Agen menjawab lewat API dan dihitung dari anggaran {{name}}. Jika tidak, {{name}} memberi tahu siapa pun yang meminta dan menunggu komputernya kembali.",
         "effort": "Upaya",
         "efforts": {
           "auto": "Otomatis",
           "low": "Rendah",
           "medium": "Sedang",
           "high": "Tinggi",
+          "xhigh": "Sangat tinggi",
           "max": "Maksimum"
         },
         "effortsLower": {
@@ -4241,6 +4241,7 @@
           "low": "rendah",
           "medium": "sedang",
           "high": "tinggi",
+          "xhigh": "sangat tinggi",
           "max": "maksimum"
         },
         "effortText": {
@@ -4248,6 +4249,7 @@
           "low": "Menjawab cepat. Cocok untuk pertanyaan sederhana.",
           "medium": "Default. Berpikir cukup hampir setiap saat.",
           "high": "Berpikir lebih banyak untuk tugas sulit. Lebih lambat dan lebih mahal.",
+          "xhigh": "Berpikir jauh lebih banyak untuk tugas panjang dan sulit. Lebih lambat dan lebih mahal.",
           "max": "Berpikir semaksimal mungkin. Jauh lebih lambat dan lebih mahal."
         },
         "speed": "Kecepatan",
@@ -4270,40 +4272,19 @@
         },
         "advanced": {
           "title": "Pengaturan lanjutan",
-          "sub": "{{brain}}. Berlaku untuk setiap percakapan.",
-          "think": "Cara berpikirnya",
-          "answers": "Siapa yang dijawabnya",
           "defaults": "Kembali ke default",
-          "done": "Selesai",
-          "contents": {
-            "model": "Jendela konteks",
-            "auto": "Jendela konteks dan siapa yang dijawabnya",
-            "fixed": "Upaya, jendela konteks, dan siapa yang dijawabnya",
-            "autoSpeed": "Kecepatan, jendela konteks, dan siapa yang dijawabnya",
-            "fixedSpeed": "Upaya, kecepatan, jendela konteks, dan siapa yang dijawabnya"
-          },
           "allDefault": "Semua default",
           "effort": "Upaya: {{level}}",
           "speed": "Kecepatan: cepat",
-          "context": "Konteks: {{size}}",
-          "sharing": "Menjawab orang lain",
-          "waits": "Menunggu komputer"
+          "context": "Konteks: {{size}}"
         },
         "copy": {
-          "row": "Pakai di agen lain",
-          "rowLine": "AI, model, upaya, dan otonomi yang sama",
-          "title": "Pakai di agen lain",
-          "sub": "Mereka akan berpikir dengan {{setup}}.",
-          "all": "Semua",
-          "allLine_other": "{{count}} agen bisa memakainya",
-          "none": "Tidak ada agen lain yang bisa memakainya sekarang.",
           "now": "Sekarang: {{brain}}",
           "same": "Sudah berpikir dengan cara ini",
           "keeps": "Tetap memakai {{account}}",
           "keepsOwn": "Tetap memakai akun komputernya",
           "autonomy": "Otonomi: {{from}} → {{to}}",
           "withAutonomy": "Sertakan otonomi",
-          "withAutonomyLine": "{{value}}, seperti di agen ini. Mati: masing-masing tetap dengan miliknya.",
           "reasons": {
             "not_allowed": "Hanya admin dan {{owner}} yang bisa mengubahnya",
             "not_allowedNobody": "Hanya admin yang bisa mengubahnya",
@@ -4316,12 +4297,6 @@
             "model_missing": "{{plan}} tidak punya {{model}}",
             "failed": "Tidak bisa mengubahnya sekarang"
           },
-          "search": "Cari agen",
-          "noMatch": "Tidak ada agen bernama “{{q}}”",
-          "pick": "Pilih agennya",
-          "use_other": "Pakai di {{count}} agen",
-          "done_other": "{{count}} agen sekarang berpikir dengan {{setup}}.",
-          "autonomyOnly_other": "{{count}} agen hanya mengubah otonominya.",
           "missed_other": "{{count}} agen tidak berubah."
         },
         "add": {
@@ -4383,10 +4358,8 @@
             "opencode": "Kunci OpenCode itu sudah terhubung sebagai {{account}}."
           },
           "startFailed": "Tidak ada jawaban dari {{computer}}. Coba lagi sebentar lagi.",
-          "sendFailed": "Tidak bisa mengirim kode. Periksa lalu coba lagi.",
-          "done": "Akun {{account}} sudah ada di {{computer}}. Klik Pakai untuk menyimpan."
-        },
-        "offCloud": "{{computer}} tidak merespons"
+          "sendFailed": "Tidak bisa mengirim kode. Periksa lalu coba lagi."
+        }
       },
       "computer": {
         "title": "Di mana {{name}} bekerja?",
@@ -8325,7 +8298,6 @@
       },
       "savedEveryone": "Sekarang {{name}} menjawab orang lain.",
       "savedOwner": "{{name}} sekarang hanya menjawab kamu.",
-      "savedOwnerOf": "{{name}} sekarang hanya menjawab {{owner}}.",
       "backOnApi": "{{name}} kembali memakai API dan tetap hanya menjawab kamu.",
       "letEveryone": "Izinkan {{name}} menjawab semua orang",
       "letPeople": "Izinkan {{name}} menjawab orang lain",
@@ -11677,7 +11649,7 @@
       "takeOverNoAccess": "Bergabunglah ke percakapan rutinitas sebelum mengambil alihnya.",
       "agentNotInChannel": "Tambahkan agen ke percakapan dulu.",
       "webhookPaused": "Aktifkan rutinitas untuk mengujinya.",
-      "continueExtraOff": "Jatah periode paket ini sudah habis dan pekerjaan panjang agen ini tidak memakai pemakaian tambahan berbayar. Aktifkan itu di pengaturan AI-nya untuk melanjutkan sekarang, atau agen melanjutkan setelah reset.",
+      "continueExtraOff": "Jatah periode paket ini sudah habis dan pekerjaan panjang agen ini tidak memakai pemakaian tambahan berbayar dari paket. Agen melanjutkan setelah reset.",
       "continueExtraUsedUp": "Jatah periode paket ini sudah habis dan pemakaian tambahan berbayarnya juga habis atau tidak tersedia. Agen melanjutkan setelah reset.",
       "actionsNeedApprover": "Hanya pemilik agen atau orang yang menyetujui tindakannya yang bisa membiarkan rutinitas bertindak sendiri.",
       "editorOnly": "Hanya pembuat rutinitas, pemilik agen, atau Admin yang bisa mengubahnya.",

@@ -190,7 +190,7 @@ export const SHOWN_ONLY: Record<Condition, readonly string[]> = {
     "proof.sent",
     "errors.reauth.code",
   ],
-  apiKey: ["agentPage.work.brain.fallbackTitle"],
+  apiKey: [],
   // A message nobody mentions still gets an agent: routing.mine (the chip and its help line), routing.by (Settings),
   // or the receipt of a message a rule sent to its one candidate.
   routing: [

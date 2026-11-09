@@ -5695,6 +5695,90 @@
   "noAi.chip": {
     "value": "No AI"
   },
+  "aiSelect.placeholder": {
+    "value": "Choose an AI"
+  },
+  "aiSelect.groupOthers": {
+    "value": "Other people's plans"
+  },
+  "aiSelect.groupKeys": {
+    "value": "API keys"
+  },
+  "aiSelect.connect": {
+    "value": "Connect another AI"
+  },
+  "aiSelect.connectLine": {
+    "value": "Another account, plan or API key"
+  },
+  "aiSelect.ownOn": {
+    "value": "Signed in on {{computer}}"
+  },
+  "aiSelect.keyRefused": {
+    "value": "Key refused"
+  },
+  "aiSelect.unknown": {
+    "value": "Sign-in not confirmed"
+  },
+  "aiSelect.inUse": {
+    "value": "In use by {{agents}}"
+  },
+  "aiSelect.keyDefault": {
+    "value": "Workspace default · ends in {{hint}}"
+  },
+  "aiSelect.serverKey": {
+    "value": "This server's Claude key"
+  },
+  "aiSelect.serverKeyLine": {
+    "value": "Set on the server"
+  },
+  "aiSelect.signedOut": {
+    "value": "{{label}} is signed out. Sign in again so {{name}} can use it."
+  },
+  "aiSelect.limited": {
+    "value": "On this account, {{name}} answers again {{when}}."
+  },
+  "aiSelect.limitedUnknown": {
+    "value": "On this account, {{name}} answers again when the plan renews."
+  },
+  "aiSelect.move": {
+    "value": "{{agent}} stops thinking with it."
+  },
+  "aiSelect.moveTo": {
+    "value": "Move to {{name}}"
+  },
+  "aiSelect.lent": {
+    "value": "{{owner}} gets an email and can take it back."
+  },
+  "aiSelect.useLent": {
+    "value": "Use {{owner}}'s plan"
+  },
+  "aiSelect.signInAgain": {
+    "value": "Sign in to {{label}} again"
+  },
+  "aiSelect.for": {
+    "value": "For {{names}}"
+  },
+  "aiSelect.plans": {
+    "value": "Your AI plan"
+  },
+  "aiSelect.endpointLine": {
+    "value": "Your own gateway or server"
+  },
+  "aiSelect.keyLocked": {
+    "value": "Only an admin adds one"
+  },
+  "aiSelect.preparing": {
+    "value": "Getting the computer ready"
+  },
+  "aiSelect.geminiTiers": {
+    "value": "Google AI Pro, Ultra or Enterprise"
+  },
+  "aiSelect.cursorTiers": {
+    "value": "Pro, Pro+, Ultra or Teams"
+  },
+  "aiSelect.undo": {
+    "value": "Undo"
+  },
   "connectAi.title.any": {
     "value": "Connect an AI"
   },
@@ -5722,18 +5806,6 @@
   "connectAi.titleFor": {
     "value": "Connect an AI for {{name}}"
   },
-  "connectAi.have.title": {
-    "value": "Already connected"
-  },
-  "connectAi.have.titleFor": {
-    "value": "Already connected, for {{name}}"
-  },
-  "connectAi.have.other": {
-    "value": "Or connect another"
-  },
-  "connectAi.have.manageKeys": {
-    "value": "Manage or delete keys"
-  },
   "connectAi.billing": {
     "value": "A plan signs in on the workspace's computer, and the computer comes with an active agentes.chat plan."
   },
@@ -5742,18 +5814,6 @@
   },
   "connectAi.orPayGo": {
     "value": "Or pay as you go"
-  },
-  "connectAi.pay.label": {
-    "value": "How do you pay?"
-  },
-  "connectAi.pay.plan": {
-    "value": "With a plan"
-  },
-  "connectAi.pay.key": {
-    "value": "With an API key"
-  },
-  "connectAi.pick.plan": {
-    "value": "Plan"
   },
   "connectAi.pick.placeholder": {
     "value": "Choose a plan"
@@ -5890,12 +5950,6 @@
   "connectAi.own.freeLower": {
     "value": "OpenCode's free models"
   },
-  "connectAi.own.one": {
-    "value": "An account just for {{name}}"
-  },
-  "connectAi.own.each": {
-    "value": "An account just for them"
-  },
   "connectAi.popup.title": {
     "value": "Connecting {{name}}"
   },
@@ -5932,12 +5986,6 @@
   "connectAi.who.state.next": {
     "value": "Waiting"
   },
-  "connectAi.for": {
-    "value": "For"
-  },
-  "connectAi.all": {
-    "value": "All agents"
-  },
   "connectAi.agentAria": {
     "value": "Agents that use this plan"
   },
@@ -5952,9 +6000,6 @@
   },
   "connectAi.onceHint": {
     "value": "They all share your plan's limits."
-  },
-  "connectAi.use": {
-    "value": "Use {{label}}"
   },
   "connectAi.another": {
     "value": "Another account"
@@ -10601,9 +10646,6 @@
   "agentPage.work.cell.brain": {
     "value": "Thinks with"
   },
-  "agentPage.work.cell.brainWith": {
-    "value": "Thinks with {{plan}}"
-  },
   "agentPage.work.cell.browser": {
     "value": "Browser"
   },
@@ -10683,26 +10725,8 @@
   "agentPage.work.brain.modelText": {
     "value": "Paid per use. It counts against {{name}}'s budget."
   },
-  "agentPage.work.brain.planText": {
-    "value": "Uses your {{plan}} plan"
-  },
-  "agentPage.work.brain.planTextOf": {
-    "value": "Uses {{owner}}'s {{plan}} plan"
-  },
-  "agentPage.work.brain.moves": {
-    "value": "Moves to {{computer}}"
-  },
-  "agentPage.work.brain.off": {
-    "value": "{{computer}} is offline"
-  },
-  "agentPage.work.brain.none": {
-    "value": "No computer has it"
-  },
   "agentPage.work.brain.planModel": {
     "value": "Model"
-  },
-  "agentPage.work.brain.account": {
-    "value": "Account"
   },
   "agentPage.work.brain.accountWho": {
     "value": "Only accounts of {{owner}}, who is responsible for {{name}}: a plan thinks only for its owner's agents."
@@ -10728,23 +10752,8 @@
   "agentPage.work.brain.accountOthers": {
     "value": "Other people's plans show whose they are. Their owner gets an email and can take it back."
   },
-  "agentPage.work.brain.addAccount": {
-    "value": "Add account"
-  },
   "agentPage.work.brain.signInAgain": {
     "value": "Sign in again"
-  },
-  "agentPage.work.brain.connectPlan": {
-    "value": "Connect another plan"
-  },
-  "agentPage.work.brain.keyLabel": {
-    "value": "API key"
-  },
-  "agentPage.work.brain.fallbackTitle": {
-    "value": "If {{computer}} stops answering, answer through the API"
-  },
-  "agentPage.work.brain.fallbackHint": {
-    "value": "It answers through the API and counts against {{name}}'s budget. Otherwise {{name}} tells whoever asked and waits for the computer to come back."
   },
   "agentPage.work.brain.effort": {
     "value": "Effort"
@@ -10761,6 +10770,9 @@
   "agentPage.work.brain.efforts.high": {
     "value": "High"
   },
+  "agentPage.work.brain.efforts.xhigh": {
+    "value": "Extra high"
+  },
   "agentPage.work.brain.efforts.max": {
     "value": "Maximum"
   },
@@ -10776,6 +10788,9 @@
   "agentPage.work.brain.effortsLower.high": {
     "value": "high"
   },
+  "agentPage.work.brain.effortsLower.xhigh": {
+    "value": "extra high"
+  },
   "agentPage.work.brain.effortsLower.max": {
     "value": "maximum"
   },
@@ -10790,6 +10805,9 @@
   },
   "agentPage.work.brain.effortText.high": {
     "value": "Thinks more on hard tasks. Slower and costs more."
+  },
+  "agentPage.work.brain.effortText.xhigh": {
+    "value": "Thinks a lot more on long, hard tasks. Slower and pricier."
   },
   "agentPage.work.brain.effortText.max": {
     "value": "Thinks as much as possible. Much slower and pricier."
@@ -10833,35 +10851,8 @@
   "agentPage.work.brain.advanced.title": {
     "value": "Advanced settings"
   },
-  "agentPage.work.brain.advanced.sub": {
-    "value": "{{brain}}. Applies to every conversation."
-  },
-  "agentPage.work.brain.advanced.think": {
-    "value": "How it thinks"
-  },
-  "agentPage.work.brain.advanced.answers": {
-    "value": "Who it answers"
-  },
   "agentPage.work.brain.advanced.defaults": {
     "value": "Back to defaults"
-  },
-  "agentPage.work.brain.advanced.done": {
-    "value": "Done"
-  },
-  "agentPage.work.brain.advanced.contents.model": {
-    "value": "Context window"
-  },
-  "agentPage.work.brain.advanced.contents.auto": {
-    "value": "Context window and who it answers"
-  },
-  "agentPage.work.brain.advanced.contents.fixed": {
-    "value": "Effort, context window and who it answers"
-  },
-  "agentPage.work.brain.advanced.contents.autoSpeed": {
-    "value": "Speed, context window and who it answers"
-  },
-  "agentPage.work.brain.advanced.contents.fixedSpeed": {
-    "value": "Effort, speed, context window and who it answers"
   },
   "agentPage.work.brain.advanced.allDefault": {
     "value": "All defaults"
@@ -10874,36 +10865,6 @@
   },
   "agentPage.work.brain.advanced.context": {
     "value": "Context: {{size}}"
-  },
-  "agentPage.work.brain.advanced.sharing": {
-    "value": "Answers other people"
-  },
-  "agentPage.work.brain.advanced.waits": {
-    "value": "Waits for the computer"
-  },
-  "agentPage.work.brain.copy.row": {
-    "value": "Use on other agents"
-  },
-  "agentPage.work.brain.copy.rowLine": {
-    "value": "The same AI, model, effort and autonomy"
-  },
-  "agentPage.work.brain.copy.title": {
-    "value": "Use on other agents"
-  },
-  "agentPage.work.brain.copy.sub": {
-    "value": "They'll think with {{setup}}."
-  },
-  "agentPage.work.brain.copy.all": {
-    "value": "All"
-  },
-  "agentPage.work.brain.copy.allLine": {
-    "value": {
-      "one": "{{count}} agent can take it",
-      "other": "{{count}} agents can take it"
-    }
-  },
-  "agentPage.work.brain.copy.none": {
-    "value": "No other agent can take it now."
   },
   "agentPage.work.brain.copy.now": {
     "value": "Now: {{brain}}"
@@ -10922,9 +10883,6 @@
   },
   "agentPage.work.brain.copy.withAutonomy": {
     "value": "Include the autonomy"
-  },
-  "agentPage.work.brain.copy.withAutonomyLine": {
-    "value": "{{value}}, as on this agent. Off: each keeps its own."
   },
   "agentPage.work.brain.copy.reasons.not_allowed": {
     "value": "Only admins and {{owner}} change it"
@@ -10955,33 +10913,6 @@
   },
   "agentPage.work.brain.copy.reasons.failed": {
     "value": "Couldn't change it now"
-  },
-  "agentPage.work.brain.copy.search": {
-    "value": "Find an agent"
-  },
-  "agentPage.work.brain.copy.noMatch": {
-    "value": "No agent named “{{q}}”"
-  },
-  "agentPage.work.brain.copy.pick": {
-    "value": "Pick the agents"
-  },
-  "agentPage.work.brain.copy.use": {
-    "value": {
-      "one": "Use on {{count}} agent",
-      "other": "Use on {{count}} agents"
-    }
-  },
-  "agentPage.work.brain.copy.done": {
-    "value": {
-      "one": "{{count}} agent now thinks with {{setup}}.",
-      "other": "{{count}} agents now think with {{setup}}."
-    }
-  },
-  "agentPage.work.brain.copy.autonomyOnly": {
-    "value": {
-      "one": "{{count}} agent changed only its autonomy.",
-      "other": "{{count}} agents changed only their autonomy."
-    }
   },
   "agentPage.work.brain.copy.missed": {
     "value": {
@@ -11141,12 +11072,6 @@
   },
   "agentPage.work.brain.add.sendFailed": {
     "value": "Couldn't send the code. Check it and try again."
-  },
-  "agentPage.work.brain.add.done": {
-    "value": "The {{account}} account is on {{computer}}. Click Use to save."
-  },
-  "agentPage.work.brain.offCloud": {
-    "value": "{{computer}} isn't answering"
   },
   "agentPage.work.computer.title": {
     "value": "Where does {{name}} work?"
@@ -20882,9 +20807,6 @@
   "aiAccounts.share.savedOwner": {
     "value": "{{name}} now answers only you."
   },
-  "aiAccounts.share.savedOwnerOf": {
-    "value": "{{name}} now answers only {{owner}}."
-  },
   "aiAccounts.share.backOnApi": {
     "value": "{{name}} is back on the API and still answers only you."
   },
@@ -29321,7 +29243,7 @@
     "value": "Turn the routine on to test it."
   },
   "errors.routine.continueExtraOff": {
-    "value": "This plan's window is used up and this agent's long work doesn't use paid extra usage. Turn that on in its AI settings to continue now, or it picks up after the reset."
+    "value": "This plan's window is used up and this agent's long work doesn't use the plan's paid extra usage. It picks up after the reset."
   },
   "errors.routine.continueExtraUsedUp": {
     "value": "This plan's window is used up and its paid extra usage is used up or unavailable. It picks up after the reset."

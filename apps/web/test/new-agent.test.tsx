@@ -17,7 +17,7 @@ import {
   readBudget,
   stepErrors,
 } from "@/lib/new-agent";
-import { aiSelect, chooseAi, payWith } from "./ai-picker";
+import { aiSelect, brainTitle, chooseAi, openAiSelect } from "./ai-picker";
 import {
   createFakeApi,
   ENG_ID,
@@ -58,8 +58,10 @@ const open = async (state = seedState(), api = createFakeApi(state)) => {
 const createdWith = (state: ReturnType<typeof seedState>) =>
   state.calls.find((c) => c.method === "agents.create")?.args[1] as AgentInput | undefined;
 
-/** "Quem pensa" on the model step: its trigger reads the choice; its list, every model and plan, searched. */
-const brainBox = () => screen().getByRole("combobox", { name: "Quem pensa" });
+/** "Quem pensa" on the model step: what thinks (a plan's account or the computer's sign-in, or a key). */
+const aiBox = () => screen().getByRole("combobox", { name: "Quem pensa" });
+/** Its "Modelo" under it: its trigger reads the model; on a key, its list, every model, searched. */
+const brainBox = () => screen().getByRole("combobox", { name: "Modelo" });
 const openBrain = async () => {
   await click(brainBox());
   return screen().getByRole("listbox", { name: "Modelos" });
@@ -576,26 +578,21 @@ describe("Criar agente: what gets created", () => {
     expect(
       screen().getByText("O workspace ainda não tem uma IA. Conecte uma agora, ou crie o agente e conecte depois."),
     ).toBeTruthy();
-    const list = await openBrain();
-    expect(optionsIn(list, "Plano do ChatGPT")[0]?.textContent).toBe("ChatGPTIndisponível");
-    expect(optionsIn(list, "Plano do ChatGPT")[0]?.getAttribute("aria-disabled")).toBe("true");
-    // The workspace's only computer: the heading doesn't name it.
-    expect(groupNames(list)).toContain("Plano do Claude");
-    const claude = optionsIn(list, "Plano do Claude")[0] as HTMLElement;
-    expect(claude.textContent).toBe("AutomáticoUsa o plano do Claude de quem conectou o computador.");
-    await click(claude);
-    expect(brainBox().textContent).toStartWith("Plano do Claude");
+    // The Mac mini's own sign-in is the one AI there; Codex, on no computer, isn't offered.
+    const rows = await openAiSelect(document.body, "Quem pensa");
+    expect(rows.map((o) => [brainTitle(o), o.querySelector(".ac-menu__desc")?.textContent])).toEqual([
+      ["Claude", "Login no Mac mini"],
+      ["Conectar outra IA", "Outra conta, plano ou chave de API"],
+    ]);
+    await act(async () => fireEvent.click(rows[0] as HTMLElement));
+    await settle(4);
+    expect(aiBox().textContent).toStartWith("Claude");
     expect(
       screen().queryByText("O workspace ainda não tem uma IA. Conecte uma agora, ou crie o agente e conecte depois."),
     ).toBeNull();
-    // In the words of the switch it points to, "Atende outras pessoas".
-    expect(
-      screen().getByText(
-        "No plano, a Eva começa atendendo só você. Na página da Eva, você pode escolher se ela atende outras pessoas.",
-      ),
-    ).toBeTruthy();
+    // On a plan it starts answering only its owner: the switch says so, off.
+    expect(screen().getByRole("switch", { name: "Atende outras pessoas" }).getAttribute("aria-checked")).toBe("false");
     await proceed();
-    expect(document.querySelector(".newag__review")?.textContent).toContain("Plano do Claude");
     await click(screen().getByRole("button", { name: "Criar Eva" }));
     await settle(8);
     const agentId = state.agents.find((a) => a.handle === "eva")?.id;
@@ -646,7 +643,7 @@ describe("Criar agente: what gets created", () => {
       window.open = realOpen;
     }
     expect(opened).toEqual([[`/org/${ORG_ID}/settings/computers`, "_blank", "noopener"]]);
-    await click(payWith(box, "Com chave de API"));
+    await chooseAi(box, "Chave de API");
     await act(async () =>
       fireEvent.change(within(box).getByLabelText("Cole aqui"), {
         target: { value: "sk-ant-api03-abcdefghijklmnop1234" },
@@ -654,7 +651,7 @@ describe("Criar agente: what gets created", () => {
     );
     await click(within(box).getByRole("button", { name: "Salvar chave" }));
     await settle(8);
-    await click(within(box).getByRole("button", { name: "Pronto" }));
+    await click(within(box).getByRole("button", { name: "Fechar" }));
     await settle(6);
     // Back where it was: the same step, the name and the budget kept, and the key thinks for it now.
     expect(screen().queryByRole("dialog", { name: "Conectar uma IA" })).toBeNull();
@@ -732,8 +729,7 @@ describe("Criar agente: what gets created", () => {
     await settle(6);
     const box = screen().getByRole("dialog", { name: "Conectar uma IA" });
     // The same choices as Settings › Contas de IA and the setup, for the agents they create.
-    expect(aiSelect(box).textContent).toBe("Claude");
-    expect(payWith(box, "Com chave de API")).toBeTruthy();
+    expect(aiSelect(box).textContent).toContain("Claude");
     const panel = within(box).getByRole("region", { name: "Seu plano do Claude" });
     expect(panel.textContent).toContain("Os agentes que você criar pensam com ele.");
     await act(async () => fireEvent.keyDown(document.activeElement as HTMLElement, { key: "Escape" }));
@@ -1085,7 +1081,6 @@ describe("Criar agente: what gets created", () => {
       account: { id: "acc-1", label: "Claude", provider: null, mine: true, free: true },
       ownSignIn: false,
       effort: "high",
-      fallback: true,
     };
     await open(state);
     await startAs("Assistente");
@@ -1101,7 +1096,7 @@ describe("Criar agente: what gets created", () => {
     expect(state.calls.find((c) => c.method === "agents.setBrain")?.args).toEqual([
       ORG_ID,
       agentId,
-      { brain: "claude_code", account: "acc-1", model: "opus", effort: "high", contextTokens: null, fallback: true },
+      { brain: "claude_code", account: "acc-1", model: "opus", effort: "high", contextTokens: null },
     ]);
   });
 
@@ -1134,7 +1129,6 @@ describe("Criar agente: what gets created", () => {
       account: null,
       ownSignIn: true,
       effort: "high",
-      fallback: true,
     };
     const api = createFakeApi(state);
     fakeMachinesOf.get(api)?.setAiAccounts({

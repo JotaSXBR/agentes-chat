@@ -318,6 +318,10 @@ html:not([data-pointer]) .rq__more:focus-visible {
 .rq__foot > .ac-btn {
   height: 32px;
 }
+/* Under a proposal's lines: 12px over the hairline, as the lines stand 12px under the object. */
+.rq > .ac-locked > .waitcard__lines + .rq__foot {
+  margin-top: 12px;
+}
 /* As `.ac-acts`: a ghost's words stand on the row's edge, on every line when the row wraps. */
 .rq__foot,
 .rq__item-acts {

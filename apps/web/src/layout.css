@@ -504,12 +504,9 @@ html:not([data-pointer]) .consult-pair__row:focus-visible {
   margin: 4px 0 0;
   white-space: pre-wrap;
 }
-/* 12px under the well's last line (its own 10px padding below it), and 12px over the footer's hairline. */
+/* 12px under the well's last line (its own 10px padding below it); 12px over the footer (request-card.css). */
 .rq > .ac-locked > .waitcard__lines {
   margin-top: 2px;
-}
-.rq > .ac-locked > .waitcard__lines + .rq__foot {
-  margin-top: 12px;
 }
 
 /* An agent waiting for its offline computer, in the sidebar: the clock and "esperando". */

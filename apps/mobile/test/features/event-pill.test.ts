@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { stoppedRunsKey, stoppedRunsOf } from "../../src/features/chat/stopped-runs";
+import { stoppedOf, withContinued } from "../../src/features/chat/turn";
 import { message } from "./fixtures";
 
 const src = (path: string) => readFileSync(join(import.meta.dir, "../../src", path), "utf8");
@@ -37,6 +38,17 @@ describe("one stop, one pill", () => {
     expect(stoppedRunsOf([reply("m2", "r1", { canceled: {}, mediaAfter: "m1" }), notice("n1", "r1")]).size).toBe(0);
     // A reply with no notice here has nothing to merge.
     expect(stoppedRunsOf([reply("m1", "r1")]).size).toBe(0);
+  });
+
+  test("a stop that went on draws no pill: continued here, elsewhere or before a reload, or started again", () => {
+    const row = src("features/chat/MessageRow.tsx");
+    // Continued by me (its cached meta), on another device (`run.continued`) or before a reload: the same value.
+    expect(row).toContain("const continued = useContinuedRun(m.id) ?? stopped.continuedRunId;");
+    expect(row).toContain("if (stopped.restarted || continued) return null;");
+    expect(stoppedOf(withContinued({ canceled: { byUserId: "me" } }, "r2"))?.continuedRunId).toBe("r2");
+    // Its notice still goes into that reply, which draws nothing now: no pill of its own either.
+    const continued = reply("m1", "r1", { canceled: { byUserId: "me", continuedRunId: "r2" } });
+    expect(stoppedRunsOf([continued, notice("n1", "r1")]).has("r1")).toBe(true);
   });
 
   test("the rows redraw when a reason is said, not on every message", () => {

@@ -152,11 +152,14 @@ describe("in the channel", () => {
     const line = msg.querySelector(".run-canceled") as HTMLElement;
     expect(line.textContent).toContain("Você parou a Ada");
     expect(msg.querySelector(".ac-msg__text")?.textContent).not.toContain("Interrompido");
-    // Continuar picks it up from where it stopped; the button goes away.
+    // Continuar picks it up from where it stopped; it is no longer stopped, so the whole pill goes.
     await act(async () => fireEvent.click(within(line).getByRole("button", { name: "Continuar" })));
     await settle(3);
     expect(state.calls.find((c) => c.method === "agents.continueRun")?.args).toEqual([ORG_ID, "r-stopped"]);
     expect(within(msg).queryByRole("button", { name: "Continuar" })).toBeNull();
+    expect(msg.querySelector(".run-canceled")).toBeNull();
+    expect(msg.textContent).not.toContain("Você parou");
+    expect(msg.textContent).toContain("Comecei a revisar o PR.");
   });
 
   /** Ada's reply in #eng, stopped as `canceled` says. */
@@ -204,6 +207,46 @@ describe("in the channel", () => {
     const { line } = await stoppedReply({ byUserId: null, code: "run.failed" });
     expect(line?.textContent).toContain("Parou aqui");
     expect(within(line as HTMLElement).queryByRole("button", { name: "Continuar" })).toBeNull();
+  });
+
+  test("continued before (here, elsewhere or before a reload): no pill, and its notice draws none either", async () => {
+    const state = seedState();
+    state.messages.push(
+      {
+        id: "m-stopped",
+        channelId: ENG_ID,
+        threadId: null,
+        author: { type: "agent", id: ADA_ID },
+        body: "Comecei a revisar o PR.\n\n_Stopped by Walter._",
+        mentionedAgentIds: [],
+        agentRunId: "r-stopped",
+        meta: { canceled: { byUserId: "u-walter", text: "Comecei a revisar o PR.", continuedRunId: "r-next" } },
+        createdAt: new Date(Date.now() - 60_000).toISOString(),
+      } as Message,
+      {
+        id: "m-told",
+        channelId: ENG_ID,
+        threadId: null,
+        author: { type: "agent", id: ADA_ID },
+        body: "Walter stopped your task.",
+        mentionedAgentIds: [],
+        agentRunId: null,
+        meta: {
+          notice: {
+            kind: "run_stopped",
+            text: "Walter stopped your task.",
+            refs: { runId: "r-stopped", byUserId: "u-walter", byName: "Walter", label: "", was: "working" },
+          },
+        },
+        createdAt: new Date().toISOString(),
+      } as Message,
+    );
+    await renderApp(`/org/${ORG_ID}/c/${ENG_ID}`, { api: createFakeApi(state) });
+    await settle(5);
+    const msg = screen().getByText("Comecei a revisar o PR.").closest(".ac-msg") as HTMLElement;
+    expect(msg.querySelector(".run-canceled")).toBeNull();
+    expect(document.querySelector(".cn-stopped")).toBeNull();
+    expect(document.body.textContent).not.toContain("Você parou");
   });
 
   test("'Parar e mandar' started it again from my message: no stop line, no Continuar", async () => {

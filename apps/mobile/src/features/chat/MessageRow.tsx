@@ -986,8 +986,8 @@ function Sending({ offline, end }: { offline: boolean; end: boolean }) {
  * A reply someone stopped: what it wrote stays, with one pill under it, "You stopped Ada · 14:16 | Continue | Add a
  * reason" ("At the step limit | Continue" under the reply of a run that reached its step limit, its cause when no
  * person stopped it). The run's stop notice, when the conversation has it, gives the pill its words (who, the reason,
- * "Add a reason") and draws nothing itself (`stoppedRunsOf`). Continue picks up from where it stopped (a new run) and
- * goes away once it did, for everyone. A run that started again at once from a person's message draws nothing.
+ * "Add a reason") and draws nothing itself (`stoppedRunsOf`). Continue picks up from where it stopped (a new run), and
+ * the pill goes away once it did, for everyone. A run that started again at once from a person's message draws nothing.
  */
 function StoppedLine({
   message: m,
@@ -1070,7 +1070,8 @@ function StoppedLine({
         });
       });
   };
-  if (stopped.restarted) return null;
+  // Started again from a message, or continued: it is no longer stopped.
+  if (stopped.restarted || continued) return null;
   if (fallback === null) {
     // Its text already says why (its long work's provider failed): Continue alone, nothing to say.
     if (!open) return null;
@@ -1104,7 +1105,7 @@ function StoppedLine({
         byAgentId={limit ? null : stopped.byAgentId}
         fallback={fallback}
         cont={
-          !continued && (open || busy) ? (
+          open || busy ? (
             <EventPillAction
               key="continue"
               lead="play"

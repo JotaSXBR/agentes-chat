@@ -3496,8 +3496,8 @@ function LiveRunStatus({
 
 /**
  * Under a stopped answer: "Parado por você · Continuar", or "No limite de passos · Continuar" under the
- * reply of a run that reached its step limit, or just Continuar under the end of a long work its AI provider failed. Continuar starts a new run of the same agent from where it
- * stopped; it goes away for everyone once someone pressed it.
+ * reply of a run that reached its step limit, or just Continuar under the end of a long work its AI provider failed.
+ * Continuar starts a new run of the same agent from where it stopped; the line goes away for everyone once it did.
  */
 function StoppedLine({
   runId,
@@ -3532,9 +3532,10 @@ function StoppedLine({
   const dir = useDirectory(org.id);
   const { canStop } = useStopRun();
   const cont = useContinueRun();
-  const continued = useWasContinued(runId, message);
+  const { continued, goneOn } = useWasContinued(runId, message);
   const stop = useStopNotice(runId);
-  if (restarted) return null;
+  // Started again from a message, or continued: it is no longer stopped.
+  if (restarted || goneOn) return null;
   // Its words when no person stopped it: the step limit, stuck, or its cause once the reply is saved (an archived
   // agent, a paused workspace); long work its provider cut off says it in its text.
   const fallback = limit

@@ -165,6 +165,7 @@ import {
   continuationVerdict,
   decideTurnEnd,
   type LearnSignal,
+  localPathsCited,
   reportRunFailure,
   type TurnEndDecision,
   triedCalls,
@@ -4807,6 +4808,12 @@ async function executeRunInner(
             unseen,
           )
         : "";
+      // Files on its computer it cites to people, who can't open them: an agent with a computer, outside a repository's
+      // or a mission's work (code talk).
+      const localPaths =
+        text && !capped && !betweenAgents && !t.repo && !plan.missionId && granted.some((g) => g.name === "upload_file")
+          ? localPathsCited(text, t.request ?? triggerMessage?.body ?? triggerText)
+          : [];
       const judging = evidenceFor(t);
       // Help it asked for in this run and stopped waiting on (a person wrote meanwhile): only then a lookup.
       const detachedIds = ((t as { detachedWaits?: { waitId: string }[] }).detachedWaits ?? []).map((d) => d.waitId);
@@ -4831,6 +4838,7 @@ async function executeRunInner(
         decided: decided && !silent && !said && !capped && !closingSummary(t, true) ? decided : null,
         unanswered: !silent && !viaRoutine && (sentinelOnly || (!text && !anythingPosted)),
         unreached,
+        localPaths,
         judged: owesAnswer && !capped ? judged : "",
         mission: Boolean(plan.missionId),
         // A mission's card already asking a person brings it back too.
@@ -4884,6 +4892,7 @@ async function executeRunInner(
         answer: sentinelOnly ? "sentinel" : "empty",
         promise: "promise",
         unreached: "unreached",
+        local_paths: "local_paths",
         untried: "untried",
         secret: "secret",
         open_request: "open_request",
@@ -4906,6 +4915,8 @@ async function executeRunInner(
         // Nor a secret asked in the chat (ADR 0109 addendum).
         if (
           decision.rule === "decision" ||
+          // Nor one citing files on its computer, which nobody else can open.
+          decision.rule === "local_paths" ||
           decision.rule === "answer" ||
           decision.rule === "untried" ||
           decision.rule === "secret"

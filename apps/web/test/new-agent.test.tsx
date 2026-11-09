@@ -608,8 +608,8 @@ describe("Criar agente: what gets created", () => {
     expect(
       screen().queryByText("O workspace ainda não tem uma IA. Conecte uma agora, ou crie o agente e conecte depois."),
     ).toBeNull();
-    // On a plan it starts answering only its owner: the switch says so, off.
-    expect(screen().getByRole("switch", { name: "Atende outras pessoas" }).getAttribute("aria-checked")).toBe("false");
+    // On a plan it keeps answering whom "Quem pode falar" lets in: the switch starts on, as every default.
+    expect(screen().getByRole("switch", { name: "Atende outras pessoas" }).getAttribute("aria-checked")).toBe("true");
     await proceed();
     await click(screen().getByRole("button", { name: "Criar Eva" }));
     await settle(8);

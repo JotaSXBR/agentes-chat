@@ -346,7 +346,9 @@ function NewAgentFlow({
   const asked = channelId ? [channelId] : [];
   const [channelIds, setChannelIds] = useState<Set<string>>(new Set(draft?.channelIds ?? asked));
   const [owner, setOwner] = useState(me.user.id);
-  const [audience, setAudience] = useState<AgentAudience>({ mode: "everyone", userIds: [] });
+  // Until the person picks, whom the workspace's new agents answer (everyone, unless an admin narrowed it).
+  const [pickedAudience, setAudience] = useState<AgentAudience>();
+  const audience = pickedAudience ?? { mode: settings.data?.newAgentAudience ?? "everyone", userIds: [] };
   // "Automático" for every new agent: each task gets its model and effort; a fixed model is one click away.
   const [model, setModel] = useState<string>(AUTO);
   // Or a plan (Claude Code, Codex) on a computer: saved as its "Quem pensa" once the agent exists. A proposal
@@ -359,8 +361,9 @@ function NewAgentFlow({
   // Or a plan with nothing to think with yet (a coding plan's key): made on Automático, Connect opens on it after.
   const [connectPlan, setConnectPlan] = useState<AiPlan | null>(null);
   const [key, setKey] = useState(DEFAULT_KEY);
-  // On a plan: "Atende outras pessoas" (off: it answers only its owner) and "Configuração avançada", saved with it.
-  const [replies, setReplies] = useState(false);
+  // On a plan: "Atende outras pessoas" (on, as every default: it answers whom "Quem pode falar" lets in; off, only its
+  // owner) and "Configuração avançada", saved with it.
+  const [replies, setReplies] = useState(true);
   // What the person changed there; the rest is what the last setup had (`onStart`), else the defaults.
   const [advPicked, setAdvPicked] = useState<Partial<Advanced>>({});
   const [advOpen, setAdvOpen] = useState(false);
@@ -749,7 +752,7 @@ function NewAgentFlow({
           ...(adv.speed === "fast" ? { speed: adv.speed } : {}),
           ...(adv.contextTokens !== null ? { contextTokens: adv.contextTokens } : {}),
         });
-        if (replies) await api.agents.setBrain(org.id, agent.id, { onlyOwner: false });
+        if (!replies) await api.agents.setBrain(org.id, agent.id, { onlyOwner: true });
         // Saved with no account, it thinks with that computer's own sign-in, which thinks only for agents of whoever
         // connected it, where that CLI is signed in (never on the workspace's computer). Else, for an agent of the
         // person's own, its plan's sign-in opens once it's created: only the owner signs a plan in for it.
@@ -861,7 +864,7 @@ function NewAgentFlow({
     setSkillIds(library.data ? new Set(library.data.filter((s) => s.defaultForNewAgents).map((s) => s.id)) : null);
     setChannelIds(new Set(asked));
     setOwner(me.user.id);
-    setAudience({ mode: "everyone", userIds: [] });
+    setAudience(undefined);
     startWith(startOf(me.user.id));
     setAiPicked(false);
     setWithAutonomy(true);
@@ -1455,7 +1458,7 @@ function NewAgentFlow({
               onChange={(v) => {
                 setOwner(v);
                 if (!aiPicked) startWith(startOf(v === NO_OWNER ? null : v));
-                if (v !== NO_OWNER) setAudience((a) => ({ ...a, userIds: a.userIds.filter((id) => id !== v) }));
+                if (v !== NO_OWNER) setAudience({ ...audience, userIds: audience.userIds.filter((id) => id !== v) });
               }}
             />
           ) : (

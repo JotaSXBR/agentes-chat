@@ -1631,7 +1631,14 @@
         "caresFor": "Si occupa di"
       },
       "noChannel": "In nessun canale",
-      "none": "Nessun agente corrisponde."
+      "none": "Nessun agente corrisponde.",
+      "pick": "Seleziona {{name}}",
+      "pickAll": "Seleziona tutti",
+      "selection": "Agenti selezionati",
+      "selected_one": "{{count}} selezionato",
+      "selected_many": "{{count}} selezionati",
+      "selected_other": "{{count}} selezionati",
+      "clearSelection": "Annulla selezione"
     },
     "chart": {
       "byLabel": "Organigramma per",
@@ -4496,8 +4503,6 @@
       "saved": {
         "brain": "Ora {{name}} pensa con {{brain}}.",
         "brain_female": "Ora {{name}} pensa con {{brain}}.",
-        "brainOwner": "Ora {{name}} pensa con {{brain}} e risponde solo a {{owner}}.",
-        "brainOwner_female": "Ora {{name}} pensa con {{brain}} e risponde solo a {{owner}}.",
         "computer": "Ora {{name}} lavora su {{computer}}.",
         "computer_female": "Ora {{name}} lavora su {{computer}}.",
         "none": "Ora {{name}} non ha un computer.",
@@ -9026,6 +9031,8 @@
       "useFor": "Usa anche per {{name}}",
       "useFor_female": "Usa anche per {{name}}",
       "useForMenu": "Usa per…",
+      "useForAll": "Tutti gli agenti",
+      "useForAllAgents": "Usa per tutti gli agenti",
       "revokeOnClaude": "Per chiuderlo anche su Claude, revocalo nelle impostazioni di Claude."
     },
     "usage": {
@@ -9102,6 +9109,32 @@
     "search": "Cerca ruoli e persone",
     "noMatch": "Nessun ruolo o persona con quel nome.",
     "pickSomeone": "Scegli almeno una persona o un ruolo.",
+    "several": {
+      "title_one": "Chi può parlare con {{count}} agente",
+      "title_many": "Chi può parlare con {{count}} agenti",
+      "title_other": "Chi può parlare con {{count}} agenti",
+      "modeText": {
+        "everyone": "Chiunque nello spazio di lavoro può chiamare questi agenti.",
+        "people": "Scegli le persone e i ruoli che possono parlare con loro.",
+        "owner": "Ogni agente parla solo con il suo proprietario."
+      },
+      "ownerAlways": "Il proprietario di ogni agente può sempre.",
+      "consultable": "Altri agenti possono consultarli",
+      "consultableHint": "Per le persone non in elenco, rispondono solo all'agente che ha chiesto, mai direttamente a loro. Le azioni sensibili richiedono comunque l'approvazione del proprietario di ciascuno.",
+      "agents": {
+        "consulted": "Vale solo per le persone. Gli altri agenti possono ancora consultarli per chi non è in elenco.",
+        "blocked": "Vale anche per gli agenti. Nessun altro agente può contattarli per chi non è in elenco."
+      },
+      "askTitle_one": "Cambiare chi può parlare con {{count}} agente?",
+      "askTitle_many": "Cambiare chi può parlare con {{count}} agenti?",
+      "askTitle_other": "Cambiare chi può parlare con {{count}} agenti?",
+      "saved_one": "Chi può parlare è cambiato per {{count}} agente.",
+      "saved_many": "Chi può parlare è cambiato per {{count}} agenti.",
+      "saved_other": "Chi può parlare è cambiato per {{count}} agenti.",
+      "failed_one": "Non è stato possibile cambiare {{count}} agente. Riprova.",
+      "failed_many": "Non è stato possibile cambiare {{count}} agenti. Riprova.",
+      "failed_other": "Non è stato possibile cambiare {{count}} agenti. Riprova."
+    },
     "chip": {
       "owner": "Personale",
       "people": "Riservato"
@@ -10202,6 +10235,10 @@
   },
   "access": {
     "matrixTitle": "Accesso degli agenti",
+    "newAgents": {
+      "title": "Nuovi agenti",
+      "hint": "Vale per gli agenti creati, importati o proposti da ora in poi. Per cambiare quelli che esistono già, selezionane diversi in Team."
+    },
     "matrixHint": "Le azioni sensibili (merge, deploy, condivisione, pagamento) chiedono sempre l'approvazione, a qualsiasi livello. Per impostarlo strumento per strumento, apri gli Strumenti del connettore.",
     "matrixHow": "Fai clic su una cella per cambiarla:",
     "kindLabel": "Mostra",

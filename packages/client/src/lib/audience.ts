@@ -197,6 +197,23 @@ export function widenQuestion(
   };
 }
 
+/**
+ * One question before a change of several agents' audience at once (Equipe's selection): each one's `widenQuestion`,
+ * one alone as it is, more under one title. Null when there is nothing to ask.
+ */
+export function severalWidenQuestion(
+  t: TFunction,
+  questions: readonly { title: string; description: string }[],
+  agents: number,
+): { title: string; description: string } | null {
+  const [only] = questions;
+  if (!only || questions.length === 1) return only ?? null;
+  return {
+    title: t("audience.several.askTitle", { count: agents }),
+    description: questions.map((q) => q.description).join(" "),
+  };
+}
+
 /** The plan a brain thinks with, as the email to its owner says it (the engine's `planName`): a coding plan's own. */
 function planName(t: TFunction, brain: Pick<NonNullable<Agent["brain"]>, "kind" | "provider"> | null | undefined) {
   const kind = brain?.kind && brain.kind !== "model" ? brain.kind : "claude_code";

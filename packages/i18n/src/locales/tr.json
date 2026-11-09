@@ -1580,7 +1580,13 @@
         "caresFor": "İlgilendiği"
       },
       "noChannel": "Hiçbir kanalda değil",
-      "none": "Eşleşen ajan yok."
+      "none": "Eşleşen ajan yok.",
+      "pick": "{{name}} seç",
+      "pickAll": "Tümünü seç",
+      "selection": "Seçili ajanlar",
+      "selected_one": "{{count}} seçili",
+      "selected_other": "{{count}} seçili",
+      "clearSelection": "Seçimi temizle"
     },
     "chart": {
       "byLabel": "Organizasyon şeması",
@@ -4336,7 +4342,6 @@
       },
       "saved": {
         "brain": "{{name}} artık {{brain}} ile düşünüyor.",
-        "brainOwner": "{{name}} artık {{brain}} ile düşünüyor ve yalnızca şu kişiye yanıt veriyor: {{owner}}.",
         "computer": "{{name}} artık {{computer}} üzerinde çalışıyor.",
         "none": "{{name}} artık bir bilgisayara sahip değil.",
         "browserOn": "{{name}} artık web sitelerinde gezinebilir.",
@@ -8631,6 +8636,8 @@
       "disconnected": "{{label}} bağlantısı kesildi.",
       "useFor": "{{name}} için de kullan",
       "useForMenu": "Şunun için kullan…",
+      "useForAll": "Tüm ajanlar",
+      "useForAllAgents": "Tüm ajanlar için kullan",
       "revokeOnClaude": "Claude tarafında da sonlandırmak için Claude ayarlarından iptal edin."
     },
     "usage": {
@@ -8701,6 +8708,28 @@
     "search": "Rol ve kişi ara",
     "noMatch": "Bu adda bir rol veya kişi yok.",
     "pickSomeone": "En az bir kişi veya rol seçin.",
+    "several": {
+      "title_one": "{{count}} ajanla kimler konuşabilir",
+      "title_other": "{{count}} ajanla kimler konuşabilir",
+      "modeText": {
+        "everyone": "Çalışma alanındaki herkes bu ajanlara seslenebilir.",
+        "people": "Onlarla konuşabilecek kişileri ve rolleri seçin.",
+        "owner": "Her ajan yalnızca sahibiyle konuşur."
+      },
+      "ownerAlways": "Her ajanın sahibi her zaman konuşabilir.",
+      "consultable": "Diğer ajanlar onlara danışabilir",
+      "consultableHint": "Listede olmayan kişiler için yalnızca soran ajana yanıt verirler, onlara doğrudan asla. Hassas işlemler yine de her birinin sahibinin onayını gerektirir.",
+      "agents": {
+        "consulted": "Bu yalnızca kişiler için geçerli. Diğer ajanlar, listede olmayan kişiler için onlara danışmaya devam edebilir.",
+        "blocked": "Bu ajanlar için de geçerli. Listede olmayan kişiler için başka hiçbir ajan onlara ulaşamaz."
+      },
+      "askTitle_one": "{{count}} ajanla kimlerin konuşabileceği değiştirilsin mi?",
+      "askTitle_other": "{{count}} ajanla kimlerin konuşabileceği değiştirilsin mi?",
+      "saved_one": "{{count}} ajan için kimlerin konuşabileceği değişti.",
+      "saved_other": "{{count}} ajan için kimlerin konuşabileceği değişti.",
+      "failed_one": "{{count}} ajan değiştirilemedi. Tekrar deneyin.",
+      "failed_other": "{{count}} ajan değiştirilemedi. Tekrar deneyin."
+    },
     "chip": {
       "owner": "Kişisel",
       "people": "Kısıtlı"
@@ -9761,6 +9790,10 @@
   },
   "access": {
     "matrixTitle": "Ajan erişimi",
+    "newAgents": {
+      "title": "Yeni ajanlar",
+      "hint": "Bundan sonra oluşturulan, içe aktarılan veya önerilen ajanlar için geçerli. Mevcut olanları değiştirmek için Ekip'te birkaçını seçin."
+    },
     "matrixHint": "Hassas işlemler (birleştirme, dağıtım, paylaşım, ödeme) hangi düzeyde olursa olsun her zaman onay ister. Araç araç ayarlamak için bağlayıcının Araçlar bölümünü açın.",
     "matrixHow": "Değiştirmek için bir hücreye tıklayın:",
     "kindLabel": "Göster",

@@ -1,0 +1,1 @@
+ALTER TABLE "organization_settings" ADD COLUMN "new_agent_audience" text DEFAULT 'everyone' NOT NULL;

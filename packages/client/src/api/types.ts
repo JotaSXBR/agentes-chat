@@ -2218,6 +2218,11 @@ export interface OrgSettings {
   agentMedia: AgentMediaLevel;
   /** People can send voice messages (ADR 0100); only with `voiceAvailable` too. On by default. */
   voiceMessages: boolean;
+  /**
+   * Who can talk to a new agent whoever made it didn't choose for: everyone (the default) or only the person
+   * responsible for it. Criar agente starts its own choice here. Absent on older servers: everyone.
+   */
+  newAgentAudience?: "everyone" | "owner";
   /** Read only: this server has a speech engine. */
   voiceAvailable: boolean;
   /** Read only: this server can search GIFs (it has a GIF provider). */

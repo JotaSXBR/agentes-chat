@@ -941,7 +941,8 @@ export function agentRoutes(deps: AppDeps) {
             ...input,
             monthlyBudgetNanoUsd: budget(monthlyBudgetUsd),
             // A restricted one is born answering only its owner, so an audience refused below never leaves it open.
-            ...(audience && audience.mode !== "everyone" ? { audienceMode: "owner" as const } : {}),
+            // Without one, it answers whom the workspace's new agents answer.
+            ...(audience ? { audienceMode: audience.mode === "everyone" ? "everyone" : ("owner" as const) } : {}),
           },
           // New agents start on "Automático".
           NEW_AGENT_DEFAULTS,
@@ -1850,7 +1851,7 @@ export function agentRoutes(deps: AppDeps) {
             }),
             onlyOwner: z.boolean().optional().openapi({
               description:
-                "\"Atende outras pessoas\" turned off (ADR 0059): true, only its owner talks to it; false, whoever its audience's people list lets in, everyone with no list (its owner or an admin, on a plan too). Omitted = keep; switching onto a plan makes it the owner's only. Audited as `agent.audience_changed`.",
+                '"Atende outras pessoas" turned off (ADR 0059): true, only its owner talks to it; false, whoever its audience\'s people list lets in, everyone with no list (its owner or an admin, on a plan too). Omitted = keep, through a switch onto a plan too. Audited as `agent.audience_changed`.',
             }),
             acceptPlanTerms: z.boolean().optional().openapi({
               deprecated: true,

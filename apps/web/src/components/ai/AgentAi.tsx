@@ -15,7 +15,13 @@ import {
 } from "@agenteschat/client";
 import { signInPlan } from "@agenteschat/client/lib/ai-accounts";
 import { type AiRow, aiNote, aiRowGroupLabel, aiRows, currentValue } from "@agenteschat/client/lib/ai-select";
-import { EVERYONE_AUDIENCE, opensOthersPlan, widenQuestion } from "@agenteschat/client/lib/audience";
+import {
+  answersOthers,
+  audienceOf,
+  EVERYONE_AUDIENCE,
+  opensOthersPlan,
+  widenQuestion,
+} from "@agenteschat/client/lib/audience";
 import {
   type Advanced,
   advancedDefaults,
@@ -460,18 +466,12 @@ export function AgentAiForm({
     const before = snapshot(view, agent);
     void save.run(
       async () => {
-        const next = await save.setBrain({
+        await save.setBrain({
           brain: r.kind,
           account: r.account?.id ?? null,
           ...(r.act === "move" ? { moveAccount: true } : {}),
         });
-        // Onto a plan it answers only its owner from now on (ADR 0059 §5): said, since it stops answering others.
-        const onlyNow = next.onlyOwner && !view.onlyOwner;
-        return t(onlyNow ? "agentPage.work.saved.brainOwner" : "agentPage.work.saved.brain", {
-          ...g,
-          brain: r.label,
-          owner: view.canUsePlans ? t("common.you") : firstName(r.account?.ownerName ?? ""),
-        });
+        return t("agentPage.work.saved.brain", { ...g, brain: r.label });
       },
       () => restore(before),
     );
@@ -1462,8 +1462,9 @@ function ProviderPicker({
 
 /**
  * Several agents at once (the composer's banner, the first run, agents created with no AI): who it's for in one line
- * with their faces, the same select (only what can think for all of them: a plan's sign-in made for all of their
- * owner's agents, the computer's own, a key), saved for each at once, and "Atendem outras pessoas".
+ * with their faces, the same select, saved for each at once, and "Atendem outras pessoas". A plan's sign-in made for
+ * all of their owner's agents, the computer's own and a key think for all of them as they are; one of the person's
+ * own logins made for one agent opens its plan's steps, which sign each agent in to it in turn.
  */
 export function TeamAi({
   agents,
@@ -1487,7 +1488,8 @@ export function TeamAi({
   const models = useModels().data?.models ?? [];
   const [picked, setPicked] = useState<AiRow | null>(null);
   const [busy, setBusy] = useState(false);
-  const [everyone, setEveryone] = useState(false);
+  // "Atendem outras pessoas" once the person sets it; until then each agent keeps whom it answers.
+  const [everyone, setEveryone] = useState<boolean | null>(null);
   // "Conectar outra IA": its providers (opened at once for a new AI, a plan or a key asked for), then the steps.
   // `fresh`: from the select's row, past the accounts it lists.
   const [flow, setFlow] = useState<"asked" | "fresh" | null>(
@@ -1515,10 +1517,15 @@ export function TeamAi({
     agents.map((a) => a.name),
     NAMES_SHOWN,
   );
-  const fits = rows.map((r) => ({
-    ...r,
-    disabled: r.disabled || r.act !== "use" || (r.account !== undefined && r.account.shared !== true),
-  }));
+  // A login of the person's own made for one agent can't think for several: picked, it signs each in to that account.
+  const perAgent = (r: AiRow) => r.account?.mine === true && r.account.shared !== true;
+  const fits = rows.map((r) => ({ ...r, disabled: r.disabled || (r.act !== "use" && !perAgent(r)) }));
+  // The switch as it stands for them: on while every one of them answers other people.
+  const answersAll = agents.every((a) => {
+    const row = dir.agentById.get(a.id);
+    return !row || answersOthers(audienceOf(row), row.ownerUserId);
+  });
+  const repliesOn = everyone ?? answersAll;
   const refresh = () => {
     for (const key of [keys.agents(org.id), keys.aiStatus(org.id), keys.aiAccounts(org.id)])
       void qc.invalidateQueries({ queryKey: key });
@@ -1534,6 +1541,11 @@ export function TeamAi({
     toast.show(missed ? t("agentPage.work.brain.copy.missed", { count: missed }) : done, missed ? "error" : "success");
   };
   const pick = (r: AiRow) => {
+    if (perAgent(r)) {
+      setProvider(`plan:${planOfAccountRow(r)}`);
+      setFlow("asked");
+      return;
+    }
     setPicked(r);
     const k = r.group === "keys" ? credentials.find((c) => c.id === (r.key ?? defaultKey)) : undefined;
     void forAll(
@@ -1542,7 +1554,7 @@ export function TeamAi({
           return api.agents.setBrain(org.id, a.id, {
             brain: r.kind,
             account: r.account?.id ?? null,
-            ...(everyone ? { onlyOwner: false } : {}),
+            ...(everyone === null ? {} : { onlyOwner: !everyone }),
           });
         await api.agents.setBrain(org.id, a.id, { brain: "model" });
         const fit = !k || keyRuns(k, a.model, models);
@@ -1567,15 +1579,11 @@ export function TeamAi({
       })}
     </AvatarStack>
   );
-  // Whom a plan's steps sign in for: those with no AI yet, and those on this plan already (done there). One on the API
-  // key or on another plan keeps it, since a plan makes an agent answer only its owner; with none left, all of them.
+  // Whom a plan's steps sign in for: every agent it was opened for (a plan keeps whom each answers), those already on
+  // this plan done there.
   const planChoice = provider.startsWith("plan:") ? (provider.slice(5) as PlanChoice) : null;
   const aiNow = (id: string) => agentAi(dir.agentById.get(id), aiStateOf(status.data, id));
-  const open = agents.filter((a) => {
-    const ai = aiNow(a.id);
-    return ai === null || ai === planChoice;
-  });
-  const forWhom = (open.length > 0 ? open : agents).map((a) => {
+  const forWhom = agents.map((a) => {
     const row = dir.agentById.get(a.id);
     const ready = (aiStateOf(status.data, a.id) ?? "no_ai") !== "no_ai";
     return {
@@ -1619,7 +1627,7 @@ export function TeamAi({
                 choice={provider.slice(5) as PlanChoice}
                 gates={gates}
                 forWhom={forWhom}
-                toEveryone={everyone}
+                {...(everyone === null ? {} : { toEveryone: everyone })}
                 fresh={flow === "fresh"}
                 onKey={() => setProvider("key:anthropic")}
                 onComputer={onComputer}
@@ -1680,7 +1688,7 @@ export function TeamAi({
                 <div className="ac-setlist__row ac-setlist__row--pad">
                   <PlanReplies
                     agent={null}
-                    on={everyone}
+                    on={repliesOn}
                     onChange={(on) => {
                       setEveryone(on);
                       void forAll(

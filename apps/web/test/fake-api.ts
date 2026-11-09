@@ -2,7 +2,6 @@ import type {
   AccountDeletionPlan,
   ActiveRun,
   Agent,
-  AgentAudience,
   AgentBrain,
   AgentGroup,
   AgentProposal,
@@ -323,6 +322,8 @@ export interface FakeState {
   audit?: AuditRow[];
   /** The workspace switch "Agentes conferem o que o time já fez" (on when unset). */
   actionCheck?: boolean;
+  /** Who can talk to the workspace's new agents (everyone when unset). */
+  newAgentAudience?: OrgSettings["newAgentAudience"];
   /** Automático's models per provider and tier (Settings › Chaves); none when unset. */
   autoModels?: OrgSettings["autoModels"];
   /**
@@ -1790,6 +1791,7 @@ export function createFakeHttpApi(state: FakeState): Omit<HttpApi, FakedParts> {
         timezone: "America/Sao_Paulo",
         actionCheck: state.actionCheck ?? true,
         autoModels: state.autoModels ?? {},
+        newAgentAudience: state.newAgentAudience ?? "everyone",
         ...mediaSettings(state),
         // Money: admins only, like the backend.
         ...(seesCost() ? { defaultAgentBudgetUsd: state.defaultAgentBudgetUsd ?? 50 } : {}),
@@ -1800,6 +1802,7 @@ export function createFakeHttpApi(state: FakeState): Omit<HttpApi, FakedParts> {
         if (input.defaultCredentialId !== undefined) state.defaultCredentialId = input.defaultCredentialId;
         if (input.defaultAgentBudgetUsd !== undefined) state.defaultAgentBudgetUsd = input.defaultAgentBudgetUsd;
         if (input.actionCheck !== undefined) state.actionCheck = input.actionCheck;
+        if (input.newAgentAudience !== undefined) state.newAgentAudience = input.newAgentAudience;
         const { gifs, gifRating, agentStickers, agentMedia } = input;
         state.media = {
           ...state.media,
@@ -1825,6 +1828,7 @@ export function createFakeHttpApi(state: FakeState): Omit<HttpApi, FakedParts> {
           timezone: input.timezone ?? "America/Sao_Paulo",
           actionCheck: state.actionCheck ?? true,
           autoModels: state.autoModels ?? {},
+          newAgentAudience: state.newAgentAudience ?? "everyone",
           ...mediaSettings(state),
         };
       },
@@ -2613,11 +2617,11 @@ export function createFakeHttpApi(state: FakeState): Omit<HttpApi, FakedParts> {
         const b = brainOf(agentId);
         const brain = input.brain ?? b.brain;
         const changed = brain !== b.brain;
-        // ADR 0059 §5: onto a plan, only its owner talks to it until its owner or an admin lets others in.
+        // ADR 0059 §5 (amended 2026-11-09): onto a plan it keeps whom it answered; "Atende outras pessoas" off narrows.
         const row = state.agents.find((a) => a.id === agentId);
         // "Só algumas pessoas" with nobody picked already answers its owner alone: the server leaves it as it is.
         const restricted = row?.audience?.mode === "people" && !answersOthers(audienceOf(row), row.ownerUserId);
-        const onlyOwner = restricted || (input.onlyOwner ?? (changed && brain !== "model" ? true : b.onlyOwner));
+        const onlyOwner = restricted || (input.onlyOwner ?? b.onlyOwner);
         const model = brain === "model" ? null : input.model !== undefined ? input.model : changed ? null : b.model;
         const option = b.options.find((o) => o.kind === brain);
         const next: AgentBrain = {
@@ -2632,21 +2636,17 @@ export function createFakeHttpApi(state: FakeState): Omit<HttpApi, FakedParts> {
           onlyOwner,
         };
         brains.set(agentId, next);
-        // Its row, as the server keeps it: onto a plan only its owner, its "who can talk" list kept; on, back to that
-        // list, or everyone with none.
-        if (row && !restricted && (changed || input.onlyOwner !== undefined)) {
+        // Its row, as the server keeps it: off, only its owner, its "who can talk" list kept; on, back to that list,
+        // or everyone with none.
+        if (row && !restricted && input.onlyOwner !== undefined) {
           const was = audienceOf(row);
-          const base: AgentAudience = changed && brain !== "model" ? { mode: "owner", userIds: was.userIds } : was;
-          row.audience =
-            input.onlyOwner === undefined
-              ? base
-              : input.onlyOwner
-                ? { mode: "owner", userIds: was.userIds }
-                : answersOthers(base, row.ownerUserId)
-                  ? base
-                  : was.userIds.length > 0
-                    ? { mode: "people", userIds: was.userIds }
-                    : { mode: "everyone", userIds: [] };
+          row.audience = input.onlyOwner
+            ? { mode: "owner", userIds: was.userIds }
+            : answersOthers(was, row.ownerUserId)
+              ? was
+              : was.userIds.length > 0
+                ? { mode: "people", userIds: was.userIds }
+                : { mode: "everyone", userIds: [] };
         }
         return structuredClone(next);
       },

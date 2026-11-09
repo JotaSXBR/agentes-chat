@@ -157,7 +157,8 @@ describe("Usar em outros agentes", () => {
         brainAccountId: ANAS,
         brainModel: "opus",
         brainEffort: "high",
-        audienceMode: "owner",
+        // A plan keeps whom it answers (ADR 0059 §5, amended 2026-11-09).
+        audienceMode: "everyone",
       });
       // Each is its own change in the audit log, saying where it came from.
       const [audit] = await w.brainAudits(id);
@@ -253,16 +254,17 @@ describe("Usar em outros agentes", () => {
       autonomy: null,
     });
 
-    // Ana's plan thinks only for her agents: an admin gives it to hers (Theo), never to Bia's Zoe.
+    // Ana's plan thinks only for her agents: an admin gives it to hers (Theo), never to Bia's Zoe. Theo keeps answering
+    // the workspace on it, so Ana's plan opens to them: the preview says so, for the apps to ask first.
     const byAdmin = (setup: AgentSetupInput) =>
       applyAgentSetup(deps, caio.id, fx.org.id, { setup, agentIds: [w.theo, w.zoe], preview: true });
     expect(await byAdmin(ANA_CLAUDE(w.mac))).toEqual([
-      { agentId: w.theo, status: "applied" },
+      { agentId: w.theo, status: "applied", opensPlan: true },
       { agentId: w.zoe, status: "skipped", reason: "account_owner", params: { owner: "ana" } },
     ]);
     // So does the MacBook's own sign-in: she connected it.
     expect(await byAdmin({ ...ANA_CLAUDE(w.mac), account: null })).toEqual([
-      { agentId: w.theo, status: "applied" },
+      { agentId: w.theo, status: "applied", opensPlan: true },
       { agentId: w.zoe, status: "skipped", reason: "account_owner", params: { owner: "ana" } },
     ]);
     expect(

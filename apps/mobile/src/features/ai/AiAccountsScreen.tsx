@@ -2,7 +2,6 @@ import type { AiAccounts as AiAccountsView, Credential } from "@agenteschat/clie
 import {
   keys,
   useAiAccounts,
-  useAiStatus,
   useApi,
   useCredentials,
   useMachines,
@@ -20,13 +19,14 @@ import {
   onSeveralComputers,
   ownSignIns,
   ownSignInTitle,
+  perAgentSignIn,
   signInOf,
 } from "@agenteschat/client/lib/ai-accounts";
 import { computerNameOf } from "@agenteschat/client/lib/computer";
 import { errorText, keyRefusal } from "@agenteschat/client/lib/errors";
 import { joinNames, relativeTime } from "@agenteschat/client/lib/format";
 import { agentGrammar } from "@agenteschat/client/lib/grammar";
-import { agentAi, aiStateOf } from "@agenteschat/client/lib/no-ai";
+import { planOfAccount } from "@agenteschat/client/lib/no-ai";
 import { can } from "@agenteschat/client/lib/permissions";
 import { planOf, signInProviderOf } from "@agenteschat/client/lib/plans";
 import { keyNamedAfterProvider, providerLabel } from "@agenteschat/client/lib/providers";
@@ -75,7 +75,6 @@ export function AiAccountsScreen() {
   const machines = useMachines(orgId);
   const dir = useDirectory();
   const meId = useMeId();
-  const status = useAiStatus(orgId);
   const [again, setAgain] = useState<Account | null>(null);
   const hold = usePlanHold(orgId, org);
   // Looking at the plans: their usage is looked up again (it comes back as `machine.updated`).
@@ -117,15 +116,26 @@ export function AiAccountsScreen() {
   };
   const names = (list: string[]) => joinNames(list, t);
   const machineOf = (a: Account) => machines.data?.find((m) => m.id === a.machineId);
-  // One more of the person's agents thinks with an account made for all of them there: no sign-in.
-  const give = (a: Account, agent: { id: string; name: string }) =>
-    api.agents.setBrain(orgId, agent.id, { brain: a.kind, account: a.id }).then(() => {
-      successHaptic();
-      toast({ title: t("aiAccounts.done.savedAgent", { agent: agent.name, label: a.label }), icon: "check" });
-      refetch();
-      for (const key of [keys.agents(orgId), keys.aiStatus(orgId), keys.agentBrain(orgId, agent.id)])
-        void qc.invalidateQueries({ queryKey: key });
-    }, failed);
+  // More of the person's agents think with an account made for all of them there: no sign-in.
+  const give = async (a: Account, to: { id: string; name: string }[]) => {
+    let missed = 0;
+    for (const agent of to) {
+      await api.agents.setBrain(orgId, agent.id, { brain: a.kind, account: a.id }).catch(() => (missed += 1));
+      void qc.invalidateQueries({ queryKey: keys.agentBrain(orgId, agent.id) });
+    }
+    refetch();
+    for (const key of [keys.agents(orgId), keys.aiStatus(orgId)]) void qc.invalidateQueries({ queryKey: key });
+    if (missed > 0) return failed();
+    successHaptic();
+    const [one] = to;
+    toast({
+      title:
+        to.length === 1 && one
+          ? t("aiAccounts.done.savedAgent", { agent: one.name, label: a.label })
+          : t("connectAi.doneAll", { names: names(to.map((g) => g.name)), label: a.label }),
+      icon: "check",
+    });
+  };
   const remove = (a: Account) =>
     Alert.alert(
       t("aiAccounts.page.disconnectTitle", { label: a.label }),
@@ -157,21 +167,20 @@ export function AiAccountsScreen() {
   const actions = (a: Account) => {
     const plan = planOf(a.provider);
     const out = offersSignInAgain(a);
-    const toGive = meId
-      ? agentsToGive({
-          account: a,
-          agents: dir.agents,
-          machine: machineOf(a),
-          viewerId: meId,
-          onKey: (id) => agentAi(dir.agentById.get(id), aiStateOf(status.data, id)) === "key",
-        })
-      : [];
+    const toGive = meId ? agentsToGive({ account: a, agents: dir.agents, machine: machineOf(a), viewerId: meId }) : [];
+    // A sign-in that thinks for one agent: each agent signs in to it on its own, in Conectar uma IA.
+    const each = perAgentSignIn(a);
     choose(
       a.label,
       [
+        ...(toGive.length > 1 && !each
+          ? [{ label: t("aiAccounts.page.useForAllAgents"), onPress: () => void give(a, toGive) }]
+          : []),
         ...toGive.map((g) => ({
-          label: t("aiAccounts.page.useFor", agentGrammar(g.name)),
-          onPress: () => void give(a, g),
+          label: each
+            ? t("connectAi.signInFor", agentGrammar(g.name))
+            : t("aiAccounts.page.useFor", agentGrammar(g.name)),
+          onPress: () => (each ? openConnectAi({ agentId: g.id, plan: planOfAccount(a) }) : void give(a, [g])),
         })),
         ...(Platform.OS === "ios" ? [{ label: t("aiAccounts.page.rename"), onPress: () => rename(a) }] : []),
         ...(out || plan

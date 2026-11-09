@@ -10,6 +10,7 @@ import {
   opensOthersPlan,
   setupPlanOpens,
   setupPlanQuestion,
+  severalWidenQuestion,
   unavailableNotice,
   widenQuestion,
 } from "../src/lib/audience";
@@ -120,6 +121,19 @@ describe("widenQuestion", () => {
     expect(widenQuestion(t, ada, "Walter", [box])?.description).toMatch(
       /^common\.joinSentences.*reach\.planOpen.*reach\.mailLoss/,
     );
+  });
+
+  test("for several agents at once: nothing, one agent's own question, or all of theirs under one title", () => {
+    const leo = { name: "Leo", brain: { kind: "codex" } as Agent["brain"] };
+    const one = widenQuestion(t, ada, "Walter", []);
+    const two = widenQuestion(t, leo, null, [box]);
+    if (!one || !two) throw new Error("no question");
+    expect(severalWidenQuestion(t, [], 3)).toBeNull();
+    expect(severalWidenQuestion(t, [one], 3)).toEqual(one);
+    expect(severalWidenQuestion(t, [one, two], 3)).toEqual({
+      title: 'audience.several.askTitle{"count":3}',
+      description: `${one.description} ${two.description}`,
+    });
   });
 });
 

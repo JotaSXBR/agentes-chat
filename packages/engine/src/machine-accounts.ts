@@ -317,15 +317,13 @@ export async function releaseAgents(
   }
   const ownSignIn = sql`exists (select 1 from ${machines} m where m.id = "agents"."machine_id"
     and m.paired_by_user_id = "agents"."owner_user_id")`;
-  const lent = sql`"agents"."brain_account_lent_by" is not null`;
+  // Who it answers stays, on its owner's own sign-in too (ADR 0059 §5, amended 2026-11-09).
   const rows = await db
     .update(agents)
     .set({
       brainAccountId: null,
       brainAccountLentBy: null,
       brain: sql`case when ${ownSignIn} then "agents"."brain" else 'model' end`,
-      // Someone else's plan leaves with its switch: its owner's own sign-in doesn't answer others.
-      audienceMode: sql`case when ${lent} and ${ownSignIn} then 'owner' else "agents"."audience_mode" end`,
       updatedAt: now,
     })
     .where(

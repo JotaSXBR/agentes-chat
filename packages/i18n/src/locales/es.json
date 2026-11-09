@@ -1631,7 +1631,14 @@
         "caresFor": "Se ocupa de"
       },
       "noChannel": "En ningún canal",
-      "none": "Ningún agente coincide."
+      "none": "Ningún agente coincide.",
+      "pick": "Seleccionar a {{name}}",
+      "pickAll": "Seleccionar todos",
+      "selection": "Agentes seleccionados",
+      "selected_one": "{{count}} seleccionado",
+      "selected_many": "{{count}} seleccionados",
+      "selected_other": "{{count}} seleccionados",
+      "clearSelection": "Borrar selección"
     },
     "chart": {
       "byLabel": "Organigrama por",
@@ -4480,7 +4487,6 @@
       },
       "saved": {
         "brain": "{{name}} ahora piensa con {{brain}}.",
-        "brainOwner": "{{name}} ahora piensa con {{brain}} y responde solo a {{owner}}.",
         "computer": "{{name}} ahora trabaja en {{computer}}.",
         "none": "{{name}} ya no tiene computadora.",
         "browserOn": "{{name}} ya puede navegar por sitios web.",
@@ -8955,6 +8961,8 @@
       "disconnected": "{{label}} desconectado.",
       "useFor": "Usar también para {{name}}",
       "useForMenu": "Usar para…",
+      "useForAll": "Todos los agentes",
+      "useForAllAgents": "Usar para todos los agentes",
       "revokeOnClaude": "Para cerrarlo también en Claude, revócalo en la configuración de Claude."
     },
     "usage": {
@@ -9026,6 +9034,32 @@
     "search": "Buscar roles y personas",
     "noMatch": "Ningún rol ni persona con ese nombre.",
     "pickSomeone": "Elige al menos una persona o un rol.",
+    "several": {
+      "title_one": "Quién puede hablar con {{count}} agente",
+      "title_many": "Quién puede hablar con {{count}} agentes",
+      "title_other": "Quién puede hablar con {{count}} agentes",
+      "modeText": {
+        "everyone": "Cualquiera del espacio de trabajo puede llamar a estos agentes.",
+        "people": "Elige las personas y los roles que pueden hablar con ellos.",
+        "owner": "Cada agente habla solo con su responsable."
+      },
+      "ownerAlways": "El responsable de cada agente siempre puede.",
+      "consultable": "Otros agentes pueden consultarlos",
+      "consultableHint": "Para las personas que no están en la lista, responden solo al agente que preguntó, nunca a ellas directamente. Las acciones sensibles siguen necesitando la aprobación del responsable de cada uno.",
+      "agents": {
+        "consulted": "Vale solo para personas. Otros agentes aún pueden consultarlos por quienes no están en la lista.",
+        "blocked": "Vale también para agentes. Ningún otro agente puede hablar con ellos por quienes no están en la lista."
+      },
+      "askTitle_one": "¿Cambiar quién puede hablar con {{count}} agente?",
+      "askTitle_many": "¿Cambiar quién puede hablar con {{count}} agentes?",
+      "askTitle_other": "¿Cambiar quién puede hablar con {{count}} agentes?",
+      "saved_one": "Se cambió quién puede hablar con {{count}} agente.",
+      "saved_many": "Se cambió quién puede hablar con {{count}} agentes.",
+      "saved_other": "Se cambió quién puede hablar con {{count}} agentes.",
+      "failed_one": "No se pudo cambiar {{count}} agente. Inténtalo de nuevo.",
+      "failed_many": "No se pudieron cambiar {{count}} agentes. Inténtalo de nuevo.",
+      "failed_other": "No se pudieron cambiar {{count}} agentes. Inténtalo de nuevo."
+    },
     "chip": {
       "owner": "Personal",
       "people": "Restringido"
@@ -10124,6 +10158,10 @@
   },
   "access": {
     "matrixTitle": "Acceso de los agentes",
+    "newAgents": {
+      "title": "Agentes nuevos",
+      "hint": "Vale para los agentes creados, importados o propuestos a partir de ahora. Para cambiar los que ya existen, selecciona varios en Equipo."
+    },
     "matrixHint": "Las acciones sensibles (merge, deploy, compartir, pagar) siempre piden aprobación, en cualquier nivel. Para ajustarlo herramienta por herramienta, abre Herramientas en el conector.",
     "matrixHow": "Haz clic en una celda para cambiarla:",
     "kindLabel": "Mostrar",

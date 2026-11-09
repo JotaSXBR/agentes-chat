@@ -7,7 +7,15 @@ import { accountTitle, ownSignInTitle } from "@agenteschat/client/lib/ai-account
 import { CURSOR_KEY_PLAN, geminiPersonal, planOf, planReplies, signInKey } from "@agenteschat/client/lib/plans";
 import { markOf } from "@agenteschat/ui/brand/marks";
 import type { TFunction } from "i18next";
-import { flowBack, modelInput, modelRows, modelSections, newAgentAi, pickedAi } from "../../src/features/ai/logic";
+import {
+  flowBack,
+  modelInput,
+  modelRows,
+  modelSections,
+  newAgentAi,
+  pickedAi,
+  repliesState,
+} from "../../src/features/ai/logic";
 import { translator } from "./fixtures";
 
 const account = (id: string, over: Partial<MachineAccount> = {}): MachineAccount => ({
@@ -692,4 +700,18 @@ describe("Outro provedor on the phone", () => {
     expect(form).toContain('<IconButton icon="plus" label={t("endpoint.add")}');
     expect(form).toContain("withoutModel(d, m.id)");
   });
+});
+
+test("Atende outras pessoas on a plan's page: whom the agent answers now, kept by the move unless the person switched it", () => {
+  // Before the move: it answers others (the open default), so on; nothing to send.
+  expect(repliesState({ live: false, onlyOwner: false, set: null })).toEqual({ on: true, move: {} });
+  // Its owner's only already: off, and the move keeps that too.
+  expect(repliesState({ live: false, onlyOwner: true, set: null })).toEqual({ on: false, move: {} });
+  // The view isn't this agent's yet: on, as every default.
+  expect(repliesState({ live: false, onlyOwner: undefined, set: null })).toEqual({ on: true, move: {} });
+  // Switched before the move: the move carries it.
+  expect(repliesState({ live: false, onlyOwner: false, set: false })).toEqual({ on: false, move: { onlyOwner: true } });
+  expect(repliesState({ live: false, onlyOwner: true, set: true })).toEqual({ on: true, move: { onlyOwner: false } });
+  // On this plan already: its own switch, saved at once, never through a move.
+  expect(repliesState({ live: true, onlyOwner: true, set: true })).toEqual({ on: false, move: {} });
 });

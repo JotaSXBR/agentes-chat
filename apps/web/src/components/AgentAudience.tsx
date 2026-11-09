@@ -78,6 +78,8 @@ export function AudienceChip({ agent }: { agent: Agent }) {
  * responsável), with the roles and people picker under the second, and whether other agents may consult it for
  * the rest (ADR 0085 addendum).
  * `compact`: a segmented control and one line about the choice ("Criar agente").
+ * `several`: one choice for that many agents at once (Equipe's selection), each with its own responsible person;
+ * `ownerless`, one of them has none, so "Só o responsável" would leave it answering nobody.
  */
 export function AudienceChoice({
   value,
@@ -88,6 +90,7 @@ export function AudienceChoice({
   compact,
   layout = "cards",
   onPlan = false,
+  several,
 }: {
   value: AgentAudience;
   onChange: (next: AgentAudience) => void;
@@ -99,6 +102,7 @@ export function AudienceChoice({
   layout?: "cards" | "rows";
   /** It thinks with a person's plan (ADR 0059 §5). */
   onPlan?: boolean;
+  several?: { count: number; ownerless: boolean };
 }) {
   const { t } = useTranslation();
   const { org, me } = useOrg();
@@ -122,17 +126,23 @@ export function AudienceChoice({
     onChange({ ...value, [key]: [...next] });
   };
   const reach = agentsReach(value, onPlan, ownerUserId);
+  const noOwner = several ? several.ownerless : !owner;
   const modeText = (mode: AudienceMode) =>
-    mode === "owner"
-      ? owner
-        ? t("audience.modeText.owner", { ...g, owner: owner.name })
-        : t("audience.modeText.noOwner")
-      : t(`audience.modeText.${mode}`, g);
+    mode === "owner" && noOwner
+      ? t("audience.modeText.noOwner")
+      : several
+        ? t(`audience.several.modeText.${mode}`)
+        : mode === "owner"
+          ? t("audience.modeText.owner", { ...g, owner: owner?.name })
+          : t(`audience.modeText.${mode}`, g);
+  // For several agents, the words that name one say "them".
+  const title = several ? t("audience.several.title", { count: several.count }) : t("audience.title", g);
+  const consultable = several ? t("audience.several.consultable") : t("audience.consultable", g);
   return (
     <div className="stack-4" style={{ gap: 12 }}>
       {compact ? (
         <OptionList
-          aria-label={t("audience.title", g)}
+          aria-label={title}
           layout={layout}
           value={value.mode}
           onValueChange={(mode) => onChange({ ...value, mode })}
@@ -145,13 +155,14 @@ export function AudienceChoice({
             ),
             title: t(`audience.mode.${mode}`),
             description: modeText(mode),
+            ...(several && mode === "owner" && noOwner ? { disabled: true } : {}),
           }))}
         />
       ) : (
         <RadioGroup
           value={value.mode}
           onValueChange={(mode) => onChange({ ...value, mode: mode as AudienceMode })}
-          aria-label={t("audience.title", g)}
+          aria-label={title}
           className="stack-4"
           style={{ gap: 8 }}
         >
@@ -161,7 +172,7 @@ export function AudienceChoice({
               value={mode}
               id={`${idPrefix}-${mode}`}
               checked={value.mode === mode}
-              disabled={mode === "owner" && !ownerUserId}
+              disabled={mode === "owner" && noOwner}
               title={t(`audience.mode.${mode}`)}
               description={modeText(mode)}
             />
@@ -170,6 +181,7 @@ export function AudienceChoice({
       )}
       {value.mode === "people" && (
         <div className="people-picker">
+          {several && !several.ownerless && <span className="small muted">{t("audience.several.ownerAlways")}</span>}
           {owner && (
             <span className="small muted">
               {picked.size > 0 || pickedRoles.size > 0
@@ -264,15 +276,18 @@ export function AudienceChoice({
       )}
       {reach && (
         <span className="small muted">
-          {t("audience.notListed")} {t(`audience.agents.${reach}`, g)}
+          {t("audience.notListed")}{" "}
+          {several
+            ? t(`audience.several.agents.${reach === "blocked" ? "blocked" : "consulted"}`)
+            : t(`audience.agents.${reach}`, g)}
         </span>
       )}
       {offersConsultable(value, onPlan) && (
         <SettingRow
-          title={t("audience.consultable", g)}
+          title={consultable}
           hint={{
-            name: t("common.about", { label: t("audience.consultable", g) }),
-            text: t("audience.consultableHint", g),
+            name: t("common.about", { label: consultable }),
+            text: several ? t("audience.several.consultableHint") : t("audience.consultableHint", g),
           }}
           htmlFor={`${idPrefix}-consultable`}
         >

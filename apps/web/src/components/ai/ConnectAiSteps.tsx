@@ -159,7 +159,10 @@ export interface PlanPanelProps {
   justReady?: boolean;
   /** An account of theirs signs in here, for the one agent: again (`again`), or once more for it. */
   login?: ExistingSignIn;
-  /** "Atende outras pessoas" on: the agents it moves onto the plan let others talk to them. */
+  /**
+   * "Atendem outras pessoas" as the person set it before the move: on, the agents it moves onto the plan answer others;
+   * off, only their owner. Untouched (undefined), each keeps whom it answered.
+   */
   toEveryone?: boolean;
   /**
    * Reached from the AI select's "Conectar outra IA", past the accounts it lists: a sign-in adds another, with no offer
@@ -318,7 +321,7 @@ function PlanSteps({
   forWhom,
   justReady,
   login,
-  toEveryone: everyoneAnswers = false,
+  toEveryone,
   fresh,
   onKey,
   onComputer,
@@ -375,7 +378,7 @@ function PlanSteps({
       await api.agents.setBrain(org.id, agentId, {
         brain: a.kind,
         account: a.id,
-        ...(everyoneAnswers ? { onlyOwner: false } : {}),
+        ...(toEveryone === undefined ? {} : { onlyOwner: !toEveryone }),
       });
       setAssigned((x) => ({ ...x, [agentId]: a }));
       refresh([agentId]);

@@ -15,6 +15,7 @@ import {
   getAgentBrain,
   NO_PERSON,
   newAgentBrainMachines,
+  PLAN_OPENED_JOB,
   releaseAgents,
   setAgentAudience,
   setAgentBrain,
@@ -161,8 +162,8 @@ describe("brain settings", () => {
 
 /*
  * ADR 0059 §2–3 and §5: a plan thinks only for its owner's agents, one
- * account per agent, and an agent on a plan answers only its owner until the
- * owner turns on "Atende outras pessoas".
+ * account per agent, and an agent moved onto a plan keeps whom it answered
+ * until "Atende outras pessoas" is turned off (amended 2026-11-09).
  */
 let f: Fixture | undefined;
 afterEach(async () => {
@@ -325,15 +326,21 @@ describe("Velocidade (ADR 0149)", () => {
   });
 });
 
-describe("a plan answers its owner until it answers other people (Atende outras pessoas)", () => {
-  test("onto a plan it answers only its owner; turning it on asks nothing and is audited as who may talk to it", async () => {
+describe("a plan keeps whom its agent answers until Atende outras pessoas is off", () => {
+  test("onto a plan it keeps its list; off makes it its owner's only and on brings the list back, audited", async () => {
     const { fx, deps, bia, caio, row, audits } = await world();
     await setAgentAudience(fx.db, fx.owner.id, fx.org.id, fx.agent.id, { mode: "people", userIds: [bia.id] });
-    const onPlan = await setAgentBrain(deps, fx.owner.id, fx.org.id, fx.agent.id, { brain: "claude_code" });
-    expect(onPlan).toMatchObject({ brain: "claude_code", onlyOwner: true, canUsePlans: true, ownSignIn: true });
-    // The people it answered wait for it to be let out again.
-    expect(await row()).toMatchObject({ audienceMode: "owner", audienceUserIds: [bia.id] });
     const changes = async () => (await audits("agent.audience_changed")).map((a) => a.details);
+    const before = (await changes()).length;
+    const onPlan = await setAgentBrain(deps, fx.owner.id, fx.org.id, fx.agent.id, { brain: "claude_code" });
+    expect(onPlan).toMatchObject({ brain: "claude_code", onlyOwner: false, canUsePlans: true, ownSignIn: true });
+    // Every default is open: the move changes nothing of who may talk to it, so nothing about it is recorded.
+    expect(await row()).toMatchObject({ audienceMode: "people", audienceUserIds: [bia.id] });
+    expect(await changes()).toHaveLength(before);
+
+    // Off, only its owner: the people it answered wait for it to be let out again.
+    expect((await setAgentBrain(deps, fx.owner.id, fx.org.id, fx.agent.id, { onlyOwner: true })).onlyOwner).toBe(true);
+    expect(await row()).toMatchObject({ audienceMode: "owner", audienceUserIds: [bia.id] });
     expect((await changes()).at(-1)).toEqual({
       from: { mode: "people", userIds: [bia.id], roleIds: [], consultable: true },
       to: { mode: "owner", userIds: [], roleIds: [], consultable: true },
@@ -411,11 +418,13 @@ describe("a plan answers its owner until it answers other people (Atende outras 
 
   test("its owner or an admin lets more people in and keeps them out, on a plan too; a member can't touch it", async () => {
     const { fx, deps, bia, caio, row } = await world();
+    // Open to the workspace, as every new agent: the plan keeps it so.
     await setAgentBrain(deps, fx.owner.id, fx.org.id, fx.agent.id, { brain: "claude_code" });
     expect(await getAgentBrain(deps, caio.id, fx.org.id, fx.agent.id)).toMatchObject({
-      onlyOwner: true,
+      onlyOwner: false,
       canUsePlans: false,
     });
+    expect((await setAgentBrain(deps, caio.id, fx.org.id, fx.agent.id, { onlyOwner: true })).onlyOwner).toBe(true);
     const member = await setAgentBrain(deps, bia.id, fx.org.id, fx.agent.id, { onlyOwner: false }).catch((e) => e);
     expect(member).toBeInstanceOf(ForbiddenError);
     // With no "who can talk" list, on means everyone.
@@ -430,7 +439,7 @@ describe("a plan answers its owner until it answers other people (Atende outras 
   test("back on the API it still answers only its owner; letting it out brings back whoever it answered", async () => {
     const { fx, deps, bia, caio, row } = await world();
     await setAgentAudience(fx.db, fx.owner.id, fx.org.id, fx.agent.id, { mode: "people", userIds: [bia.id] });
-    await setAgentBrain(deps, fx.owner.id, fx.org.id, fx.agent.id, { brain: "claude_code" });
+    await setAgentBrain(deps, fx.owner.id, fx.org.id, fx.agent.id, { brain: "claude_code", onlyOwner: true });
     expect((await setAgentBrain(deps, fx.owner.id, fx.org.id, fx.agent.id, { brain: "model" })).onlyOwner).toBe(true);
     // No plan any more: an admin may let them in.
     await setAgentBrain(deps, caio.id, fx.org.id, fx.agent.id, { onlyOwner: false });
@@ -564,7 +573,9 @@ describe("Usar planos de outras pessoas (ADR 0059 §3, amended 2026-11-04)", () 
     ]);
 
     const lent = await setAgentBrain(deps, caio.id, fx.org.id, fx.agent.id, { brain: "claude_code", account: BIAS });
-    expect(lent).toMatchObject({ brain: "claude_code", account: BIAS, onlyOwner: true });
+    // It keeps answering the workspace, on her plan now: she hears that too (`agent.plan_opened`).
+    expect(lent).toMatchObject({ brain: "claude_code", account: BIAS, onlyOwner: false });
+    expect((await fx.db.select().from(schema.outbox).where(eq(schema.outbox.kind, PLAN_OPENED_JOB))).length).toBe(1);
     expect(await row()).toMatchObject({ brainAccountId: BIAS, brainAccountLentBy: caio.id });
     expect((await audits("account.lent"))[0]).toMatchObject({
       targetId: BIAS,
@@ -621,18 +632,16 @@ describe("Usar planos de outras pessoas (ADR 0059 §3, amended 2026-11-04)", () 
     expect(done?.doneAt).not.toBeNull();
   });
 
-  test("a plan given leaves with its own switch", async () => {
+  test("a plan given back leaves whom its agent answers as it was", async () => {
     const { fx, deps, bia, caio, account, row } = await world();
     await account(BIAS, bia.id);
     // Dev's long work may use its owner's own plan's paid extra usage, never Bia's given to it.
     expect(paysExtraUsage(await row())).toBe(true);
     await setAgentBrain(deps, caio.id, fx.org.id, fx.agent.id, { brain: "claude_code", account: BIAS });
     expect(paysExtraUsage(await row())).toBe(false);
-    // On her plan someone let everyone talk to Dev.
-    await fx.db.update(schema.agents).set({ audienceMode: "everyone" }).where(eq(schema.agents.id, fx.agent.id));
     await takeBackPlan(deps, bia.id, fx.org.id, BIAS, fx.agent.id);
-    // Back on its owner's own sign-in, which answers no one else until its owner says so.
-    expect(await row()).toMatchObject({ brain: "claude_code", audienceMode: "owner" });
+    // Back on its owner's own sign-in, open as it was: its owner turns Atende outras pessoas off if they want.
+    expect(await row()).toMatchObject({ brain: "claude_code", audienceMode: "everyone" });
     expect(paysExtraUsage(await row())).toBe(true);
   });
 

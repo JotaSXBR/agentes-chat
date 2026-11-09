@@ -21,7 +21,6 @@ import {
 } from "@agenteschat/client/lib/ai-select";
 import { computerNameOf } from "@agenteschat/client/lib/computer";
 import { keyRefusal } from "@agenteschat/client/lib/errors";
-import { firstName } from "@agenteschat/client/lib/format";
 import { agentGrammar } from "@agenteschat/client/lib/grammar";
 import { planOfAccount } from "@agenteschat/client/lib/no-ai";
 import { can } from "@agenteschat/client/lib/permissions";
@@ -144,7 +143,6 @@ export function useAiPick(agentId: string) {
     const before = view;
     setBusy(true);
     try {
-      let onlyNow = false;
       if (row.group === "keys") {
         if (row.key) await api.agents.checkCredential(orgId, row.key);
         if (view.brain !== "model") await api.agents.setBrain(orgId, agentId, { brain: "model" });
@@ -152,12 +150,11 @@ export function useAiPick(agentId: string) {
         const fits = !k || keyRuns(k, agentModel, models);
         await api.agents.update(orgId, agentId, { credentialId: row.key ?? null, ...(fits ? {} : { model: AUTO }) });
       } else {
-        const next = await api.agents.setBrain(orgId, agentId, {
+        await api.agents.setBrain(orgId, agentId, {
           brain: row.kind,
           account: row.account?.id ?? null,
           ...(move ? { moveAccount: true } : {}),
         });
-        onlyNow = next.onlyOwner && !view.onlyOwner;
       }
       refresh();
       if (row.group === "keys" && view.brain !== "model" && view.onlyOwner && view.scope !== "mine") {
@@ -182,11 +179,7 @@ export function useAiPick(agentId: string) {
         return true;
       }
       toast({
-        title: t(onlyNow ? "agentPage.work.saved.brainOwner" : "agentPage.work.saved.brain", {
-          ...g,
-          brain: row.label,
-          owner: view.canUsePlans ? t("common.you") : firstName(row.account?.ownerName ?? ""),
-        }),
+        title: t("agentPage.work.saved.brain", { ...g, brain: row.label }),
         icon: "check",
         action: {
           label: t("aiSelect.undo"),

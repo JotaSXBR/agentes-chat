@@ -152,30 +152,35 @@ export function unusedCopies<A extends MachineAccount>({ logins }: Pick<PlanAcco
 }
 
 /**
- * "Use for…" an account that thinks for all of its owner's agents there (`shared`): the viewer's agents on its
- * computer that don't think with it yet. Never one on the workspace's API key: a plan makes an agent answer only
- * its owner, so that one moves on its own page.
+ * "Use for…" an account of the viewer's: their agents on its computer that don't think with it yet (`usedByIds`: every
+ * login of the account's). One made for all of their agents there (`shared`) thinks for one more at once; any other
+ * signs that agent in to it, a login per agent (`perAgentSignIn`). A plan keeps whom an agent answers, so one on the
+ * API key moves too.
  */
 export function agentsToGive<A extends { id: string; ownerUserId: string | null }>({
   account,
   agents,
   machine,
   viewerId,
-  onKey,
 }: {
-  account: Pick<MachineAccount, "shared" | "mine" | "usedByIds">;
+  account: Pick<MachineAccount, "mine" | "usedByIds">;
   agents: readonly A[];
   /** The account's computer (`useMachines`): the agents on it. */
   machine: Pick<Machine, "agents"> | undefined;
   viewerId: string;
-  /** The agent thinks with the workspace's API key now. */
-  onKey: (agentId: string) => boolean;
 }): A[] {
-  if (account.shared !== true || !account.mine || !machine) return [];
+  if (!account.mine || !machine) return [];
   const here = new Set(machine.agents.map((a) => a.id));
   const using = new Set(account.usedByIds ?? []);
-  return agents.filter((a) => here.has(a.id) && a.ownerUserId === viewerId && !using.has(a.id) && !onKey(a.id));
+  return agents.filter((a) => here.has(a.id) && a.ownerUserId === viewerId && !using.has(a.id));
 }
+
+/**
+ * An account whose sign-in thinks for one agent (`shared` false): one more agent needs its own login of it. Where each
+ * agent is its own OS user, Cursor's, Grok's, Gemini's and OpenCode's sign-ins are one per agent, and ChatGPT's on a
+ * computer program before protocol 38.
+ */
+export const perAgentSignIn = (account: Pick<MachineAccount, "shared">) => account.shared !== true;
 
 /**
  * Disconnecting ends the account's sign-in on the computer only: a Claude account made for all agents where each is

@@ -1,5 +1,5 @@
 import type { AiAccounts as AiAccountsView } from "@agenteschat/client";
-import { keys, useAiAccounts, useAiStatus, useApi, useMachines } from "@agenteschat/client";
+import { keys, useAiAccounts, useApi, useMachines } from "@agenteschat/client";
 import {
   accountTitle,
   agentsToGive,
@@ -11,12 +11,13 @@ import {
   ownSignIns,
   ownSignInTitle,
   type PlanAccount,
+  perAgentSignIn,
   unusedCopies,
 } from "@agenteschat/client/lib/ai-accounts";
 import { computerNameOf } from "@agenteschat/client/lib/computer";
 import { joinNames } from "@agenteschat/client/lib/format";
 import { agentGrammar } from "@agenteschat/client/lib/grammar";
-import { agentAi, aiStateOf } from "@agenteschat/client/lib/no-ai";
+import { planOfAccount } from "@agenteschat/client/lib/no-ai";
 import { isPlanId, planOf, signInProviderOf } from "@agenteschat/client/lib/plans";
 import {
   Button,
@@ -32,6 +33,8 @@ import {
   Locked,
   Menu,
   MenuItem,
+  MenuNote,
+  MenuSeparator,
   PlanMeter,
   ProviderLogo,
   SettingNote,
@@ -39,6 +42,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { AgentAvatar } from "@/components/AgentAvatar";
 import { useConnectAi, useMayConnectAi } from "@/components/ConnectAi";
 import { LoadingList } from "@/components/Loading";
 import { useOrg } from "@/components/org-context";
@@ -72,7 +76,6 @@ export function AiAccountsSection() {
   const ai = useAiAccounts(org.id);
   const machines = useMachines(org.id);
   const dir = useDirectory(org.id);
-  const status = useAiStatus(org.id);
   const connectAi = useConnectAi();
   const hold = usePlanHold();
   const mayConnect = useMayConnectAi();
@@ -99,25 +102,36 @@ export function AiAccountsSection() {
     </Button>
   );
 
-  // One more of the person's agents thinks with an account made for all of them there: no sign-in.
-  const giveTo = async (a: Row, agent: { id: string; name: string }) => {
-    try {
-      await api.agents.setBrain(org.id, agent.id, { brain: a.kind, account: a.id });
-      toast.show(t("aiAccounts.done.savedAgent", { agent: agent.name, label: a.label }));
-      refetch();
-      for (const key of [keys.agents(org.id), keys.aiStatus(org.id), keys.agentBrain(org.id, agent.id)])
-        void qc.invalidateQueries({ queryKey: key });
-    } catch {
-      toast.show(t("agentPage.work.failed"), "error");
+  // More of the person's agents think with an account made for all of them there, with no sign-in. One whose sign-in
+  // thinks for one agent signs each in to it in turn, in Conectar uma IA.
+  const giveTo = async (a: Row, to: { id: string; name: string }[]) => {
+    if (perAgentSignIn(a)) {
+      const plan = planOfAccount(a);
+      connectAi?.open(to.length === 1 ? { agentId: to[0]?.id, plan } : { agentIds: to.map((g) => g.id), plan });
+      return;
     }
+    let missed = 0;
+    for (const agent of to) {
+      await api.agents.setBrain(org.id, agent.id, { brain: a.kind, account: a.id }).catch(() => (missed += 1));
+      void qc.invalidateQueries({ queryKey: keys.agentBrain(org.id, agent.id) });
+    }
+    refetch();
+    for (const key of [keys.agents(org.id), keys.aiStatus(org.id)]) void qc.invalidateQueries({ queryKey: key });
+    if (missed > 0) return toast.show(t("agentPage.work.brain.copy.missed", { count: missed }), "error");
+    const [one] = to;
+    toast.show(
+      to.length === 1 && one
+        ? t("aiAccounts.done.savedAgent", { agent: one.name, label: a.label })
+        : t("connectAi.doneAll", { names: names(to.map((g) => g.name)), label: a.label }),
+    );
   };
-  const toGive = (a: Row) =>
+  // Every login of the account counts: an agent that thinks with any of them has it.
+  const toGive = (account: PlanAccount<Row>, a: Row) =>
     agentsToGive({
-      account: a,
+      account: { mine: a.mine, usedByIds: account.logins.flatMap((l) => l.usedByIds ?? []) },
       agents: dir.agents,
       machine: machines.data?.find((m) => m.id === a.machineId),
       viewerId: me.user.id,
-      onKey: (id) => agentAi(dir.agentById.get(id), aiStateOf(status.data, id)) === "key",
     });
 
   // Every login of the account goes.
@@ -204,7 +218,7 @@ export function AiAccountsSection() {
             const { logins, usedBy, usage, signedOut, unknown } = account;
             const a = logins.find((l) => l.shared === true) ?? logins[0];
             if (!a) return null;
-            const give = toGive(a);
+            const give = toGive(account, a);
             const copies = unusedCopies(account);
             const plan = planOf(a.provider);
             const allOut = signedOut.length === logins.length;
@@ -270,7 +284,7 @@ export function AiAccountsSection() {
                 </span>
                 <div className="ac-acts ac-mediarow__end ac-mediarow__end--wrap">
                   {give.length === 1 && give[0] ? (
-                    <Button variant="ghost" size="sm" onClick={() => give[0] && void giveTo(a, give[0])}>
+                    <Button variant="ghost" size="sm" onClick={() => void giveTo(a, give)}>
                       {t("aiAccounts.page.useFor", agentGrammar(give[0].name))}
                     </Button>
                   ) : (
@@ -283,8 +297,18 @@ export function AiAccountsSection() {
                           </Button>
                         }
                       >
+                        {/* A sign-in that thinks for one agent: each one picked signs in to it, said before the pick. */}
+                        {perAgentSignIn(a) && <MenuNote>{t("connectAi.each")}</MenuNote>}
+                        <MenuItem icon="members" onSelect={() => void giveTo(a, give)}>
+                          {t("aiAccounts.page.useForAll")}
+                        </MenuItem>
+                        <MenuSeparator />
                         {give.map((g) => (
-                          <MenuItem key={g.id} onSelect={() => void giveTo(a, g)}>
+                          <MenuItem
+                            key={g.id}
+                            leading={<AgentAvatar agentId={g.id} name={g.name} size="xs" />}
+                            onSelect={() => void giveTo(a, [g])}
+                          >
                             {g.name}
                           </MenuItem>
                         ))}

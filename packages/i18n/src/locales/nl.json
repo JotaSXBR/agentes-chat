@@ -1580,7 +1580,13 @@
         "caresFor": "Zorgt voor"
       },
       "noChannel": "In geen kanaal",
-      "none": "Geen agent gevonden."
+      "none": "Geen agent gevonden.",
+      "pick": "{{name}} selecteren",
+      "pickAll": "Alles selecteren",
+      "selection": "Geselecteerde agenten",
+      "selected_one": "{{count}} geselecteerd",
+      "selected_other": "{{count}} geselecteerd",
+      "clearSelection": "Selectie wissen"
     },
     "chart": {
       "byLabel": "Organogram per",
@@ -4363,8 +4369,6 @@
       "saved": {
         "brain": "{{name}} denkt nu met {{brain}}.",
         "brain_female": "{{name}} denkt nu met {{brain}}.",
-        "brainOwner": "{{name}} denkt nu met {{brain}} en antwoordt alleen {{owner}}.",
-        "brainOwner_female": "{{name}} denkt nu met {{brain}} en antwoordt alleen {{owner}}.",
         "computer": "{{name}} werkt nu op {{computer}}.",
         "computer_female": "{{name}} werkt nu op {{computer}}.",
         "none": "{{name}} heeft nu geen computer.",
@@ -8735,6 +8739,8 @@
       "useFor": "Ook gebruiken voor {{name}}",
       "useFor_female": "Ook gebruiken voor {{name}}",
       "useForMenu": "Gebruiken voor…",
+      "useForAll": "Alle agenten",
+      "useForAllAgents": "Gebruiken voor alle agenten",
       "revokeOnClaude": "Wil je het ook bij Claude beëindigen? Trek het dan in bij de instellingen van Claude."
     },
     "usage": {
@@ -8810,6 +8816,28 @@
     "search": "Rollen en mensen zoeken",
     "noMatch": "Geen rol of persoon met die naam.",
     "pickSomeone": "Kies minstens één persoon of rol.",
+    "several": {
+      "title_one": "Wie met {{count}} agent mag praten",
+      "title_other": "Wie met {{count}} agenten mag praten",
+      "modeText": {
+        "everyone": "Iedereen in de werkruimte kan deze agenten roepen.",
+        "people": "Kies de mensen en rollen die met hen mogen praten.",
+        "owner": "Elke agent praat alleen met zijn eigenaar."
+      },
+      "ownerAlways": "De eigenaar van elke agent mag altijd.",
+      "consultable": "Andere agents kunnen ze raadplegen",
+      "consultableHint": "Voor mensen die niet op de lijst staan, antwoorden ze alleen de agent die het vroeg, nooit henzelf. Gevoelige acties vragen nog steeds om goedkeuring van de eigenaar van elke agent.",
+      "agents": {
+        "consulted": "Dit geldt alleen voor mensen. Andere agents kunnen ze nog steeds raadplegen voor mensen die niet op de lijst staan.",
+        "blocked": "Dit geldt ook voor agents. Geen andere agent kan ze bereiken voor mensen die niet op de lijst staan."
+      },
+      "askTitle_one": "Wijzigen wie met {{count}} agent mag praten?",
+      "askTitle_other": "Wijzigen wie met {{count}} agenten mag praten?",
+      "saved_one": "Wie mag praten is gewijzigd voor {{count}} agent.",
+      "saved_other": "Wie mag praten is gewijzigd voor {{count}} agenten.",
+      "failed_one": "{{count}} agent kon niet worden gewijzigd. Probeer het opnieuw.",
+      "failed_other": "{{count}} agenten konden niet worden gewijzigd. Probeer het opnieuw."
+    },
     "chip": {
       "owner": "Persoonlijk",
       "people": "Beperkt"
@@ -9880,6 +9908,10 @@
   },
   "access": {
     "matrixTitle": "Toegang van agents",
+    "newAgents": {
+      "title": "Nieuwe agenten",
+      "hint": "Dit geldt voor agenten die vanaf nu worden gemaakt, geïmporteerd of voorgesteld. Om bestaande te wijzigen, selecteer je er meerdere in Team."
+    },
     "matrixHint": "Gevoelige acties (merge, deploy, delen, betalen) vragen altijd om goedkeuring, op elk niveau. Wil je het per tool instellen? Open dan Tools bij de connector.",
     "matrixHow": "Klik op een cel om het te wijzigen:",
     "kindLabel": "Toon",

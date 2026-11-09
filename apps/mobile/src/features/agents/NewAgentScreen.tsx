@@ -390,7 +390,6 @@ function NewAgentForm({
         // Its setup checklist suggests from the ready-made role it started from (ADR 0155 §2).
         setup: { role: role && role !== "custom" ? role : null },
         ownerUserId: meId ?? null,
-        audience: { mode: "everyone", userIds: [] },
         credentialId: thinks.credentialId,
         monthlyBudgetUsd: null,
         appearance: look,

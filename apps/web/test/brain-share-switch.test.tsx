@@ -103,7 +103,7 @@ const CLAUDE =
   "Os planos do Claude são para uso pessoal. Deixar outras pessoas usarem o seu é uma zona cinzenta nos termos do Claude.";
 
 describe("Atende outras pessoas (Quem pensa)", () => {
-  test("off by default; on asks nothing and saves at once; its ⓘ says whom Ada answers and the plan's terms", async () => {
+  test("off while Ada answers only her owner; on asks nothing and saves at once; its ⓘ says whom and the terms", async () => {
     const state = await ada({});
     const d = await brainDialog();
     const off = replies(d);

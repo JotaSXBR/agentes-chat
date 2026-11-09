@@ -925,8 +925,8 @@ export interface AgentBrainInput {
   /**
    * "Atende outras pessoas" turned off (ADR 0059 §5): true, only its owner talks
    * to it; false, whoever its "who can talk" list lets in (everyone with no
-   * list). Omitted = keep it; a switch onto a plan makes it its owner's only,
-   * until its owner or an admin lets more people in.
+   * list). Omitted = keep it, through a switch onto a plan too (ADR 0059 §5,
+   * amended 2026-11-09).
    */
   onlyOwner?: unknown;
   /**
@@ -948,14 +948,15 @@ export interface AgentBrainInput {
 
 const EVERYONE: AgentAudience = { mode: "everyone", userIds: [], roleIds: [] };
 
-/** Who it answers after this change: a switch onto a plan makes it its owner's only (ADR 0059 §5). */
-function nextAudience(agent: Agent, brain: BrainKind, changed: boolean, onlyOwner: boolean | undefined): AgentAudience {
-  const current = audienceOf(agent);
-  // One that already answers its owner alone keeps its mode: "Só algumas pessoas" with nobody picked stays that.
-  const narrow = (a: AgentAudience) => (answersOthers(a, agent.ownerUserId) ? OWNER_ONLY : a);
-  const base = changed && isComputerBrain(brain) ? narrow(current) : current;
+/**
+ * Who it answers after this change (ADR 0059 §5, amended 2026-11-09): a switch onto a plan keeps who it answered, as
+ * every default is open; "Atende outras pessoas" off (`onlyOwner`) makes it its owner's only.
+ */
+function nextAudience(agent: Agent, onlyOwner: boolean | undefined): AgentAudience {
+  const base = audienceOf(agent);
   if (onlyOwner === undefined) return base;
-  if (onlyOwner) return narrow(base);
+  // One that already answers its owner alone keeps its mode: "Só algumas pessoas" with nobody picked stays that.
+  if (onlyOwner) return answersOthers(base, agent.ownerUserId) ? OWNER_ONLY : base;
   if (answersOthers(base, agent.ownerUserId)) return base;
   // Its "who can talk" list decides who comes back: it stays while the agent is its owner's only. One a person
   // restricted ("Só algumas pessoas ou papéis", even with nobody picked yet) stays restricted: never everyone.
@@ -1066,10 +1067,7 @@ export async function setAgentBrain(
   const contextTokens =
     input.contextTokens === undefined ? agent.contextTokens : (input.contextTokens as number | null);
   // The right hand keeps its audience: "Atende outras pessoas" is its own switch, off when it moves onto a plan.
-  // Onto someone else's plan it starts on its owner alone, as onto a plan (ADR 0059 §5).
-  const to = rightHand
-    ? audienceOf(agent)
-    : nextAudience(agent, brain, changed || ownerSwitch, input.onlyOwner as boolean | undefined);
+  const to = rightHand ? audienceOf(agent) : nextAudience(agent, input.onlyOwner as boolean | undefined);
   const audience = to.mode === agent.audienceMode ? null : to;
   const planForOthers = !rightHand
     ? agent.planForOthers

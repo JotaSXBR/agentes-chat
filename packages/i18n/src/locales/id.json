@@ -1529,7 +1529,12 @@
         "caresFor": "Mengurus"
       },
       "noChannel": "Tidak di kanal mana pun",
-      "none": "Tidak ada agen yang cocok."
+      "none": "Tidak ada agen yang cocok.",
+      "pick": "Pilih {{name}}",
+      "pickAll": "Pilih semua",
+      "selection": "Agen yang dipilih",
+      "selected_other": "{{count}} dipilih",
+      "clearSelection": "Hapus pilihan"
     },
     "chart": {
       "byLabel": "Bagan organisasi menurut",
@@ -4203,7 +4208,6 @@
       },
       "saved": {
         "brain": "{{name}} sekarang berpikir dengan {{brain}}.",
-        "brainOwner": "{{name}} sekarang berpikir dengan {{brain}} dan hanya menjawab {{owner}}.",
         "computer": "{{name}} sekarang bekerja di {{computer}}.",
         "none": "{{name}} sekarang tidak punya komputer.",
         "browserOn": "{{name}} sekarang bisa menjelajah situs web.",
@@ -8381,6 +8385,8 @@
       "disconnected": "{{label}} diputuskan.",
       "useFor": "Pakai untuk {{name}} juga",
       "useForMenu": "Pakai untuk…",
+      "useForAll": "Semua agen",
+      "useForAllAgents": "Pakai untuk semua agen",
       "revokeOnClaude": "Untuk mengakhirinya di Claude juga, cabut di pengaturan Claude."
     },
     "usage": {
@@ -8450,6 +8456,24 @@
     "search": "Cari peran dan orang",
     "noMatch": "Tidak ada peran atau orang dengan nama itu.",
     "pickSomeone": "Pilih setidaknya satu orang atau peran.",
+    "several": {
+      "title_other": "Siapa yang bisa bicara dengan {{count}} agen",
+      "modeText": {
+        "everyone": "Siapa pun di ruang kerja bisa memanggil agen-agen ini.",
+        "people": "Pilih orang dan peran yang bisa bicara dengan mereka.",
+        "owner": "Setiap agen hanya bicara dengan pemiliknya."
+      },
+      "ownerAlways": "Pemilik setiap agen selalu bisa.",
+      "consultable": "Agen lain bisa berkonsultasi dengan mereka",
+      "consultableHint": "Untuk orang yang tidak ada di daftar, mereka hanya menjawab agen yang bertanya, tidak pernah langsung ke orang itu. Tindakan sensitif tetap butuh persetujuan dari pemilik masing-masing.",
+      "agents": {
+        "consulted": "Ini hanya berlaku untuk orang. Agen lain tetap bisa berkonsultasi dengan mereka untuk orang yang tidak ada di daftar.",
+        "blocked": "Ini juga berlaku untuk agen. Tidak ada agen lain yang bisa menghubungi mereka untuk orang yang tidak ada di daftar."
+      },
+      "askTitle_other": "Ubah siapa yang bisa bicara dengan {{count}} agen?",
+      "saved_other": "Siapa yang bisa bicara sudah diubah untuk {{count}} agen.",
+      "failed_other": "{{count}} agen tidak bisa diubah. Coba lagi."
+    },
     "chip": {
       "owner": "Pribadi",
       "people": "Terbatas"
@@ -9460,6 +9484,10 @@
   },
   "access": {
     "matrixTitle": "Akses agen",
+    "newAgents": {
+      "title": "Agen baru",
+      "hint": "Berlaku untuk agen yang dibuat, diimpor, atau diusulkan mulai sekarang. Untuk mengubah yang sudah ada, pilih beberapa di Tim."
+    },
     "matrixHint": "Tindakan sensitif (merge, deploy, berbagi, bayar) selalu meminta persetujuan, di level apa pun. Untuk mengaturnya per alat, buka Alat milik konektor.",
     "matrixHow": "Klik sel untuk mengubahnya:",
     "kindLabel": "Tampilkan",

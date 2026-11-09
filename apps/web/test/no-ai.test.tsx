@@ -476,9 +476,9 @@ describe("the agent's no-AI card", () => {
     ]);
     expect(document.body.textContent).toContain("Ada agora pensa com Walter.");
     expect(calls(state, "chat.answerNow").map((c) => c.args)).toEqual([[ORG_ID, "m-noai"]]);
-    // Choosing a plan asked nothing: she answers only him until he turns on Atende outras pessoas (ADR 0059 §5).
+    // Choosing a plan asked nothing, and she keeps answering whom she answered (ADR 0059 §5, amended 2026-11-09).
     expect(within(plan).getByRole("switch", { name: "Atende outras pessoas" }).getAttribute("aria-checked")).toBe(
-      "false",
+      "true",
     );
     await click(within(plan).getByRole("button", { name: "Fechar" }));
     expect(dialog("Conectar uma IA para a Ada")).toBeNull();
@@ -783,10 +783,10 @@ describe("Conectar uma IA for an agent with no AI: one select of what the person
       [ORG_ID, ADA_ID, { brain: "claude_code", account: "acct_team" }],
     ]);
     expect(calls(state, "machines.beginAccountLogin")).toHaveLength(0);
-    expect(document.body.textContent).toContain("A Ada agora pensa com Claude Team e só atende você.");
-    // On his plan she answers only him until he lets everyone in (ADR 0059 §5).
+    expect(document.body.textContent).toContain("A Ada agora pensa com Claude Team.");
+    // On his plan she keeps answering whom she answered (ADR 0059 §5, amended 2026-11-09).
     expect(within(box).getByRole("switch", { name: "Atende outras pessoas" }).getAttribute("aria-checked")).toBe(
-      "false",
+      "true",
     );
     expect(calls(state, "chat.answerNow").map((c) => c.args)).toEqual([[ORG_ID, "m-noai"]]);
   });

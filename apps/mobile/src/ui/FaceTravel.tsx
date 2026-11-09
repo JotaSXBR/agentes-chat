@@ -47,6 +47,8 @@ interface Entry {
   setHidden(hidden: boolean): void;
   /** The role its face flew in from: where it flies back to when its screen closes. */
   cameFrom: FaceRole | null;
+  /** Where its face stood when it last flew off (window coordinates). */
+  leftFrom?: FaceSpot;
 }
 
 interface Flight {
@@ -65,8 +67,14 @@ interface Flight {
 const BASE = 96;
 /** How long a departed face waits for a screen to land it. */
 const WAIT_MS = 600;
-/** A flight that didn't report its end by now is over. */
-const FLY_MAX_MS = 900;
+/**
+ * How long a flight is on screen: the springs read as arrived well before they come to rest, so the copy hands over to
+ * the real face on this clock, never on the spring's own end (that left it standing still for half a second).
+ */
+const FLY_MAX_MS = 460;
+/** The same for the slower spring a face takes when it grows into a cover. */
+const FLY_SOFT_MS = 720;
+const flyMs = (from: FaceSpot, to: FaceSpot) => (to.size >= BASE && to.size > from.size ? FLY_SOFT_MS : FLY_MAX_MS);
 /** The copy's fade when nobody landed it, and over the real face once it did. */
 const LOST_FADE_MS = 160;
 const LANDED_FADE_MS = 90;
@@ -184,7 +192,7 @@ function begin(
     claimant = target.entry;
     hide(target.entry);
   }
-  timer = setTimeout(() => (target ? land(id) : lose(id)), target ? FLY_MAX_MS : WAIT_MS);
+  timer = setTimeout(() => (target ? land(id) : lose(id)), target ? flyMs(from, target.spot) : WAIT_MS);
   emit();
 }
 
@@ -210,7 +218,7 @@ function track(entry: Entry, id: number, frame: number) {
       flight = { ...flight, to: spot, phase: "flying" };
       if (first) {
         stopTimer();
-        timer = setTimeout(() => land(id), FLY_MAX_MS);
+        timer = setTimeout(() => land(id), flyMs(flight.from, spot));
       }
       emit();
     }
@@ -256,6 +264,13 @@ function returnFrom(agentId: string, role: FaceRole) {
   if (!target || !agent) return;
   source.measure((from) => {
     if (!from || !onScreen(from)) return;
+    // Where the face left from is where it returns: the screen under a closing one is mid-transition (shifted under
+    // an edge swipe), so measuring it now gives a place the face is not in once the transition ends.
+    const known = target.leftFrom;
+    if (known) {
+      begin(agentId, agent, from, role, source, { entry: target, spot: known });
+      return;
+    }
     target.measure((to) => {
       if (!to || !onScreen(to)) return;
       begin(agentId, agent, from, role, source, { entry: target, spot: to });
@@ -371,7 +386,9 @@ export function useFaceSpot(
     if (!agent) return;
     arm();
     mine.measure((from) => {
-      if (from) begin(mine.agentId, agent, from, mine.role, mine, null);
+      if (!from) return;
+      mine.leftFrom = from;
+      begin(mine.agentId, agent, from, mine.role, mine, null);
     });
   }, []);
   return { ref, hidden, depart };

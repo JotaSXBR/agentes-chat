@@ -3121,6 +3121,10 @@ html:not([data-pointer]) .artifact-table__sort:focus-visible {
   flex-direction: column;
   gap: var(--space-2);
 }
+/* Its label is a field's: as far over the people picked or the search as a field's label over its input. */
+.people-picker > :is(.ac-field__label, .ac-hintline):first-child {
+  margin-block-end: calc(var(--field-gap) - var(--space-2));
+}
 .people-picker__results {
   max-height: 200px;
   overflow-y: auto;

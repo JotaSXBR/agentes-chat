@@ -996,8 +996,13 @@
           !hasSurface(style(square))
         )
           continue;
+        // What ends the row after the words (a count, "Novo") sits on the row's middle in a column of its own: between
+        // two lines, it is none of theirs.
+        const words = kids.slice(1).find((k) => visibleText(k));
+        const end = words ? words.getBoundingClientRect().right : Number.POSITIVE_INFINITY;
         const beside = [];
         for (const kid of kids.slice(1)) {
+          if (kid !== words && kid.getBoundingClientRect().left >= end - 1) continue;
           const walker = document.createTreeWalker(kid, NodeFilter.SHOW_TEXT);
           for (let n = walker.nextNode(); n; n = walker.nextNode()) {
             if (!n.textContent.trim() || !seen(n.parentElement)) continue;
@@ -1352,7 +1357,15 @@
           left: b.left + parseFloat(cs.borderLeftWidth),
           right: b.right - parseFloat(cs.borderRightWidth),
         };
-        // A side of the clip on the window's own edge cuts nothing the window wouldn't.
+        // A side of the clip on the window's own edge cuts nothing the window wouldn't. Nor does a scroller's side with
+        // more to scroll to: what it cuts there shows whole once scrolled (the work's sheet ends above the window's edge).
+        const more = {
+          top: clip.scrollTop > 0.5,
+          bottom: clip.scrollHeight - clip.clientHeight - clip.scrollTop > 0.5,
+          left: clip.scrollLeft > 0.5,
+          right: clip.scrollWidth - clip.clientWidth - clip.scrollLeft > 0.5,
+        };
+        const scrolls = (overflow) => overflow === "auto" || overflow === "scroll";
         const cut = [
           ["top", cs.overflowY, pad.top > 0.5 && a.top >= pad.top - 0.5 && a.top - reach.top < pad.top - 0.5],
           [
@@ -1368,7 +1381,7 @@
             cs.overflowX,
             pad.right < innerWidth - 0.5 && a.right <= pad.right + 0.5 && a.right + reach.right > pad.right + 0.5,
           ],
-        ].find(([, overflow, hit]) => hit && overflow !== "visible");
+        ].find(([side, overflow, hit]) => hit && overflow !== "visible" && !(scrolls(overflow) && more[side]));
         if (cut) out.push({ rule: "clip", node: el, el: sig(el), box: sig(clip), side: cut[0] });
       }
     },
@@ -1512,9 +1525,11 @@
           (el) => seen(el) && !el.closest(OWN) && !el.parentElement.closest(ITEM),
         );
         if (!items.length) continue;
-        const faces = items.some((el) =>
-          el.querySelector(":scope > .ac-menu__leading > .ac-avatar, :scope > .ac-avatar"),
-        );
+        // The palette (⌘K) finds people and agents among the rest: its rows are option rows whatever a query found,
+        // one height as it's typed.
+        const faces =
+          menu.matches(".ac-palette__list") ||
+          items.some((el) => el.querySelector(":scope > .ac-menu__leading > .ac-avatar, :scope > .ac-avatar"));
         // The workspace menu (MenuOverlay) fills the screen in 15px type: its rows are the touch ones everywhere.
         const roomy = touch || menu.matches(".ac-mo__group");
         const own = [...menu.querySelectorAll(OWN)].filter((x) => style(x).display !== "none");

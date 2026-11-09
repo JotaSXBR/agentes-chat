@@ -4444,15 +4444,9 @@ export const ptBR = {
       saved: {
         brain: "O {{name}} agora pensa com {{brain}}.",
         brain_female: "A {{name}} agora pensa com {{brain}}.",
-        brainMoved: "O {{name}} agora trabalha no {{computer}} e pensa com {{brain}}.",
-        brainMoved_female: "A {{name}} agora trabalha no {{computer}} e pensa com {{brain}}.",
         /** From the API onto a plan, it answers only its owner (ADR 0059 §5): "você", or their name. */
         brainOwner: "O {{name}} agora pensa com {{brain}} e só atende {{owner}}.",
         brainOwner_female: "A {{name}} agora pensa com {{brain}} e só atende {{owner}}.",
-        brainMovedOwner: "O {{name}} agora trabalha no {{computer}}, pensa com {{brain}} e só atende {{owner}}.",
-        brainMovedOwner_female: "A {{name}} agora trabalha no {{computer}}, pensa com {{brain}} e só atende {{owner}}.",
-        account: "O {{name}} agora usa a conta {{account}}.",
-        account_female: "A {{name}} agora usa a conta {{account}}.",
         computer: "O {{name}} agora trabalha no {{computer}}.",
         computer_female: "A {{name}} agora trabalha no {{computer}}.",
         none: "O {{name}} agora está sem computador.",
@@ -5681,10 +5675,6 @@ export const ptBR = {
     price: "US$ {{input}} / {{output}} por milhão de tokens",
     plans: "Pelo plano, num computador",
     plansHelp: "Claude Code ou Codex com a assinatura de quem conectou o computador. Não usa chave.",
-    planOnlyOwner:
-      "No plano, o {{name}} começa atendendo só {{owner}}. Na página do {{name}}, {{owner}} pode escolher se ele atende outras pessoas.",
-    planOnlyOwner_female:
-      "No plano, a {{name}} começa atendendo só {{owner}}. Na página da {{name}}, {{owner}} pode escolher se ela atende outras pessoas.",
     partly: "O {{name}} já existe, mas parte do que você escolheu não foi salva. {{reason}}",
     partly_female: "A {{name}} já existe, mas parte do que você escolheu não foi salva. {{reason}}",
     planNotSaved:
@@ -5697,7 +5687,6 @@ export const ptBR = {
     lastAutonomy: "{{value}}, como na última escolha. Desligado, começa com {{fallback}}.",
     autoCost: "O custo acompanha cada tarefa",
     noKeyFor: "Sem chave {{provider}}",
-    key: "Chave",
     defaultKey: "Chave padrão do workspace",
     defaultKeyDesc: "{{provider}} · termina em {{hint}}",
     otherKeyDesc: "{{provider}} · termina em {{hint}}",
@@ -5709,7 +5698,6 @@ export const ptBR = {
       needsKey: "Precisa de uma chave {{plan}}",
       other: "Escolher outro",
     },
-    noKeys: "Nenhuma chave cadastrada",
     budgetTitle: "Orçamento mensal",
     budget: "Orçamento mensal (US$)",
     budgetHelp: "Ao atingir o limite, o {{name}} para e avisa.",

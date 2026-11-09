@@ -79,16 +79,10 @@ import { AddAccount, OpenPage, Step, StepTitle } from "./AddAccountFlow";
  * workspace's setup. `poll`: asked again this often where no event keeps them current (the setup opens no socket).
  */
 export function usePlanGates(orgId: string, agentId: string | undefined, poll: number | false = false) {
-  const api = useApi();
   const { org } = useOrg();
   const asks = agentId !== undefined;
   const brain = useAgentBrain(orgId, agentId ?? "", asks, poll);
   const ai = useAiAccounts(orgId, asks, poll);
-  // Codex's own sign-in is known only by a usage read with it: looked up again here (it comes back as
-  // `machine.updated`, or with the next poll), so a computer's own ChatGPT sign-in shows before any turn ran.
-  useEffect(() => {
-    if (asks) void api.machines.refreshAccountUsage(orgId).catch(() => undefined);
-  }, [api, orgId, asks]);
   const setupQ = useComputerSetup(orgId);
   const edition = computerEdition(setupQ.data);
   const setup = setupView(setupQ.data, setupQ.dataUpdatedAt);
@@ -167,6 +161,11 @@ export interface PlanPanelProps {
   login?: ExistingSignIn;
   /** "Atende outras pessoas" on: the agents it moves onto the plan let others talk to them. */
   toEveryone?: boolean;
+  /**
+   * Reached from the AI select's "Conectar outra IA", past the accounts it lists: a sign-in adds another, with no offer
+   * to sign in again to one of them.
+   */
+  fresh?: boolean;
   /** "Usar uma chave de API agora". */
   onKey: () => void;
   /** Self-host with no computer for the agent: where one is connected. */
@@ -320,6 +319,7 @@ function PlanSteps({
   justReady,
   login,
   toEveryone: everyoneAnswers = false,
+  fresh,
   onKey,
   onComputer,
   onDone,
@@ -406,17 +406,7 @@ function PlanSteps({
     (a) => a.id === view.account && a.kind === kind && providerFitsChoice(a.provider, choice, coding),
   );
 
-  if (gates.failed)
-    return (
-      <div className="ai-panel__row">
-        <SettingNote icon="alert" live>
-          {t("common.loadFailed")}
-        </SettingNote>
-        <Button size="sm" icon="refresh" onClick={gates.retry}>
-          {t("common.retry")}
-        </Button>
-      </div>
-    );
+  if (gates.failed) return <LoadFailed onRetry={gates.retry} />;
   // Done, or nothing to do: every agent already thought with this plan.
   if (allDone || (everyone && todo.length === 0)) {
     return (
@@ -527,8 +517,7 @@ function PlanSteps({
               ? { provider: signInProviderOf(signedOut?.provider) }
               : {})}
           again={login ? login.again : signedOut?.id}
-          // The AI select lists the accounts the person has: a sign-in from here adds another, with no "use this one?".
-          fresh
+          fresh={fresh}
           email={turn && sameAs ? sameAs : login ? login.email : signedOut?.email}
           local={view?.ownSignIn}
           ready={ready}
@@ -547,6 +536,21 @@ function PlanSteps({
         />
       )}
     </>
+  );
+}
+
+/** What an AI's steps read didn't load: said, with Tentar de novo, which asks again. */
+export function LoadFailed({ onRetry }: { onRetry: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <div className="ai-panel__row">
+      <SettingNote icon="alert" live>
+        {t("common.loadFailed")}
+      </SettingNote>
+      <Button size="sm" icon="refresh" onClick={onRetry}>
+        {t("common.retry")}
+      </Button>
+    </div>
   );
 }
 

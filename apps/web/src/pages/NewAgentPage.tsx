@@ -578,7 +578,30 @@ function NewAgentFlow({
     : connectPlan || connectAfter
       ? null
       : `key:${key === DEFAULT_KEY ? "default" : key}`;
-  const aiRow = newRows.find((r) => r.value === aiValue);
+  // What it starts on (the last setup's account, a proposal's) and the list leaves out, as while the accounts are on
+  // their way: named all the same, so the select never shows empty.
+  const aiRows: AiRow[] =
+    plan && aiValue && !newRows.some((r) => r.value === aiValue)
+      ? [
+          {
+            value: aiValue,
+            group: "mine",
+            kind: plan.kind,
+            machineId: plan.machineId,
+            mark: plan.kind,
+            label: plan.label ?? t(`aiAccounts.connect.${plan.kind}`),
+            who: null,
+            state: null,
+            tone: null,
+            hint: null,
+            owner: null,
+            disabled: false,
+            act: "use",
+          },
+          ...newRows,
+        ]
+      : newRows;
+  const aiRow = aiRows.find((r) => r.value === aiValue);
   const pickRow = (r: AiRow) => {
     setAiPicked(true);
     setConnectPlan(null);
@@ -1479,7 +1502,7 @@ function NewAgentFlow({
           <Field label={t("brain.title")}>
             <AiSelect
               label={t("brain.title")}
-              rows={newRows}
+              rows={aiRows}
               value={aiValue}
               onPick={pickRow}
               {...(connectsHere ? { onConnect: connectHere } : {})}
@@ -1717,8 +1740,13 @@ function NewAgentFlow({
                 {modelLabel}
                 {autonomy && ` · ${autonomyWords(t, autonomy)}`}{" "}
                 <span className="muted">
-                  {keyLabel && ` · ${keyLabel}`}
-                  {budgetShown !== undefined && ` · ${t("newAgent.upTo", { amount: usd(t, locale, budgetShown) })}`}
+                  {[
+                    keyLabel,
+                    budgetShown !== undefined ? t("newAgent.upTo", { amount: usd(t, locale, budgetShown) }) : null,
+                  ]
+                    .filter(Boolean)
+                    .map((part) => `· ${part}`)
+                    .join(" ")}
                 </span>
               </span>,
             )}

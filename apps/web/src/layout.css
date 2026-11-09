@@ -8973,19 +8973,6 @@ html:not([data-pointer]) .newag__sel .ac-select__trigger:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
 }
-.newag__sel-value {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-  text-align: left;
-}
-/* Model and budget. The line under "Quem pensa" ("No plano, … só a você"): the steps have no gap, so it sits as far
-   below it as an error line or a note does. */
-.agp-brainsel + .small {
-  display: block;
-  margin-top: 12px;
-}
 .newag__money {
   display: flex;
   flex-wrap: wrap;
@@ -9538,14 +9525,6 @@ html:not([data-pointer]) .agp-cell:focus-visible {
   border-radius: 0 0 var(--control-r-md) var(--control-r-md);
   background: var(--sunken);
 }
-.agp-brainsel .ac-select__trigger {
-  min-height: 52px;
-  height: auto;
-  padding: 8px 14px 8px 10px;
-}
-.agp-brainsel .newag__sel-value {
-  gap: 10px;
-}
 /*
  * "Atende outras pessoas" (`PlanReplies`): its label with the ⓘ right after it, the switch at the end of the line, its
  * middle on the label's capitals' middle as an `.ac-iconline` lead's is. No line under it: what it means is behind the ⓘ.
@@ -9654,7 +9633,8 @@ html:not([data-pointer]) .agp-cell:focus-visible {
   color: var(--ink2);
 }
 /* The settings under the select: one box, hairline rows, the room above a row's words as below them. A select keeps
-   its row (its words wrap under the title instead), a switch the end of its line. */
+   its title's line and the row's words go under both, its full width: beside a select on a phone they would wrap word
+   by word. */
 .ai-set > .ac-setlist__row {
   padding: var(--space-3) var(--space-4);
 }
@@ -9663,11 +9643,23 @@ html:not([data-pointer]) .agp-cell:focus-visible {
   min-width: 0;
 }
 :is(.ai-set, .ai-adv__body) .ac-setrow {
-  flex-wrap: nowrap;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0 var(--space-4);
 }
 :is(.ai-set, .ai-adv__body) .ac-setrow__text {
-  flex: 1 1 0;
+  display: contents;
+}
+:is(.ai-set, .ai-adv__body) .ac-setrow__status {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  margin-top: 0;
+}
+:is(.ai-set, .ai-adv__body) .ac-setrow__end {
+  grid-column: 2;
+  grid-row: 1;
+  margin-left: 0;
 }
 /* "Configuração avançada": a row that opens in place, what it holds under it, the chevron turning. */
 .ai-set > .ai-adv {
@@ -9724,6 +9716,10 @@ html:not([data-pointer]) .ai-adv__toggle:focus-visible {
   flex-direction: column;
   gap: var(--space-4);
   padding: 0 var(--space-4) var(--space-4);
+}
+/* Closed: `hidden` alone gives way to the display above. */
+.ai-adv__body[hidden] {
+  display: none;
 }
 @media (prefers-reduced-motion: no-preference) {
   .ai-adv__body:not([hidden]) {

@@ -6,6 +6,7 @@ import {
   useAiAccounts,
   useAiStatus,
   useApi,
+  useComputerSetup,
   useCredentials,
   useMachines,
   useModels,
@@ -28,16 +29,18 @@ import {
   viewSpeedFits,
 } from "@agenteschat/client/lib/brain-advanced";
 import { brainModelLine } from "@agenteschat/client/lib/brain-picker";
-import { computerNameOf } from "@agenteschat/client/lib/computer";
+import { computerNameOf, setupView } from "@agenteschat/client/lib/computer";
 import { type ContextLimit, contextChoices, contextSize, isContextLimit } from "@agenteschat/client/lib/context-limits";
 import { CUSTOM_PROVIDER } from "@agenteschat/client/lib/endpoints";
 import { errorText, keyRefusal } from "@agenteschat/client/lib/errors";
 import { firstName, NAMES_SHOWN, namesText } from "@agenteschat/client/lib/format";
 import { agentGrammar } from "@agenteschat/client/lib/grammar";
 import {
+  agentAi,
   agentPlan,
   aiChoiceOf,
   aiStateOf,
+  defaultChoice,
   type ExistingSignIn,
   gateLine,
   PLAN_CHOICES,
@@ -107,6 +110,7 @@ import { OpenPage } from "./AddAccountFlow";
 import {
   type KeyDraft,
   KeyPanel,
+  LoadFailed,
   PlanHold,
   PlanPanel,
   PlanWithoutAgent,
@@ -165,13 +169,15 @@ export function useAiRows(agent: AiAgent, enabled = true) {
   const computerName = computerNameOf(t, org.name, view?.computer?.name ?? "");
   const machines = useMachines(org.id);
   const machine = machines.data?.find((m) => m.id === view?.computer?.machineId);
+  const setupQ = useComputerSetup(org.id);
+  const setup = setupView(setupQ.data, setupQ.dataUpdatedAt);
   // The words a plan's steps would say for a CLI that can't think there (installing, turned off, missing).
   const reasonOf = (kind: BrainKind) => {
     const reason = view?.options.find((o) => o.kind === kind)?.reason;
     if (!reason || kind === "model") return null;
     return (
       gateLine(t, {
-        gate: unsupportedGate(reason, edition, null),
+        gate: unsupportedGate(reason, edition, setup),
         edition,
         kind,
         computer: computerName,
@@ -202,6 +208,9 @@ export function useAiRows(agent: AiAgent, enabled = true) {
     rows,
     computerRow,
     loading: brain.isPending,
+    // Its view didn't load, with nothing to show: said, with a retry (a poll that fails keeps the last view).
+    failed: brain.isError && !view,
+    retry: brain.refetch,
     computerName,
     cloud: edition === "cloud",
     hold,
@@ -285,9 +294,10 @@ export function AiSelect({
           const row = rows.find((r) => r.value === v);
           if (row) onPick(row);
         }}
+        // The kit's lead and text, side by side in the value as its own chosen option's are.
         renderValue={() =>
           chosen && (
-            <span>
+            <>
               <span className="ac-select__lead" aria-hidden="true">
                 <ProviderLogo id={chosen.mark} size="xs" />
               </span>
@@ -295,7 +305,7 @@ export function AiSelect({
                 <span className="ai-sel__label">{chosen.label}</span>
                 {chosen.account && chosen.who && <span className="ai-sel__who">&nbsp;· {chosen.who}</span>}
               </span>
-            </span>
+            </>
           )
         }
       />
@@ -371,7 +381,8 @@ function useAiSave(agent: AiAgent, onThinks?: () => void) {
 }
 
 type Flow =
-  | { kind: "new"; plan?: PlanChoice; key?: ProviderId | typeof CUSTOM_PROVIDER }
+  /** `fresh`: from the select's "Conectar outra IA", past the accounts it lists. */
+  | { kind: "new"; plan?: PlanChoice; key?: ProviderId | typeof CUSTOM_PROVIDER; fresh?: boolean }
   | { kind: "again" | "for" | "newKey"; row: AiRow };
 
 /**
@@ -400,7 +411,8 @@ export function AgentAiForm({
   const { t, i18n } = useTranslation();
   const { org } = useOrg();
   const g = agentGrammar(agent.name);
-  const { view, rows, computerRow, loading, computerName, cloud, hold, credentials, defaultKey } = useAiRows(agent);
+  const { view, rows, computerRow, loading, failed, retry, computerName, cloud, hold, credentials, defaultKey } =
+    useAiRows(agent);
   const models = useModels().data?.models ?? [];
   const save = useAiSave(agent, onThinks);
   const dir = useDirectory(org.id);
@@ -418,17 +430,23 @@ export function AgentAiForm({
           ? { kind: "new" }
           : null,
   );
-  // Opening it is looking at the plans: their usage is looked up again (it comes back as `machine.updated`).
+  // Opening it is looking at the plans: their usage is looked up again (it comes back as `machine.updated`). Codex's
+  // own sign-in is known only by such a read, so this is also how a computer's own ChatGPT sign-in shows before any
+  // turn ran.
   const { api } = save;
   useEffect(() => {
     void api.machines.refreshAccountUsage(org.id).catch(() => undefined);
   }, [api, org.id]);
   if (hold) return <PlanHold hold={hold} />;
+  if (failed) return <LoadFailed onRetry={() => void retry()} />;
   if (loading || !view) return <Spinner />;
   const current = currentValue(view, agent.key ?? null);
   const shownValue = picked ?? current;
   const row = rows.find((r) => r.value === shownValue);
   const mayConnect = view.canUsePlans || can(org, "manage_credentials");
+  // A new AI starts on the plan its brain is on (ChatGPT for Codex), where it thinks with none of its rows.
+  const choiceNow = aiChoiceOf(view);
+  const ownPlan = agentPlan(dir.agentById.get(agent.id)) ?? (choiceNow === "key" ? null : choiceNow);
   // Nothing to pick: the steps at once, with no way back to an empty list.
   const empty = rows.length === 0 && mayConnect;
   /** Thinks with `r` now; `confirmed`: the person said yes to a lent plan or a move. */
@@ -515,7 +533,7 @@ export function AgentAiForm({
       <AiFlow
         agent={agent}
         view={view}
-        flow={flow ?? { kind: "new" }}
+        flow={flow ?? { kind: "new", ...(ownPlan ? { plan: ownPlan } : {}) }}
         start={start}
         onBack={empty ? undefined : () => setFlow(null)}
         {...(onComputer ? { onComputer } : {})}
@@ -561,7 +579,10 @@ export function AgentAiForm({
           value={shownValue}
           onPick={(r) => pick(r)}
           onConnect={
-            mayConnect ? () => setFlow({ kind: "new", plan: plan ? planOfAccountRow(plan) : undefined }) : undefined
+            mayConnect
+              ? () =>
+                  setFlow({ kind: "new", plan: plan ? planOfAccountRow(plan) : (ownPlan ?? undefined), fresh: true })
+              : undefined
           }
           strip={stripOf(t, i18n.language, row, view, agent.name)}
           disabled={save.busy}
@@ -1181,17 +1202,13 @@ function AiFlow({
   const mayAddKey = can(org, "manage_credentials");
   // What it opens on, until the person picks: what was asked, else Claude, else (no computer for a plan) the key.
   const [picked, setChosen] = useState<string | null>(null);
+  const opening = defaultChoice({
+    asked: flow.kind !== "new" ? planOfAccountRow(flow.row) : flow.key ? "key" : flow.plan,
+    mayAddKey,
+    claudeGate: gates.gateOf("claude"),
+  });
   const chosen =
-    picked ??
-    (flow.kind !== "new"
-      ? `plan:${planOfAccountRow(flow.row)}`
-      : flow.key
-        ? `key:${flow.key}`
-        : flow.plan
-          ? `plan:${flow.plan}`
-          : mayAddKey && gates.gateOf("claude").state === "missing"
-            ? "key:anthropic"
-            : "plan:claude");
+    picked ?? (opening === "key" ? `key:${(flow.kind === "new" && flow.key) || "anthropic"}` : `plan:${opening}`);
   // A key saving holds the provider where it is.
   const [busy, setBusy] = useState(false);
   const fixed = flow.kind !== "new" ? flow.row : null;
@@ -1256,6 +1273,7 @@ function AiFlow({
           gates={gates}
           forWhom={forWhom}
           justReady={start?.ready}
+          fresh={flow.kind === "new" && flow.fresh === true}
           {...(login ? { login } : {})}
           locked={
             view.canUsePlans
@@ -1465,20 +1483,32 @@ export function TeamAi({
   const toast = useToast();
   const dir = useDirectory(org.id);
   const [first] = agents as [AiAgent];
-  const { view, rows, loading, hold, credentials, defaultKey } = useAiRows(first);
+  const { view, rows, loading, failed, retry, hold, credentials, defaultKey } = useAiRows(first);
   const models = useModels().data?.models ?? [];
   const [picked, setPicked] = useState<AiRow | null>(null);
   const [busy, setBusy] = useState(false);
   const [everyone, setEveryone] = useState(false);
   // "Conectar outra IA": its providers (opened at once for a new AI, a plan or a key asked for), then the steps.
-  const [flow, setFlow] = useState(Boolean(start?.other || start?.plan || start?.key));
-  const [provider, setProvider] = useState(() =>
-    start?.key ? `key:${keyOf(start.provider)}` : `plan:${start?.plan ?? "claude"}`,
+  // `fresh`: from the select's row, past the accounts it lists.
+  const [flow, setFlow] = useState<"asked" | "fresh" | null>(
+    start?.other || start?.plan || start?.key ? "asked" : null,
   );
+  const [pickedProvider, setProvider] = useState<string | null>(null);
   const mayAddKey = can(org, "manage_credentials");
   const gates = usePlanGates(org.id, first.id);
+  // Opening it is looking at the plans, as for one agent (`AgentAiForm`): their usage is looked up again.
+  useEffect(() => {
+    void api.machines.refreshAccountUsage(org.id).catch(() => undefined);
+  }, [api, org.id]);
+  const opening = defaultChoice({
+    asked: start?.key ? "key" : start?.plan,
+    mayAddKey,
+    claudeGate: gates.gateOf("claude"),
+  });
+  const provider = pickedProvider ?? (opening === "key" ? `key:${keyOf(start?.provider)}` : `plan:${opening}`);
   const status = useAiStatus(org.id);
   if (hold) return <PlanHold hold={hold} />;
+  if (failed) return <LoadFailed onRetry={() => void retry()} />;
   if (loading || !view) return <Spinner />;
   const names = namesText(
     t,
@@ -1537,15 +1567,21 @@ export function TeamAi({
       })}
     </AvatarStack>
   );
-  // Whom a plan's steps sign in for; one that already thinks with that plan is done there.
+  // Whom a plan's steps sign in for: those with no AI yet, and those on this plan already (done there). One on the API
+  // key or on another plan keeps it, since a plan makes an agent answer only its owner; with none left, all of them.
   const planChoice = provider.startsWith("plan:") ? (provider.slice(5) as PlanChoice) : null;
-  const forWhom = agents.map((a) => {
+  const aiNow = (id: string) => agentAi(dir.agentById.get(id), aiStateOf(status.data, id));
+  const open = agents.filter((a) => {
+    const ai = aiNow(a.id);
+    return ai === null || ai === planChoice;
+  });
+  const forWhom = (open.length > 0 ? open : agents).map((a) => {
     const row = dir.agentById.get(a.id);
     const ready = (aiStateOf(status.data, a.id) ?? "no_ai") !== "no_ai";
     return {
       id: a.id,
       name: a.name,
-      done: planChoice !== null && ready && agentPlan(row) === planChoice,
+      done: planChoice !== null && ready && aiNow(a.id) === planChoice,
       ...(row ? { appearance: lookOf(row), initials: dir.agentInitials(a.id) } : {}),
     };
   });
@@ -1565,7 +1601,7 @@ export function TeamAi({
                 iconOnly
                 icon="chevronLeft"
                 aria-label={t("common.back")}
-                onClick={() => setFlow(false)}
+                onClick={() => setFlow(null)}
               />
               <b>{t("aiSelect.connect")}</b>
             </div>
@@ -1584,15 +1620,20 @@ export function TeamAi({
                 gates={gates}
                 forWhom={forWhom}
                 toEveryone={everyone}
+                fresh={flow === "fresh"}
                 onKey={() => setProvider("key:anthropic")}
                 onComputer={onComputer}
-                onDone={(_ids, account) => {
-                  setFlow(false);
+                onDone={(ids, account) => {
+                  setFlow(null);
                   refresh();
                   onThinks?.();
                   toast.show(
                     t("connectAi.doneAll", {
-                      names,
+                      names: namesText(
+                        t,
+                        ids.map((id) => agents.find((a) => a.id === id)?.name ?? ""),
+                        NAMES_SHOWN,
+                      ),
                       label: account?.label ?? planLabel(t, provider.slice(5) as PlanChoice),
                     }),
                     "success",
@@ -1605,7 +1646,7 @@ export function TeamAi({
                 apiKey={start?.apiKey}
                 locked={!mayAddKey}
                 onSaved={(key) => {
-                  setFlow(false);
+                  setFlow(null);
                   void forAll(
                     async (a) => {
                       await api.agents.setBrain(org.id, a.id, { brain: "model" });
@@ -1616,7 +1657,7 @@ export function TeamAi({
                   );
                 }}
                 onEndpoint={() => {
-                  setFlow(false);
+                  setFlow(null);
                   refresh();
                   onThinks?.();
                 }}
@@ -1631,7 +1672,7 @@ export function TeamAi({
               rows={fits}
               value={picked?.value ?? null}
               onPick={pick}
-              onConnect={view.canUsePlans ? () => setFlow(true) : undefined}
+              onConnect={view.canUsePlans ? () => setFlow("fresh") : undefined}
               disabled={busy}
             />
             {picked && picked.group !== "keys" && view.scope !== "mine" && (
@@ -1688,15 +1729,12 @@ export function LoneAiFlow({
   const mayAddKey = can(org, "manage_credentials");
   const [picked, setChosen] = useState<string | null>(null);
   // What it opens on, until the person picks: what was asked, else Claude, else (no computer for a plan) the key.
-  const chosen =
-    picked ??
-    (start?.key
-      ? `key:${keyOf(start.provider)}`
-      : start?.plan
-        ? `plan:${start.plan}`
-        : mayAddKey && gates.at("claude").gate.state === "missing"
-          ? "key:anthropic"
-          : "plan:claude");
+  const opening = defaultChoice({
+    asked: start?.key ? "key" : start?.plan,
+    mayAddKey,
+    claudeGate: gates.at("claude").gate,
+  });
+  const chosen = picked ?? (opening === "key" ? `key:${keyOf(start?.provider)}` : `plan:${opening}`);
   const [saved, setSaved] = useState(false);
   const choice = chosen.startsWith("plan:") ? (chosen.slice(5) as PlanChoice) : null;
   const done = () => {

@@ -782,7 +782,8 @@ describe("Quem pensa: adding an account (Conectar outra IA)", () => {
       await settle(6);
       expect(fakeMachinesOf.get(api)?.lastLogin()?.box).not.toBeNull();
       expect(JSON.stringify(state.calls)).not.toContain("c0de-from-claude");
-      await click(within(block).getByRole("button", { name: "Voltar" }));
+      // Back to the select: the sign-in under way stops on the computer.
+      await click(d.querySelector(".ai-flow__head button") as Element);
       await settle(4);
       expect(state.calls.find((c) => c.method === "machines.cancelAccountLogin")?.args).toEqual([
         ORG_ID,
@@ -1134,7 +1135,8 @@ describe("Quem pensa: a plan with a login per agent", () => {
   });
 
   test("a coding plan whose logins think for other agents: one row for the account, one more login for this one", async () => {
-    const { state, api } = await onMac({ accounts: [glm("acct_theo", ["Theo"]), glm("acct_lia", ["Lia"])] });
+    // The MacBook's runner takes a plan's key.
+    const { state, api } = await onMac({ accounts: [glm("acct_theo", ["Theo"]), glm("acct_lia", ["Lia"])] }, {});
     fakeMachinesOf.get(api)?.endLogin("login_1", { state: "done", account: glm("acct_ada", []) });
     const d = await brainDialog();
     const rows = await brainRows(d);
@@ -1191,6 +1193,8 @@ describe("Quem pensa: a coding plan's models", () => {
     const api = createFakeApi(state);
     pairMac(api, true);
     await api.sandbox.setTarget(ORG_ID, ADA_ID, "machine_1");
+    // Its runner takes a plan's key.
+    reportOwn(api, {});
     liveBrain(api, {
       brain: "claude_code",
       effectiveModel: "sonnet",

@@ -4448,11 +4448,8 @@ export const en = {
       },
       saved: {
         brain: "{{name}} now thinks with {{brain}}.",
-        brainMoved: "{{name}} now works on {{computer}} and thinks with {{brain}}.",
         /** From the API onto a plan, it answers only its owner (ADR 0059 §5): "you", or their name. */
         brainOwner: "{{name}} now thinks with {{brain}} and answers only {{owner}}.",
-        brainMovedOwner: "{{name}} now works on {{computer}}, thinks with {{brain}} and answers only {{owner}}.",
-        account: "{{name}} now uses the {{account}} account.",
         computer: "{{name}} now works on {{computer}}.",
         none: "{{name}} now has no computer.",
         browserOn: "{{name}} can browse websites now.",
@@ -5604,10 +5601,6 @@ export const en = {
     price: "US$ {{input}} / {{output}} per million tokens",
     plans: "With a plan, on a computer",
     plansHelp: "Claude Code or Codex with the subscription of whoever connected the computer. No key needed.",
-    planOnlyOwner:
-      "On a plan, {{name}} starts answering only {{owner}}. On {{name}}'s page, {{owner}} can choose whether he answers other people.",
-    planOnlyOwner_female:
-      "On a plan, {{name}} starts answering only {{owner}}. On {{name}}'s page, {{owner}} can choose whether she answers other people.",
     partly: "{{name}} is ready, but part of what you chose wasn't saved. {{reason}}",
     planNotSaved:
       "{{name}} is ready, but {{brain}} couldn't be set up now. Choose it again in Who thinks, on {{name}}'s page.",
@@ -5615,7 +5608,6 @@ export const en = {
     lastAutonomy: "{{value}}, as in the latest choice. Off: it starts with {{fallback}}.",
     autoCost: "The cost follows each task",
     noKeyFor: "No {{provider}} key",
-    key: "Key",
     defaultKey: "Workspace default key",
     defaultKeyDesc: "{{provider}} · ends in {{hint}}",
     otherKeyDesc: "{{provider}} · ends in {{hint}}",
@@ -5628,7 +5620,6 @@ export const en = {
       needsKey: "Needs a {{plan}} key",
       other: "Choose another",
     },
-    noKeys: "No keys yet",
     budgetTitle: "Monthly budget",
     budget: "Monthly budget (US$)",
     budgetHelp: "At the limit, {{name}} stops and says so.",

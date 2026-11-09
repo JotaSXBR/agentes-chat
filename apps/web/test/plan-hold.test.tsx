@@ -7,7 +7,7 @@ setupDom();
 
 import { act, cleanup, fireEvent, within } from "@testing-library/react";
 import i18next from "i18next";
-import { brainTitle, chooseAi, openAiSelect } from "./ai-picker";
+import { chooseAi, openAiSelect } from "./ai-picker";
 import { ADA_ID, createFakeApi, fakeMachinesOf, ORG_ID, seedState, withRightHand } from "./fake-api";
 import { shownText } from "./hint";
 import { renderApp, screen, settle } from "./render";
@@ -208,21 +208,14 @@ describe("the other places a plan is chosen", () => {
     expect(shownText(screen().getByRole("region", { name: "Seus planos" }))).not.toContain(WHY);
   });
 
-  test("Quem pensa: the plans in its select say why, and the dialog offers the way on; the key is one choice away", async () => {
+  test("Quem pensa: why and the way on in place of the select, nothing to pick that wouldn't think", async () => {
     await open("owner", `/org/${ORG_ID}/agents/${ADA_ID}`);
     await click(screen().getByRole("button", { name: "Mudar quem pensa" }));
     const d = screen().getByRole("dialog", { name: "Quem pensa" });
-    const rows = await openAiSelect(d, "Quem pensa");
-    const plans = rows.filter((o) => brainTitle(o) !== "Chave de API");
-    expect(plans.length).toBeGreaterThan(0);
-    for (const o of plans) {
-      expect(o.getAttribute("aria-disabled")).toBe("true");
-      expect(o.querySelector(".ac-menu__desc")?.textContent).toBe(WHY);
-    }
-    await act(async () => fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" }));
-    await settle(2);
+    expect(within(d).queryByRole("combobox", { name: "Quem pensa" })).toBeNull();
     expect(shownText(d)).toContain(WHY);
     expect(buttonNamed(d, PAY)).not.toBeNull();
+    expect(buttonNamed(d, KEY)).toBeNull();
   });
 
   test("Lodi's settings: why and the way on in place of the plan row", async () => {

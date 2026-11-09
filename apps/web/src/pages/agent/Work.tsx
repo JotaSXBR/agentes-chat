@@ -65,6 +65,7 @@ import { Link } from "@tanstack/react-router";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { NO_COMPUTER, useNoComputer } from "@/components/AgentComputer";
+import { DEFAULT_KEY } from "@/components/AgentFields";
 import { AgentAiForm } from "@/components/ai/AgentAi";
 import { usePlanHold } from "@/components/ai/ConnectAiSteps";
 import { useConnectAi } from "@/components/ConnectAi";
@@ -591,7 +592,8 @@ function BrainDialog({ onClose }: { onClose: () => void }) {
             name: agent.name,
             ownerUserId: agent.ownerUserId,
             model: saved.model,
-            key: saved.key ?? null,
+            // The workspace's default key is null to the select (its `key:default` row).
+            key: saved.key === DEFAULT_KEY ? null : (saved.key ?? null),
           }}
           mode="edit"
           color={draft.look.color}

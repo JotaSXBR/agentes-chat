@@ -3804,6 +3804,16 @@ export function createFakeApi(state: FakeState = seedState(), options: { seed?: 
   state.drive = artifacts;
   const client: ApiClient = {
     ...http,
+    agents: {
+      ...http.agents,
+      // As the server lists them: the account an agent thinks with is among its computer's, one just signed in too.
+      brain: async (orgId, agentId) => {
+        const view = await http.agents.brain(orgId, agentId);
+        const made =
+          view.account && !view.accounts.some((a) => a.id === view.account) ? machines.accountOf(view.account) : null;
+        return made ? { ...view, accounts: [...view.accounts, made] } : view;
+      },
+    },
     apps: apps.client,
     sandbox: createFakeSandbox(ctx, (method, ...args) => state.calls.push({ method, args }), machines),
     machines: machines.client,

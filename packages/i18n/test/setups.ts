@@ -99,6 +99,8 @@ export const SHOWN_ONLY: Record<Condition, readonly string[]> = {
     "noAi.kept.plan",
   ],
   selfhost: [
+    // The server's own Claude key, a row of the AI select only where a self-hosted server has one.
+    "aiSelect.serverKey",
     "auth.owner.",
     "auth.flow.ownerWaits",
     "auth.flow.ownerWaitsLead",

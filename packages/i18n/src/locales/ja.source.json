@@ -10680,17 +10680,8 @@
   "agentPage.work.saved.brain": {
     "value": "{{name}} now thinks with {{brain}}."
   },
-  "agentPage.work.saved.brainMoved": {
-    "value": "{{name}} now works on {{computer}} and thinks with {{brain}}."
-  },
   "agentPage.work.saved.brainOwner": {
     "value": "{{name}} now thinks with {{brain}} and answers only {{owner}}."
-  },
-  "agentPage.work.saved.brainMovedOwner": {
-    "value": "{{name}} now works on {{computer}}, thinks with {{brain}} and answers only {{owner}}."
-  },
-  "agentPage.work.saved.account": {
-    "value": "{{name}} now uses the {{account}} account."
   },
   "agentPage.work.saved.computer": {
     "value": "{{name}} now works on {{computer}}."
@@ -13470,10 +13461,6 @@
   "newAgent.plansHelp": {
     "value": "Claude Code or Codex with the subscription of whoever connected the computer. No key needed."
   },
-  "newAgent.planOnlyOwner": {
-    "value": "On a plan, {{name}} starts answering only {{owner}}. On {{name}}'s page, {{owner}} can choose whether he answers other people.",
-    "female": "On a plan, {{name}} starts answering only {{owner}}. On {{name}}'s page, {{owner}} can choose whether she answers other people."
-  },
   "newAgent.partly": {
     "value": "{{name}} is ready, but part of what you chose wasn't saved. {{reason}}"
   },
@@ -13491,9 +13478,6 @@
   },
   "newAgent.noKeyFor": {
     "value": "No {{provider}} key"
-  },
-  "newAgent.key": {
-    "value": "Key"
   },
   "newAgent.defaultKey": {
     "value": "Workspace default key"
@@ -13521,9 +13505,6 @@
   },
   "newAgent.brainPick.other": {
     "value": "Choose another"
-  },
-  "newAgent.noKeys": {
-    "value": "No keys yet"
   },
   "newAgent.budgetTitle": {
     "value": "Monthly budget"

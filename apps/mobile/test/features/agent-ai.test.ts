@@ -360,7 +360,10 @@ describe("the agent's AI", () => {
     // sign-in by its maker the same way ("Claude · Max").
     expect(ownSignInTitle(await translator("pt-BR"), { kind: "claude_code", plan: "max" })).toBe("Claude · Max");
     const read = (file: string) => Bun.file(new URL(`../../src/features/${file}`, import.meta.url).pathname).text();
-    expect(await read("ai/logic.ts")).toContain("label: accountTitle(choice.login),");
+    const rows = await Bun.file(
+      new URL("../../../../packages/client/src/lib/ai-select.ts", import.meta.url).pathname,
+    ).text();
+    expect(rows).toContain("label: accountTitle(a),");
     // AI accounts' grouped rows take a `label`, the Me page's rows a `title`.
     for (const [screen, row, prop] of [["ai/AiAccountsScreen.tsx", "a", "label"]]) {
       const source = await read(screen);

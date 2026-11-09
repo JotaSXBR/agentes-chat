@@ -3,7 +3,7 @@ import { useAgentDetail, useAiStatus, useApi } from "@agenteschat/client";
 import { errorCode, errorText } from "@agenteschat/client/lib/errors";
 import { agentGrammar } from "@agenteschat/client/lib/grammar";
 import { stepPermissions } from "@agenteschat/client/lib/home";
-import { aiStateOf, mayConnectAi, type PlanChoice } from "@agenteschat/client/lib/no-ai";
+import { aiStateOf, choiceOfIntent, mayConnectAi, type PlanChoice } from "@agenteschat/client/lib/no-ai";
 import { can } from "@agenteschat/client/lib/permissions";
 import { isRightHand, rightHandOf } from "@agenteschat/client/lib/right-hand";
 import { Dialog, DialogBody, Spinner } from "@agenteschat/ui";
@@ -159,16 +159,21 @@ function ConnectAiDialog({
   const only = named ? (named.length === 1 ? named[0] : undefined) : request.agentId;
   const one = only ? dir.agentById.get(only) : undefined;
   const pool = request.forNewAgent ? [] : one ? [one.id] : named;
-  // Of several, those that still have no AI (by the AI status, as its "Sem IA" chip), else every one of theirs; one
-  // alone, whatever it has.
+  // Of theirs, those that still have no AI (by the AI status, as its "Sem IA" chip); one asked for, whatever it has.
+  // With every one of theirs thinking already: their one agent, else none, since a new AI moving them all would be a
+  // surprise (it is added, for each agent's select, as for someone with no agent).
   const noAi = (id: string) => (aiStateOf(status.data, id) ?? "no_ai") === "no_ai";
+  const own = mine.filter((a) => !isRightHand(a));
   const withoutAi = mine.filter((a) => noAi(a.id));
+  // Named ones in the order they were named.
   const found = (
     pool
-      ? dir.agents.filter((a) => pool.includes(a.id))
+      ? pool.flatMap((id) => dir.agentById.get(id) ?? [])
       : withoutAi.length > 0
         ? withoutAi
-        : mine.filter((a) => !isRightHand(a))
+        : own.length === 1
+          ? own
+          : []
   ).filter((a) => one || mine.includes(a));
   // Held from the moment they're known: agents getting an AI here, one by one, don't change whom it's for midway.
   const [held, setHeld] = useState<string[] | null>(null);
@@ -176,12 +181,13 @@ function ConnectAiDialog({
   useEffect(() => {
     if (ready && held === null) setHeld(found.map((a) => a.id));
   }, [ready, held, found]);
-  const agents = held ? dir.agents.filter((a) => held.includes(a.id)) : found;
+  const agents = held ? held.flatMap((id) => dir.agentById.get(id) ?? []) : found;
   const detail = useAgentDetail(org.id, one?.id ?? agents[0]?.id ?? "");
   // A plan or a key the message or card named, a key pasted in the composer, or the computer just got ready.
+  const asked = request.plan ?? choiceOfIntent(request.intent);
   const start: AiStart = {
-    ...(request.plan ? { plan: request.plan } : {}),
-    ...(request.intent === "api_key" || request.apiKey ? { key: true } : {}),
+    ...(asked && asked !== "key" ? { plan: asked } : {}),
+    ...(asked === "key" || request.apiKey ? { key: true } : {}),
     ...(request.provider ? { provider: request.provider } : {}),
     ...(request.apiKey ? { apiKey: request.apiKey } : {}),
     ...(request.ready ? { ready: true } : {}),
@@ -205,7 +211,12 @@ function ConnectAiDialog({
     onClose();
     void navigate({ to: "/org/$orgId/settings/$section", params: { orgId: org.id, section: "computers" } });
   };
-  const keyFirst = !request.plan && !request.forNewAgent && dir.agents.length > 0 && can(org, "manage_credentials");
+  const keyFirst =
+    !request.plan &&
+    !request.forNewAgent &&
+    own.length === 0 &&
+    dir.agents.length > 0 &&
+    can(org, "manage_credentials");
   return (
     <Dialog
       open
@@ -232,8 +243,8 @@ function ConnectAiDialog({
         ) : agents.length > 1 ? (
           <TeamAi agents={agents.map(asAi)} start={start} onThinks={onConnected} onComputer={toComputers} />
         ) : (
-          // No agent of theirs: a plan signs in for the agents they create. An admin among other people's agents
-          // starts on the workspace's key, which serves every agent with no plan.
+          // No agent of theirs without an AI: a plan signs in for the agents they create. An admin among other
+          // people's agents starts on the workspace's key, which serves every agent with no plan.
           <LoneAiFlow
             start={keyFirst ? { ...start, key: true } : start}
             onDone={onConnected}

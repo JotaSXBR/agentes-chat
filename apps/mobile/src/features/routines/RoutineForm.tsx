@@ -119,7 +119,7 @@ const zoneLabel = (zone: string, locale: string) =>
  * shown back as a sentence with the next runs and its time zone (a screen of its own), an event, or an email.
  * Then when it posts and what it may do on its own. Editing saves only what changed.
  */
-export function RoutineForm({ editId }: { editId: string | null }) {
+export function RoutineForm({ editId, agentId = null }: { editId: string | null; agentId?: string | null }) {
   const { t } = useTranslation();
   const c = useColors();
   const routines = useRoutines(useOrgId());
@@ -139,10 +139,10 @@ export function RoutineForm({ editId }: { editId: string | null }) {
         </View>
       </View>
     );
-  return <Form key={routine?.id ?? "new"} routine={routine} />;
+  return <Form key={routine?.id ?? "new"} routine={routine} agentId={agentId} />;
 }
 
-function Form({ routine }: { routine: Routine | undefined }) {
+function Form({ routine, agentId }: { routine: Routine | undefined; agentId: string | null }) {
   const { t, i18n } = useTranslation();
   const c = useColors();
   const insets = useSafeAreaInsets();
@@ -168,7 +168,9 @@ function Form({ routine }: { routine: Routine | undefined }) {
   const savedZone = zoneOf(routine);
   // A routine still read in UTC (made before time zones) starts in my zone, with a hint to keep UTC.
   const utc = wasUtc(routine);
-  const [d, setD] = useState<RoutineDraft>(() => draftOf(routine, utc ? myZone : savedZone || myZone));
+  const [d, setD] = useState<RoutineDraft>(() =>
+    draftOf(routine, utc ? myZone : savedZone || myZone, undefined, agentId ?? undefined),
+  );
   const set = (patch: Partial<RoutineDraft>) => setD((x) => ({ ...x, ...patch }));
   // What the routine had, to tell whether "when" changed.
   const [savedRule] = useState(() => JSON.stringify(toApiRule(ruleOf(routine, savedZone || myZone))));

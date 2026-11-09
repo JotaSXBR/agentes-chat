@@ -1,6 +1,6 @@
 import { type Routine, useRoutines } from "@agenteschat/client";
 import { routineStateTime, routineStateWords } from "@agenteschat/client/lib/routine-view";
-import { memo, useEffect, useMemo, useState } from "react";
+import { Fragment, memo, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, RefreshControl, StyleSheet, View } from "react-native";
 import Animated, { FadeIn, FadeOut, LayoutAnimationConfig, LinearTransition } from "react-native-reanimated";
@@ -9,6 +9,9 @@ import {
   Button,
   EmptyState,
   Filters,
+  GroupedHeader,
+  GroupedList,
+  GroupedRow,
   Icon,
   IconButton,
   LineIcon,
@@ -24,11 +27,12 @@ import { router } from "@/ui/navigation";
 import { routineHref, widgetHref } from "../links/logic";
 import { mayCreate } from "../new/logic";
 import { AgentFace } from "../shared/Face";
-import { FirstUse } from "../shared/FirstUse";
+import { FirstUse, LoadFailed } from "../shared/FirstUse";
 import { useColors, useDirectory, useMeId, useNamesComputers, useNow, useOrgId, usePullRefresh } from "../shared/hooks";
+import { agentLook } from "../shared/logic";
 import { PushedLargeTitle } from "../shared/PushedLargeTitle";
 import { SheetHostProvider } from "../shared/SheetHost";
-import { useRoutineMenu, useSay, useWhenText } from "./hooks";
+import { newRoutineHref, useRoutineMenu, useSay, useWhenText } from "./hooks";
 import {
   isAtWork,
   isDoneOnce,
@@ -254,6 +258,74 @@ const RoutineListRow = memo(function RoutineListRow({
     />
   );
 });
+
+/**
+ * An agent's routines on its profile (the web's Rotinas tab), grouped as Rotinas groups them: on the air, paused, and
+ * the one-offs that already ran. A tap opens one, where it is paused and edited; "Nova rotina" ends the first group for
+ * who may make one for this agent, or stands alone as the first step when it has none.
+ */
+export function AgentRoutines({ agentId, mayNew }: { agentId: string; mayNew: boolean }) {
+  const { t, i18n } = useTranslation();
+  const say = useSay();
+  const names = useNamesComputers();
+  const whenText = useWhenText();
+  const agent = useDirectory().agentById.get(agentId);
+  const routines = useRoutines(useOrgId());
+  const list = (routines.data ?? []).filter((r) => r.agentId === agentId);
+  const sections = routineSections(list, { status: "all", agentId: null, query: "" }, whenText);
+  const openNew = () => router.push(newRoutineHref(agentId));
+  if (routines.isLoading) return <SkeletonList rows={2} />;
+  if (routines.isError && !routines.data) return <LoadFailed onRetry={() => void routines.refetch()} />;
+  if (list.length === 0)
+    return (
+      <FirstUse
+        place="routines"
+        size="inline"
+        look={agentLook(agent)}
+        acts={mayNew}
+        label={t("routines.new")}
+        onPress={openNew}
+      />
+    );
+  const row = (r: Routine) => {
+    const state = routineStateWords(r, routineStateTime(t, i18n.language, r), names);
+    const needsLook = !isDoneOnce(r) && state.tone === "waiting";
+    const href = r.target.type === "widget" ? widgetHref(r.target.widgetId, r.target.dashboardId) : routineHref(r.id);
+    return (
+      <GroupedRow
+        key={r.id}
+        icon={needsLook ? "wait" : whenIcon(r)}
+        label={routineTitle(r)}
+        labelLines={2}
+        sub={needsLook ? say(state) : whenText(r)}
+        subLines={2}
+        faint={isPaused(r) || isDoneOnce(r)}
+        chevron
+        onPress={() => router.push(href)}
+      />
+    );
+  };
+  const groups = [
+    { key: "live", title: t("routines.groupLive"), items: sections.live },
+    { key: "paused", title: t("routines.groupPaused"), items: sections.paused },
+    { key: "done", title: t("routines.done"), items: sections.done },
+  ].filter((g) => g.items.length > 0);
+  return (
+    <>
+      {groups.map((g, i) => (
+        <Fragment key={g.key}>
+          <GroupedHeader>{g.title}</GroupedHeader>
+          <GroupedList>
+            {g.items.map(row)}
+            {i === 0 && mayNew ? (
+              <GroupedRow key="new" icon="plus" label={t("routines.new")} chevron onPress={openNew} />
+            ) : null}
+          </GroupedList>
+        </Fragment>
+      ))}
+    </>
+  );
+}
 
 const styles = StyleSheet.create({
   when: { flexDirection: "row", alignItems: "flex-start", gap: 6, minWidth: 0 },

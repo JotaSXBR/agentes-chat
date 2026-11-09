@@ -4668,6 +4668,7 @@ export const en = {
     tabs: {
       overview: "Overview",
       instructions: "Instructions",
+      routines: "Routines",
       access: "Tools and access",
       memory: "Memory",
       files: "Files",

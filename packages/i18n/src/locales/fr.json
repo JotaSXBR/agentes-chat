@@ -4716,6 +4716,7 @@
     "tabs": {
       "overview": "Vue d'ensemble",
       "instructions": "Instructions",
+      "routines": "Routines",
       "access": "Outils et accès",
       "memory": "Mémoire",
       "files": "Fichiers",

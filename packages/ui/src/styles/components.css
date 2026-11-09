@@ -2712,6 +2712,19 @@ html:not([data-pointer]) .ac-pill:has(:focus-visible) .ac-check {
   border-bottom-color: var(--ink);
   color: var(--ink);
 }
+/* A tab that doesn't fit: out of the row and of reach, still laid out so its width is known, in the "More" menu. */
+.ac-tab[data-overflow] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+/* The "More" menu's trigger ends the row, a tab itself. */
+.ac-tabs__end {
+  display: flex;
+  flex: none;
+}
 html:not([data-pointer]) .ac-tab:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);

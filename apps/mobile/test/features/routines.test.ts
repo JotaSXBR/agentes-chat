@@ -285,6 +285,12 @@ describe("the form", () => {
     expect(draftInput({ ...d, agentId: "dev", target: "dm", prompt: "x", name: " Bom dia " }).name).toBe("Bom dia");
   });
 
+  test("Nova rotina from an agent's profile starts with that agent; a routine keeps its own", () => {
+    expect(draftOf(undefined, SP, today, "theo").agentId).toBe("theo");
+    expect(draftOf(undefined, SP, today).agentId).toBe("");
+    expect(draftOf(routine({ id: "r", agentId: "nina" }), SP, today, "theo").agentId).toBe("nina");
+  });
+
   test("what starts it, as the API takes it", () => {
     const d = draftOf(undefined, SP, today);
     expect(draftTrigger({ ...d, kind: "event", event: "deploy.succeeded" })).toEqual({

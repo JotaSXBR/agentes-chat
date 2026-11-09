@@ -78,6 +78,7 @@ import {
 import { fullLook, lookOf } from "@/lib/look";
 import { handleAfterRename, handleProblemText, readBudget, takenHandles } from "@/lib/new-agent";
 import { useToast } from "@/lib/toast";
+import { AgentRoutines } from "@/pages/RoutinesPage";
 import { AccessTab } from "./agent/AccessTab";
 import { ActivityTab } from "./agent/ActivityTab";
 import { type AgentEdit, AgentEditProvider, type Change, type Draft } from "./agent/context";
@@ -96,13 +97,22 @@ import { type WorkDialog, WorkDialogs } from "./agent/Work";
 
 const sortIds = (ids: string[]) => [...ids].sort();
 
-/** The tabs always in the bar; the rest live in its "More" menu, and the one open from there shows in the bar. */
-const MAIN_TABS: AgentTab[] = ["overview", "instructions", "memory", "activity"];
+/**
+ * The tabs in the bar, in the order they give way to its "More" menu when the row is too narrow; the rest live in the
+ * menu, and the one open from there shows in the bar.
+ */
+const MAIN_TABS: AgentTab[] = ["overview", "instructions", "routines", "access", "memory", "activity"];
 const MORE_TABS = AGENT_TABS.filter((id) => !MAIN_TABS.includes(id));
-const MORE_ICON: Partial<Record<AgentTab, IconName>> = {
+/** Each tab's icon in the "More" menu. */
+const TAB_ICON: Record<AgentTab, IconName> = {
+  overview: "home",
+  instructions: "note",
+  routines: "routines",
   access: "plug",
+  memory: "book",
   files: "file",
   usage: "clock",
+  activity: "waiting",
   settings: "settings",
 };
 
@@ -690,7 +700,7 @@ function AgentProfile({ agent, tab, section, onNavigate, onClose, closeRequest }
   };
 
   // Unsaved changes on a tab inside "More": its trigger counts them.
-  const moreChanges = changes.filter((c) => MORE_TABS.includes(c.tab) && c.tab !== tab).length;
+  const moreChanges = (inMenu: AgentTab[]) => changes.filter((c) => inMenu.includes(c.tab)).length;
 
   const value: AgentEdit = {
     agent,
@@ -745,38 +755,43 @@ function AgentProfile({ agent, tab, section, onNavigate, onClose, closeRequest }
               value: id,
               label: tabLabel(id),
             }))}
-            after={
-              <Menu
-                align="end"
-                label={t("agentPage.tabs.more")}
-                trigger={
-                  <button type="button" className="ac-tab agp-more">
-                    {t("agentPage.tabs.more")}
-                    {moreChanges > 0 && (
-                      <span
-                        className="agp-badge agp-badge--edit ac-num"
-                        title={t("agentPage.changesCount", { count: moreChanges })}
-                      >
-                        <Icon name="edit" size={14} />
-                        {moreChanges}
-                      </span>
-                    )}
-                    <Icon name="chevronDown" size={14} />
-                  </button>
-                }
-              >
-                {MORE_TABS.filter((id) => id !== tab).map((id) => (
-                  <MenuItem key={id} icon={MORE_ICON[id]} onSelect={() => goTo(id)}>
-                    {tabLabel(id)}
-                  </MenuItem>
-                ))}
-              </Menu>
-            }
+            after={(overflow) => {
+              const inMenu = [...overflow, ...MORE_TABS.filter((id) => id !== tab)];
+              const n = moreChanges(inMenu);
+              return (
+                <Menu
+                  align="end"
+                  label={t("agentPage.tabs.more")}
+                  trigger={
+                    <button type="button" className="ac-tab agp-more">
+                      {t("agentPage.tabs.more")}
+                      {n > 0 && (
+                        <span
+                          className="agp-badge agp-badge--edit ac-num"
+                          title={t("agentPage.changesCount", { count: n })}
+                        >
+                          <Icon name="edit" size={14} />
+                          {n}
+                        </span>
+                      )}
+                      <Icon name="chevronDown" size={14} />
+                    </button>
+                  }
+                >
+                  {inMenu.map((id) => (
+                    <MenuItem key={id} icon={TAB_ICON[id]} onSelect={() => goTo(id)}>
+                      {tabLabel(id)}
+                    </MenuItem>
+                  ))}
+                </Menu>
+              );
+            }}
           >
             <TabPanel value={tab}>
               <div className="agp-view" key={tab}>
                 {tab === "overview" && <OverviewTab />}
                 {tab === "instructions" && <InstructionsTab />}
+                {tab === "routines" && <AgentRoutines agent={agent} />}
                 {tab === "access" && <AccessTab />}
                 {tab === "memory" && <MemoryTab />}
                 {tab === "files" && <FilesTab />}

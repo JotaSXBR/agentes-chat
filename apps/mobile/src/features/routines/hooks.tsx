@@ -28,6 +28,9 @@ import { fromApiRule, nextLabel, ruleSentence } from "./rule";
 /** A routine's form to edit it ("Nova rotina"'s screen, with the routine). */
 export const editRoutineHref = (id: string) => `/routines/new?edit=${id}`;
 
+/** "Nova rotina" for an agent: the form opens with it picked. */
+export const newRoutineHref = (agentId: string) => `/routines/new?agent=${agentId}`;
+
 /** Says the routine's words (`lib/routine-view`): its key and values, else its fallback key. */
 export function useSay() {
   const { t } = useTranslation();

@@ -15107,6 +15107,13 @@
       "label": "Klavye",
       "field": "{{name}} bilgisayarına yazın"
     },
+    "cursor": {
+      "click": "{{name}} öğesine tıklıyor",
+      "clickPlain": "tıklıyor",
+      "type": "yazıyor",
+      "scroll": "kaydırıyor",
+      "drag": "sürüklüyor"
+    },
     "seeWhole": "Tüm ekranı gör",
     "card": {
       "group": "{{name}} bilgisayarda yardım istiyor",

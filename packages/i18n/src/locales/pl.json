@@ -16219,6 +16219,13 @@
       "label": "Klawiatura",
       "field": "Pisz na komputerze agenta {{name}}"
     },
+    "cursor": {
+      "click": "klika {{name}}",
+      "clickPlain": "klika",
+      "type": "pisze",
+      "scroll": "przewija",
+      "drag": "przeciąga"
+    },
     "seeWhole": "Zobacz cały ekran",
     "card": {
       "group": "Prośba o pomoc przy komputerze: {{name}}",

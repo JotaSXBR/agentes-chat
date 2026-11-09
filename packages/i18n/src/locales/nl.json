@@ -15331,6 +15331,13 @@
       "field": "Typ op de computer van {{name}}",
       "field_female": "Typ op de computer van {{name}}"
     },
+    "cursor": {
+      "click": "klikt op {{name}}",
+      "clickPlain": "klikt",
+      "type": "typt",
+      "scroll": "scrolt",
+      "drag": "sleept"
+    },
     "seeWhole": "Het hele scherm bekijken",
     "card": {
       "group": "Hulpvraag van {{name}} op de computer",

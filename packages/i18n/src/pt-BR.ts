@@ -15260,6 +15260,13 @@ export const ptBR = {
       field: "Digitar no computador do {{name}}",
       field_female: "Digitar no computador da {{name}}",
     },
+    cursor: {
+      click: "clicando em {{name}}",
+      clickPlain: "clicando",
+      type: "digitando",
+      scroll: "rolando",
+      drag: "arrastando",
+    },
     seeWhole: "Ver a tela inteira",
     card: {
       group: "Pedido de ajuda do {{name}} no computador",

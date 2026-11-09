@@ -15763,6 +15763,13 @@
       "field": "Saisir sur l'ordinateur de {{name}}",
       "field_female": "Saisir sur l'ordinateur de {{name}}"
     },
+    "cursor": {
+      "click": "clique sur {{name}}",
+      "clickPlain": "clique",
+      "type": "écrit",
+      "scroll": "fait défiler",
+      "drag": "fait glisser"
+    },
     "seeWhole": "Voir tout l'écran",
     "card": {
       "group": "Demande d'aide de {{name}} sur l'ordinateur",

@@ -15636,6 +15636,13 @@
       "field": "Escribe en la computadora de {{name}}",
       "field_female": "Escribe en la computadora de {{name}}"
     },
+    "cursor": {
+      "click": "haciendo clic en {{name}}",
+      "clickPlain": "haciendo clic",
+      "type": "escribiendo",
+      "scroll": "desplazándose",
+      "drag": "arrastrando"
+    },
     "seeWhole": "Ver la pantalla completa",
     "card": {
       "group": "Pedido de ayuda de {{name}} en la computadora",

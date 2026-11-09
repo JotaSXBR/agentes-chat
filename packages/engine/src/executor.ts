@@ -72,7 +72,6 @@ import {
   forgetModelLimit,
   forgetPlanLimit,
   type ModelScope,
-  mayFallBack,
   NO_AI_CODES,
   noteAnswered,
   noteModelLimit,
@@ -343,6 +342,7 @@ import {
   nextMonthStart,
   overrideHolds,
   type PlanReadingRef,
+  paysExtraUsage,
   planName,
   REPARK_STEADY_MS,
   RESUME_AFTER_MS,
@@ -591,8 +591,6 @@ export interface Transcript {
    * the judges read this as the request instead.
    */
   request?: string;
-  /** The computer brain couldn't answer and the model brain did (ADR 0032 §5): the reply carries a quiet note. */
-  fallback?: { from: BrainKind; code: string; message: string; resetsAt?: string };
   /** Fast was refused on a turn of this run, which went on at standard speed (`meta.speedFallback`). */
   speedFallback?: boolean;
   /**
@@ -1592,7 +1590,7 @@ async function executeRunInner(
   if (fresh && trigger)
     deps.onTiming?.("trigger_to_claim_ms", claimedAt - trigger.createdAt.getTime(), { runId: run.id });
   if (!agent || agent.archivedAt) return fail("agent_archived");
-  // A new run that can't think (no key, a computer brain signed out or missing, and no fallback) fails here,
+  // A new run that can't think (no key, a computer brain signed out or missing) fails here,
   // before the judges below, any context or a model call.
   if (needsContext) {
     const ai = await agentAiState({ db, gateway: deps.gateway, machines: deps.machines }, agent, run);
@@ -2587,11 +2585,6 @@ async function executeRunInner(
       { turn: true, found: true, text: settingsChangedNote(transcript.system) } as ContextBlock,
     ];
   }
-  // A conversation run that fell back to the model brain keeps it when it resumes (an approval, an answer):
-  // its transcript is the model's, and the computer would start the task again from the trigger.
-  if (brainPlan.kind !== "model" && run.brain === "model" && transcript.fallback) {
-    brainPlan = { kind: "model", ...(brainPlan.missionId ? { missionId: brainPlan.missionId } : {}) };
-  }
   if (brainPlan.kind !== "claude_code") onDemandForOtherBrain(transcript);
   // The run's effective brain (ADR 0053 §10): shared code reads it, never the agent's stored brain.
   if (run.brain !== brainPlan.kind) {
@@ -2684,7 +2677,7 @@ async function executeRunInner(
     };
     return { evidence, gather };
   };
-  let brain = createBrain(deps, thinker, run, plan.kind, turnToken, () => transcript as Transcript);
+  const brain = createBrain(deps, thinker, run, plan.kind, turnToken, () => transcript as Transcript);
   let triggerText = trigger?.body ?? topTrigger?.body ?? "";
   if (plan.kind !== "model" && !triggerText) {
     triggerText = (await getMessage(db, run.orgId, run.triggerMessageId))?.body ?? "";
@@ -2870,14 +2863,14 @@ async function executeRunInner(
 
   /**
    * The computer brain can't answer. On the run's first look (`firstLook`), a computer just gone is waited for
-   * first (`computerBackSoon`). Still away: the model brain stands in with a quiet note, or the run waits for the
-   * computer, or (nothing to think with) it fails with `no_ai`. A computer with no room for the turn (`busy`)
+   * first (`computerBackSoon`). Still away: the run waits for the computer (the API never stands in, ADR 0032's
+   * 2026-11-09 addendum), or (nothing to think with) it fails with `no_ai`. A computer with no room for the turn (`busy`)
    * is asked again every `COMPUTER_BUSY_RETRY_MS` until it runs.
    */
   const brainUnavailable = async (
     u: BrainUnavailability & { queued?: boolean; retryAt?: number },
     firstLook = false,
-  ): Promise<"fallback" | "waited" | "failed" | "no" | "back" | "canceled"> => {
+  ): Promise<"waited" | "failed" | "no" | "back" | "canceled"> => {
     const from = plan.kind;
     if (from === "model") return "no";
     const t = transcript as Transcript;
@@ -2902,31 +2895,6 @@ async function executeRunInner(
     // brain would redo them), so the run waits for it. A turn the plan cut after it worked parks with no
     // executed tools when the runner can't name them (Claude Code's own tools, an older runner): the same.
     const onlyThisComputer = (t.interruptedTurn?.executed.length ?? 0) > 0 || t.interruptedTurn?.cause === "plan_limit";
-    // A background run never stands in on the model brain (`mayFallBack`): it waits for its computer.
-    // Behind others in the computer's line (`roomGate`) is no refusal: it waits its turn.
-    if (
-      !onlyThisComputer &&
-      !u.queued &&
-      mayFallBack(agent, run) &&
-      (await deps.gateway.hasModelCredential(thinker).catch(() => false))
-    ) {
-      await leaveLine();
-      t.fallback = { from, code: u.code, message: u.message, ...(u.resetsAt ? { resetsAt: u.resetsAt } : {}) };
-      // On "Automático" the API answers with the model and effort chosen for this run.
-      const autoEffort = isAutoModel(agent.model) ? t.autoModel?.effort : undefined;
-      plan = {
-        kind: "model",
-        ...(plan.missionId ? { missionId: plan.missionId } : {}),
-        ...(autoEffort ? { effort: autoEffort } : {}),
-      };
-      brain = createBrain(deps, thinker, run, "model", turnToken, () => transcript as Transcript);
-      onDemandForOtherBrain(t);
-      await saveTranscript(db, t);
-      await recordRunBrain(db, run.id, "model");
-      run = { ...run, brain: "model" };
-      await addRunStep(db, run, "context", { brainFallback: { from, code: u.code, message: u.message } });
-      return "fallback";
-    }
     // Signed out, the command-line tool missing, no computer: nothing signals that it's fixed (only the
     // computer coming back online would), so a wait would never end.
     if (!onlyThisComputer && NO_AI_CODES.has(u.code)) {
@@ -3144,7 +3112,7 @@ async function executeRunInner(
 
   /**
    * A computer brain failed mid-turn after tools already ran (ADR 0032 §5):
-   * no fallback (the model brain would redo them). What it said after its
+   * never the model brain (it would redo them). What it said after its
    * last call (`lastText`), and which tools it used, are posted
    * (`meta.brainInterrupted`, the app adds the note in the person's
    * language) and the run ends there.
@@ -3386,12 +3354,6 @@ async function executeRunInner(
       wait.step++;
     } else if (!known) at = now + LINE_SAFETY_MS;
     const resetsAt = known ? new Date(at).toISOString() : undefined;
-    // Thinking through the API only because its computer brain couldn't: that brain may be back (its plan reset)
-    // long before the budget renews, and a resume picks it again. The note still says when the budget renews.
-    if (budget && t.fallback && !u.soon) {
-      const brainBack = Date.parse(t.fallback.resetsAt ?? "");
-      at = Math.min(at, brainBack > now ? brainBack : now + ladderDelay(wait.step++));
-    }
     const runAt = new Date(at + RESUME_AFTER_MS + RESUME_GAP_MS * line.place);
     // The region a model needs, a model switched off or no subscription has no reset: its note says what to do.
     const tellOwner =
@@ -3619,7 +3581,7 @@ async function executeRunInner(
       used: top.used,
       window: top.kind,
       ...(top.resetsAt ? { resetsAt: top.resetsAt } : {}),
-      extra: agent.brainExtraUsage && extraUsageLeft(usage),
+      extra: paysExtraUsage(agent) && extraUsageLeft(usage),
     };
   };
   /** A routine's run started by Rodar agora isn't long by kind (a person just asked for it): read once. */
@@ -4220,7 +4182,7 @@ async function executeRunInner(
           .where(and(eq(agentRuns.id, run.id), eq(agentRuns.status, "running")))
           .catch(() => {});
         // Tools already ran in this computer turn (their side effects happened; they aren't in the
-        // transcript): neither the model brain (fallback) nor a retried job may redo the turn from scratch,
+        // transcript): no retried job may redo the turn from scratch,
         // they would run them again. Post what the brain said and what it did instead, and end the run there.
         if (turnPlan.kind !== "model") {
           const executed = await executedSince(db, run.id, turnStepSeq, executedNow);
@@ -4306,7 +4268,6 @@ async function executeRunInner(
             }
           }
           const handled = await brainUnavailable({ code: error.code, message: error.message, ...refusal });
-          if (handled === "fallback") continue;
           if (handled === "waited" || handled === "failed") return;
         }
         // The person behind it is at their monthly limit (ADR 0141): the agent says so with "Pedir mais" and stops.
@@ -5717,18 +5678,9 @@ const DONE_TEXT = "Done.";
 const withCode = (meta: Record<string, unknown> | undefined, code: ReturnType<typeof bodyCode> | undefined) =>
   code ? { ...(meta ?? {}), ...code } : meta;
 
-/**
- * The quiet notes on a reply: the model brain gave it for an unavailable computer brain (`meta.brainFallback`), or
- * Fast was refused and it came at standard speed (`meta.speedFallback`, the apps say so under the reply).
- */
+/** The quiet note on a reply: Fast was refused and it came at standard speed (`meta.speedFallback`, the apps say so). */
 const withFallback = (t: Transcript, meta: Record<string, unknown> | undefined) =>
-  t.fallback || t.speedFallback
-    ? {
-        ...(meta ?? {}),
-        ...(t.fallback ? { brainFallback: t.fallback } : {}),
-        ...(t.speedFallback ? { speedFallback: true } : {}),
-      }
-    : meta;
+  t.speedFallback ? { ...(meta ?? {}), speedFallback: true } : meta;
 
 /**
  * The conversation a "Continuar" run starts from: the stopped run's messages (what it wrote

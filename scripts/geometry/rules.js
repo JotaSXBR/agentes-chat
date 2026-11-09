@@ -372,6 +372,8 @@
   const sameLine = (a, b) =>
     Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > Math.min(a.bottom - a.top, b.bottom - b.top) / 2;
   const textRects = (node) => [...textRange(node).getClientRects()].filter((r) => r.width > 1 && r.height > 1);
+  /** A line held for words still loading: a no-break space alone (the app's `BLANK_LINE`). It is one of the lines. */
+  const held = (node) => /^\u00a0+$/.test(node.textContent);
   /** The distinct lines a set of boxes covers, however their type sizes differ on each line. */
   const lineCount = (rects) => {
     const lines = [];
@@ -1198,7 +1200,8 @@
           const lines = [];
           const walker = document.createTreeWalker(row, NodeFilter.SHOW_TEXT);
           for (let n = walker.nextNode(); n; n = walker.nextNode())
-            if (n.textContent.trim() && !glyph.contains(n) && seen(n.parentElement)) lines.push(...textRects(n));
+            if ((n.textContent.trim() || held(n)) && !glyph.contains(n) && seen(n.parentElement))
+              lines.push(...textRects(n));
           if (lineCount(lines) === 1 && lines.some((t) => sameLine(t, box))) caps = capsAt(before);
         }
         if (!caps) continue;

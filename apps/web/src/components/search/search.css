@@ -122,12 +122,13 @@
 /* ── The channel header's mini menu (SearchBox `compact`, Discord's): filters with their mark and an example, then
  * recent searches as their chips; after `de:`, who, agents and people apart. ── */
 .search-menu.search-box__menu {
+  /* Its room as the menu's own, so its corner stays its rows' corner plus that room (`.ac-menu`). */
+  --menu-pad: 6px;
   left: auto;
   right: 0;
   width: 360px;
   max-width: calc(100vw - 24px);
   max-height: min(520px, 70vh);
-  padding: 6px;
 }
 .search-menu .ac-menu__heading {
   padding: 8px 10px 4px;

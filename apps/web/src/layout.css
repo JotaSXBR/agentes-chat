@@ -10163,13 +10163,17 @@ html:not([data-pointer]) .agp-tabs .ac-tab:focus-visible {
 }
 /*
  * The Ficha (Overview): how it works and who it works with, as two lists of rows on the root card's face. A row is
- * its key, what it is, the value and a chevron (or its own button); the whole row opens its dialog.
+ * its key, what it is, the value and a chevron (or its own button); the whole row opens its dialog. Its plate stands
+ * `--ficha-pad` from every edge of the card, its corners the card's less that room (concentric).
  */
 .agp-ficha__card {
+  --ficha-pad: var(--action-clear);
   container-type: inline-size;
   display: flex;
   flex-direction: column;
-  padding: 4px;
+  padding: var(--ficha-pad);
+  /* No hairlines of its own: Como trabalha is also an `.agp-workcard`, which draws them for the memory's counts. */
+  border: 0;
   border-radius: var(--radius-section) var(--radius-section) var(--radius-section) 4px;
   background: linear-gradient(180deg, var(--card-face-top), var(--surface-raised) 64px);
   box-shadow: var(--card-shadow);
@@ -10190,12 +10194,13 @@ html:not([data-pointer]) .agp-tabs .ac-tab:focus-visible {
   grid-template-areas: "key label value tail";
   gap: 0 12px;
   align-items: center;
-  width: calc(100% - 8px);
+  width: 100%;
   min-height: 40px;
-  margin: 0 4px;
+  margin: 0;
   padding: var(--row-py) 12px;
   border: 0;
-  border-radius: 13px 13px 13px 4px;
+  border-radius: calc(var(--radius-section) - var(--ficha-pad)) calc(var(--radius-section) - var(--ficha-pad))
+    calc(var(--radius-section) - var(--ficha-pad)) var(--radius-cut);
   background: none;
   box-shadow: none;
   overflow: visible;

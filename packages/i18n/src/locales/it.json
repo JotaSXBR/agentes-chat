@@ -1903,7 +1903,7 @@
     "visibilityPublic": "Pubblico",
     "visibilityPrivate": "Privato",
     "actions": "Azioni per il messaggio di {{name}}",
-    "actionsWhenDone": "Disponibile quando {{name}} finisce",
+    "actionsWhenDone": "Disponibile quando {{name}} ha finito",
     "helpful": "Utile",
     "notHelpful": "Non utile",
     "correct": "Correggi risposta",

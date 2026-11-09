@@ -172,6 +172,8 @@ describe("message action bars", () => {
     const row = document.querySelector('[data-run-id="r-bar"]') as HTMLElement;
     const bar = within(row).getByRole("toolbar", { name: "Ações da mensagem de Ada" });
     expect(bar.className).toBe("ac-msg__actions");
+    // Off as a whole (drawn plainly off, not the working bar's gray a shade lighter), and its tip says until when.
+    expect(bar.getAttribute("aria-disabled")).toBe("true");
     expect(bar.title).toBe("Disponível quando a Ada terminar");
     const buttons = () => within(bar).getAllByRole("button") as HTMLButtonElement[];
     expect(buttons().map((b) => b.getAttribute("aria-label"))).toEqual([
@@ -208,6 +210,7 @@ describe("message action bars", () => {
     const saved = document.querySelector('[data-message-id="m-bar"]') as HTMLElement;
     const live = within(saved).getByRole("toolbar", { name: "Ações da mensagem de Ada" });
     expect(live.title).toBe("");
+    expect(live.getAttribute("aria-disabled")).toBeNull();
     expect((within(live).getByRole("button", { name: "Útil" }) as HTMLButtonElement).disabled).toBe(false);
     expect((within(live).getByRole("button", { name: "Reagir" }) as HTMLButtonElement).disabled).toBe(false);
   });

@@ -1840,7 +1840,7 @@
     "visibilityPublic": "Herkese açık",
     "visibilityPrivate": "Özel",
     "actions": "{{name}} mesajı için işlemler",
-    "actionsWhenDone": "{{name}} bitince kullanılabilir",
+    "actionsWhenDone": "{{name}} işini bitirince kullanılabilir",
     "helpful": "Faydalı",
     "notHelpful": "Faydalı değil",
     "correct": "Yanıtı düzelt",

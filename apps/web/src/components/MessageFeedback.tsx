@@ -103,6 +103,7 @@ export function PendingFeedback({ agentName }: { agentName: string }) {
       className="ac-msg__actions"
       role="toolbar"
       aria-label={t("channel.actions", { name: agentName })}
+      aria-disabled="true"
       title={t("channel.actionsWhenDone", agentGrammar(agentName))}
     >
       {off("smile", t("reactions.react"))}

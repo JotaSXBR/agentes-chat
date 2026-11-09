@@ -10970,6 +10970,7 @@
       "page": "sayfa|sayfalar",
       "document": "belge|belgeler",
       "doc": "belge|belgeler",
+      "documentation": "dokümantasyon|dokümantasyon",
       "report": "rapor|raporlar",
       "campaign": "kampanya|kampanyalar",
       "ad": "reklam|reklamlar",
@@ -10995,6 +10996,7 @@
       "commit": "commit|commit'ler",
       "release": "sürüm|sürümler",
       "database": "veritabanı|veritabanları",
+      "query": "sorgu|sorgular",
       "table": "tablo|tablolar",
       "record": "kayıt|kayıtlar",
       "row": "satır|satırlar",
@@ -11044,6 +11046,7 @@
       "discussion": "tartışma|tartışmalar",
       "dependabot": "Dependabot",
       "org": "kuruluş|kuruluşlar",
+      "organization": "kuruluş|kuruluşlar",
       "ruleset": "kural kümesi|kural kümeleri"
     }
   },

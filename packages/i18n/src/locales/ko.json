@@ -10589,6 +10589,7 @@
       "page": "페이지",
       "document": "문서",
       "doc": "문서",
+      "documentation": "문서",
       "report": "보고서",
       "campaign": "캠페인",
       "ad": "광고",
@@ -10614,6 +10615,7 @@
       "commit": "커밋",
       "release": "릴리스",
       "database": "데이터베이스",
+      "query": "쿼리",
       "table": "테이블",
       "record": "레코드",
       "row": "행",
@@ -10663,6 +10665,7 @@
       "discussion": "디스커션",
       "dependabot": "Dependabot",
       "org": "조직",
+      "organization": "조직",
       "ruleset": "규칙 세트"
     }
   },

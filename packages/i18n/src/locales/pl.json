@@ -11842,6 +11842,7 @@
       "page": "stronę|strony|strony",
       "document": "dokument|dokumenty|dokumentu",
       "doc": "dokument|dokumenty|dokumentu",
+      "documentation": "dokumentację|dokumentację|dokumentacji",
       "report": "raport|raporty|raportu",
       "campaign": "kampanię|kampanie|kampanii",
       "ad": "reklamę|reklamy|reklamy",
@@ -11867,6 +11868,7 @@
       "commit": "commit|commity|commita",
       "release": "wydanie|wydania|wydania",
       "database": "bazę danych|bazy danych|bazy danych",
+      "query": "zapytanie|zapytania|zapytania",
       "table": "tabelę|tabele|tabeli",
       "record": "rekord|rekordy|rekordu",
       "row": "wiersz|wiersze|wiersza",
@@ -11916,6 +11918,7 @@
       "discussion": "dyskusję|dyskusje|dyskusji",
       "dependabot": "Dependabot|Dependabot|Dependabota",
       "org": "organizację|organizacje|organizacji",
+      "organization": "organizację|organizacje|organizacji",
       "ruleset": "zestaw reguł|zestawy reguł|zestawu reguł"
     }
   },

@@ -10649,6 +10649,7 @@
       "page": "页面|页面",
       "document": "文档|文档",
       "doc": "文档|文档",
+      "documentation": "文档|文档",
       "report": "报告|报告",
       "campaign": "广告系列|广告系列",
       "ad": "广告|广告",
@@ -10674,6 +10675,7 @@
       "commit": "提交|提交",
       "release": "版本|版本",
       "database": "数据库|数据库",
+      "query": "查询|查询",
       "table": "表|表",
       "record": "记录|记录",
       "row": "行|行",
@@ -10723,6 +10725,7 @@
       "discussion": "讨论|讨论",
       "dependabot": "Dependabot",
       "org": "组织|组织",
+      "organization": "组织|组织",
       "ruleset": "规则集|规则集"
     }
   },

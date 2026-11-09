@@ -438,14 +438,17 @@ export function sharedPrefix(names: string[]): string | null {
   return firsts.every((w) => w[0] === first && w.length > 1) ? first : null;
 }
 
+/** Mirrored in the client's `tool-review.ts`. `-aches` only drops its s: caches, not cach. */
 const singular = (w: string) =>
   w.endsWith("ies") && w.length > 4
     ? `${w.slice(0, -3)}y`
-    : /(ss|us|is|data|info|news|status|analytics)$/.test(w)
-      ? w
-      : w.endsWith("s") && w.length > 3
-        ? w.slice(0, -1)
-        : w;
+    : /([^a]ch|sh|x|ss)es$/.test(w)
+      ? w.slice(0, -2)
+      : /(ss|us|is|data|info|news|status|analytics|postgres)$/.test(w)
+        ? w
+        : w.endsWith("s") && w.length > 3
+          ? w.slice(0, -1)
+          : w;
 
 /** Readable parts and the subject (the resource the tool is about: `campaign`, `ticket`; `other` when none). */
 export function describeToolName(name: string, prefix: string | null = null): ToolNameParts & { subject: string } {
@@ -454,6 +457,7 @@ export function describeToolName(name: string, prefix: string | null = null): To
   const v = verbIndex(words);
   const verb = v >= 0 ? (words[v] ?? null) : null;
   const rest = v >= 0 ? words.filter((_, i) => i !== v) : words;
-  const head = rest[0];
+  // Only verbs before a last one: that last word is what they act on (`execute_read_query` is about a query).
+  const head = v > 0 && v === words.length - 1 && rest.every(isVerb) ? verb : rest[0];
   return { verb, words: rest, subject: head ? singular(head) : "other" };
 }

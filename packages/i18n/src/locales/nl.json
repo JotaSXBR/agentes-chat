@@ -11089,6 +11089,7 @@
       "page": "pagina|pagina's",
       "document": "document|documenten",
       "doc": "doc|docs",
+      "documentation": "documentatie|documentatie",
       "report": "rapport|rapporten",
       "campaign": "campagne|campagnes",
       "ad": "advertentie|advertenties",
@@ -11114,6 +11115,7 @@
       "commit": "commit|commits",
       "release": "release|releases",
       "database": "database|databases",
+      "query": "query|queries",
       "table": "tabel|tabellen",
       "record": "record|records",
       "row": "rij|rijen",
@@ -11163,6 +11165,7 @@
       "discussion": "discussie|discussies",
       "dependabot": "Dependabot",
       "org": "organisatie|organisaties",
+      "organization": "organisatie|organisaties",
       "ruleset": "regelset|regelsets"
     }
   },

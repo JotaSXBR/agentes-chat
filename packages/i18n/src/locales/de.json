@@ -11034,6 +11034,7 @@
       "page": "Seite|Seiten|der Seite",
       "document": "Dokument|Dokumente|des Dokuments",
       "doc": "Dokument|Dokumente|des Dokuments",
+      "documentation": "Dokumentation|Dokumentation|der Dokumentation",
       "report": "Bericht|Berichte|des Berichts",
       "campaign": "Kampagne|Kampagnen|der Kampagne",
       "ad": "Anzeige|Anzeigen|der Anzeige",
@@ -11059,6 +11060,7 @@
       "commit": "Commit|Commits|des Commits",
       "release": "Release|Releases|des Release",
       "database": "Datenbank|Datenbanken|der Datenbank",
+      "query": "Abfrage|Abfragen|der Abfrage",
       "table": "Tabelle|Tabellen|der Tabelle",
       "record": "Datensatz|Datensätze|des Datensatzes",
       "row": "Zeile|Zeilen|der Zeile",
@@ -11108,6 +11110,7 @@
       "discussion": "Diskussion|Diskussionen|der Diskussion",
       "dependabot": "Dependabot|Dependabot|von Dependabot",
       "org": "Organisation|Organisationen|der Organisation",
+      "organization": "Organisation|Organisationen|der Organisation",
       "ruleset": "Regelsatz|Regelsätze|des Regelsatzes"
     }
   },

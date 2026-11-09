@@ -26724,6 +26724,9 @@
   "toolNames.noun.doc": {
     "value": "doc|docs"
   },
+  "toolNames.noun.documentation": {
+    "value": "documentation|documentation"
+  },
   "toolNames.noun.report": {
     "value": "report|reports"
   },
@@ -26798,6 +26801,9 @@
   },
   "toolNames.noun.database": {
     "value": "database|databases"
+  },
+  "toolNames.noun.query": {
+    "value": "query|queries"
   },
   "toolNames.noun.table": {
     "value": "table|tables"
@@ -26944,6 +26950,9 @@
     "value": "Dependabot|Dependabot"
   },
   "toolNames.noun.org": {
+    "value": "organization|organizations"
+  },
+  "toolNames.noun.organization": {
     "value": "organization|organizations"
   },
   "toolNames.noun.ruleset": {

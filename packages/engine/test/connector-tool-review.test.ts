@@ -107,6 +107,23 @@ describe("classification by the rules", () => {
     expect(describeToolName("list_tickets").subject).toBe("ticket");
     expect(describeToolName("categories").subject).toBe("category");
     expect(describeToolName("ping")).toEqual({ verb: null, words: ["ping"], subject: "ping" });
+    // Plurals in -es join their singular's group, and a name that ends in s keeps it.
+    expect(
+      ["list_branches", "get_branch", "list_addresses", "list_indexes", "list_caches", "get_postgres_logs"].map(
+        (n) => describeToolName(n).subject,
+      ),
+    ).toEqual(["branch", "branch", "address", "index", "cache", "postgres"]);
+    // Only verbs before the last one: what they act on is that last word.
+    expect(describeToolName("planetscale_execute_write_query", "planetscale")).toEqual({
+      verb: "query",
+      words: ["execute", "write"],
+      subject: "query",
+    });
+    expect(["run_query", "list_query_tags", "create_post"].map((n) => describeToolName(n).subject)).toEqual([
+      "query",
+      "query",
+      "post",
+    ]);
     expect(sharedPrefix(["github_create_issue", "github_list_repos"])).toBe("github");
     expect(sharedPrefix(["list_issues", "list_repos"])).toBeNull();
     expect(describeToolName("github_create_issue", "github")).toEqual({

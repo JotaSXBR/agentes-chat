@@ -235,7 +235,7 @@ const LEARN_QUESTION = {
     method:
       "It worked out a way it will reuse: several tries before one worked, a new API or address, a command or a script it wrote.",
     correction:
-      "A person corrected it or said how they want things done from now on ('always…', 'from now on…', 'don't… again').",
+      "A person corrected it, questioned something it did ('did anyone ask you to…?'), or said how they want things done from now on ('always…', 'from now on…', 'don't… again').",
     fact: "A person's message or a tool result gave a lasting fact about the company, its people or its systems.",
     access:
       "Someone in the team got, lost or was named for an access: the agent or another signed in to a service, got a login, a key, a connector or a mailbox, or a person said who handles a service.",

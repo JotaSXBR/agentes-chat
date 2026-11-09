@@ -11,6 +11,7 @@ import {
   createAgent,
   drainOutbox,
   editContextItem,
+  HOW_YOU_WORK,
   insertMessage,
   isHowTo,
   isPlaybook,
@@ -32,7 +33,7 @@ import {
 } from "../src";
 import { learnTags, readsOutside, reportLearnFailure } from "../src/context/learn";
 import { continuationVerdict, runCalls } from "../src/continuation";
-import { createLlmJudge, judgeCallOf, withJudgeCall, withJudgeFallback } from "../src/judge";
+import { createLlmJudge, type JudgeRequest, judgeCallOf, withJudgeCall, withJudgeFallback } from "../src/judge";
 import { addMember, setup as baseSetup, type Fixture } from "./fixtures";
 
 let f: Fixture;
@@ -1424,5 +1425,74 @@ describe("quiet learning (ADR 0120 addendum)", () => {
       (await listAgentMemoryRows(f.db, userId, f.org.id, f.agent.id)).items.map((i) => i.kind).sort();
     expect(await seen(f.owner.id)).toEqual(["fact", "lesson"]);
     expect(await seen(bia.id)).toEqual(["fact"]);
+  });
+});
+
+describe("a person questioning what the agent did on its own", () => {
+  test("is a correction it keeps: the turn-end question counts it, and the lesson reaches its next runs", async () => {
+    // The prompt keeps unasked extras on someone's private data to an offer, and makes a correction stop it.
+    expect(HOW_YOU_WORK).toContain("Do what was asked and what it clearly needs.");
+    expect(HOW_YOU_WORK).toContain("Unasked extras that read someone's private data");
+    expect(HOW_YOU_WORK).toContain(
+      "Never post a person's email or personal data in a channel unless the task needs it.",
+    );
+    expect(HOW_YOU_WORK).toContain("Questioned or corrected on what you did: stop and save the correction.");
+    const lesson = "Ler saldo, plano ou dados de uma conta só quando pedirem, e oferecer isso em uma linha.";
+    f = await setup({
+      judge: (kind, id, state) =>
+        kind === "follow_through" && id === "learn"
+          ? String(state.request).includes("por que você abriu")
+            ? "correction"
+            : "none"
+          : undefined,
+      reply: (req) => {
+        const last = JSON.stringify(req.messages.at(-1)?.content);
+        if (last.includes("por que você abriu"))
+          return { chunks: ["Ninguém pediu, foi decisão minha. Não leio mais dados da conta sem pedirem."] };
+        if (last.includes("resumo")) return { chunks: ["A Northwind tem três planos."] };
+        return { chunks: ["Pesquisei a Northwind. A conta tem 120 créditos."] };
+      },
+    });
+    learnOutput = {
+      items: [
+        {
+          kind: "lesson",
+          scope: "own",
+          about_person: "",
+          title: "Dados da conta só quando pedirem",
+          key: "account data only when asked",
+          content: lesson,
+          refs: ["m1", "m2", "m3", "m4"],
+        },
+      ],
+      skill_fixes: [],
+    };
+    const say = async (body: string) => {
+      await postPersonMessage({ db: f.db, pubsub: f.pubsub }, f.owner.id, f.org.id, f.general.id, { body });
+      await drainOutbox(f.db, f.handlers);
+    };
+    await say("@dev pesquisa a Northwind");
+    expect(await items()).toEqual([]);
+    await say("@dev por que você abriu os créditos da conta?");
+
+    // The judge reads such a question as a correction.
+    const asked = (f.context.judge as unknown as { calls: JudgeRequest[] }).calls.find(
+      (c) => c.kind === "follow_through",
+    );
+    const learn = asked?.questions.learn as { criteria?: Record<string, string> } | undefined;
+    expect(learn?.criteria?.correction).toContain("questioned something it did");
+    const [kept, ...rest] = await items();
+    expect(rest).toEqual([]);
+    expect([kept?.kind, kept?.scopeType, kept?.agentId, kept?.trust, kept?.content]).toEqual([
+      "lesson",
+      "agent",
+      f.agent.id,
+      "high",
+      lesson,
+    ]);
+    expect(kept?.evidence.some((e) => e.type === "human")).toBe(true);
+
+    await say("@dev me manda o resumo");
+    expect(JSON.stringify(f.provider.calls.at(-1)?.request)).toContain(lesson);
   });
 });

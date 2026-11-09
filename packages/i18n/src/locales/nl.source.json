@@ -36804,6 +36804,21 @@
   "desktop.keyboard.field": {
     "value": "Type on {{name}}'s computer"
   },
+  "desktop.cursor.click": {
+    "value": "clicking {{name}}"
+  },
+  "desktop.cursor.clickPlain": {
+    "value": "clicking"
+  },
+  "desktop.cursor.type": {
+    "value": "typing"
+  },
+  "desktop.cursor.scroll": {
+    "value": "scrolling"
+  },
+  "desktop.cursor.drag": {
+    "value": "dragging"
+  },
   "desktop.seeWhole": {
     "value": "See the whole screen"
   },

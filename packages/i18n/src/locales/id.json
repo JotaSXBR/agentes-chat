@@ -14780,6 +14780,13 @@
       "field": "Ketik di komputer {{name}}",
       "field_female": "Ketik di komputer {{name}}"
     },
+    "cursor": {
+      "click": "mengeklik {{name}}",
+      "clickPlain": "mengeklik",
+      "type": "mengetik",
+      "scroll": "menggulir",
+      "drag": "menyeret"
+    },
     "seeWhole": "Lihat seluruh layar",
     "card": {
       "group": "Permintaan bantuan {{name}} di komputer",

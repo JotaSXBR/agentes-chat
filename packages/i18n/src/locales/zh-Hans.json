@@ -14839,6 +14839,13 @@
       "field": "在 {{name}} 的电脑上输入",
       "field_female": "在 {{name}} 的电脑上输入"
     },
+    "cursor": {
+      "click": "正在点击“{{name}}”",
+      "clickPlain": "正在点击",
+      "type": "正在输入",
+      "scroll": "正在滚动",
+      "drag": "正在拖动"
+    },
     "seeWhole": "查看整个屏幕",
     "card": {
       "group": "{{name}} 在电脑上请求协助",

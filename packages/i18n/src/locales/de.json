@@ -15211,6 +15211,13 @@
       "label": "Tastatur",
       "field": "Auf dem Computer von {{name}} tippen"
     },
+    "cursor": {
+      "click": "klickt auf {{name}}",
+      "clickPlain": "klickt",
+      "type": "tippt",
+      "scroll": "scrollt",
+      "drag": "zieht"
+    },
     "seeWhole": "Ganzen Bildschirm ansehen",
     "card": {
       "group": "Bitte von {{name}} um Hilfe am Computer",

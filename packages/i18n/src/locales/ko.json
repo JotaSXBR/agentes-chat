@@ -14677,6 +14677,13 @@
       "label": "키보드",
       "field": "{{name}}의 컴퓨터에 입력"
     },
+    "cursor": {
+      "click": "{{name}} 클릭 중",
+      "clickPlain": "클릭 중",
+      "type": "입력 중",
+      "scroll": "스크롤 중",
+      "drag": "드래그 중"
+    },
     "seeWhole": "전체 화면 보기",
     "card": {
       "group": "{{name}}의 컴퓨터 도움 요청",

@@ -15113,6 +15113,17 @@ export const en = {
       label: "Keyboard",
       field: "Type on {{name}}'s computer",
     },
+    /**
+     * The agent's own pointer over its screen (`AgentCursor`): what it does, after its name on the pointer's tag, for a
+     * moment. `name` is what it clicks, as the screen shows it (a button's or an icon's words).
+     */
+    cursor: {
+      click: "clicking {{name}}",
+      clickPlain: "clicking",
+      type: "typing",
+      scroll: "scrolling",
+      drag: "dragging",
+    },
     seeWhole: "See the whole screen",
     card: {
       group: "{{name}}'s request for help on the computer",

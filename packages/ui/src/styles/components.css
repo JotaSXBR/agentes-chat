@@ -10272,11 +10272,17 @@ html:not([data-pointer]) .ac-effort:focus-visible .ac-effort__ramp {
     grid-template-columns: minmax(0, 1fr);
   }
 }
-/* Cards (layout="cards"): side by side, illustration on top, radio in the corner. */
+/* Cards (layout="cards"): illustration on top, radio in the corner. All side by side while each gets 168px, else one
+   per row (`--ac-cards`: how many, from OptionList): never two over one left alone, which a scrollbar coming and going
+   switched between. */
 .ac-optlist__cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+  --ac-cards-row: calc(var(--ac-cards, 3) * 168px + (var(--ac-cards, 3) - 1) * 10px);
+  display: flex;
+  flex-wrap: wrap;
   gap: 10px;
+}
+.ac-optlist__cards > .ac-optrow {
+  flex: 1 1 calc((var(--ac-cards-row) - 100%) * 999);
 }
 .ac-optlist--cards .ac-optrow {
   position: relative;

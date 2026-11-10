@@ -14,6 +14,7 @@ import { copyPillAddresses } from "./chat/link-pill-copy";
 import { ErrorScreen } from "./components/ErrorScreen";
 import { withComposerDraftsSignOut } from "./hooks/useComposerDraft";
 import { loadI18n, savedLocale } from "./i18n";
+import { startAppIcon } from "./lib/app-icon";
 import {
   checkAppVersion,
   createVersionWatch,
@@ -65,6 +66,8 @@ trackInput();
 const toasts = createToastStore();
 // The app's sounds (ADR 0070): a click or a key switches audio on; the person's choice is in Sua conta.
 installSounds();
+// The app icon this device picked (ADR 0164): the tab's, or the desktop app's Dock.
+startAppIcon();
 
 /** A 401 anywhere means the session ended: back to sign-in, then here again. */
 function onUnauthorized() {

@@ -1292,6 +1292,26 @@ export const en = {
     moveDown: "Move down",
     restoreOrder: "Restore default order",
   },
+  /** The icon a person picks for the app on this device (ADR 0164): Settings › Account › This device, and the phone's You. */
+  appIcon: {
+    title: "App icon",
+    /** In a browser: the pick changes this browser's tab icon. */
+    hintWeb: "The icon on this browser's tabs.",
+    /** In the desktop app on a Mac: macOS shows the bundle's own icon wherever the app isn't running. */
+    hintMac: "The Dock's icon while the app is open. Finder and Launchpad keep the default one.",
+    /** In the desktop app on Windows and Linux. */
+    hintDesktop: "The taskbar's icon while the app is open.",
+    /** On Android, under the list: launchers redraw the home screen in their own time. */
+    hintAndroid: "Some home screens take a few seconds to show the new icon.",
+    failed: "Couldn't change the icon. Try again.",
+    names: {
+      night: "Night",
+      moon: "Moon",
+      sky: "Sky",
+      peekNight: "Peeking at night",
+      peekSky: "Peeking in the sky",
+    },
+  },
   legal: {
     updated: "Last updated {{date}}",
     contents: "On this page",

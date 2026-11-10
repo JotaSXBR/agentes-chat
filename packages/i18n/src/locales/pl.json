@@ -1338,6 +1338,21 @@
     "moveDown": "Przenieś niżej",
     "restoreOrder": "Przywróć domyślną kolejność"
   },
+  "appIcon": {
+    "title": "Ikona aplikacji",
+    "hintWeb": "Ikona na kartach tej przeglądarki.",
+    "hintMac": "Ikona w Docku, gdy aplikacja jest otwarta. Finder i Launchpad zachowują domyślną.",
+    "hintDesktop": "Ikona na pasku zadań, gdy aplikacja jest otwarta.",
+    "hintAndroid": "Niektóre ekrany główne potrzebują kilku sekund, by pokazać nową ikonę.",
+    "failed": "Nie udało się zmienić ikony. Spróbuj ponownie.",
+    "names": {
+      "night": "Noc",
+      "moon": "Księżyc",
+      "sky": "Niebo",
+      "peekNight": "Zerkanie nocą",
+      "peekSky": "Zerkanie w niebie"
+    }
+  },
   "legal": {
     "updated": "Ostatnia aktualizacja: {{date}}",
     "contents": "Na tej stronie",

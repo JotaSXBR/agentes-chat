@@ -231,10 +231,10 @@ pub fn open(app: &AppHandle, url: Option<Url>) -> Result<(), String> {
         // browser, the device's name in its words), that `this_mac` takes `servers` and `files` (older apps
         // refuse them, so the sign-in's other server and Storage's "Show the folder" show only where this says
         // so), that a connector's sign-in and the window's own browser sign-in come back here (`deep_link.rs`,
-        // older apps don't take them), and that it lists the other servers' workspaces (`workspaces`,
-        // ADR 0154); nothing else.
+        // older apps don't take them), that it lists the other servers' workspaces (`workspaces`,
+        // ADR 0154) and that it takes the person's app icon (`appIcon`, ADR 0164); nothing else.
         .initialization_script(format!(
-            "window.__agentesDesktop = Object.freeze({{ version: {version:?}, platform: {PLATFORM:?}, servers: true, files: true, connectorReturn: true, workspaces: true }});"
+            "window.__agentesDesktop = Object.freeze({{ version: {version:?}, platform: {PLATFORM:?}, servers: true, files: true, connectorReturn: true, workspaces: true, appIcon: true }});"
         ))
         .on_navigation(move |url| match route_now(&on_nav, url) {
             Route::Stay => true,
@@ -302,6 +302,8 @@ pub fn open(app: &AppHandle, url: Option<Url>) -> Result<(), String> {
         // The buttons are placed by `place_lights` (on every fit), not with `traffic_light_position`.
         .hidden_title(true);
     let built = builder.build().map_err(|e| e.to_string())?;
+    // A new window starts with the bundle's icon on Windows and Linux: the person's pick (ADR 0164).
+    crate::app_icon::show(app);
     let window = built.as_ref().window();
     if saved.maximized {
         let _ = window.maximize();
@@ -770,6 +772,12 @@ fn checked(request: &Value) -> Result<Value, String> {
         }
         // The folder is the app's to know: the page names none.
         Some("files") => Ok(json!({ "kind": "files" })),
+        // The app icon (ADR 0164): one of the app's own ids, or none to read the one kept.
+        Some("appIcon") => match text("icon") {
+            None => Ok(json!({ "kind": "appIcon" })),
+            Some(id) if crate::app_icon::find(id).is_some() => Ok(json!({ "kind": "appIcon", "icon": id })),
+            Some(_) => Err("unknown icon".into()),
+        },
         Some("connect") => {
             let mut out = json!({ "kind": "connect", "orgId": org()? });
             if let Some(name) = display_name(request.get("orgName")) {
@@ -1042,6 +1050,13 @@ pub async fn this_mac(app: AppHandle, webview: tauri::Webview, request: Value) -
             let count = |key: &str| u32::try_from(request[key].as_u64().unwrap_or(0)).unwrap_or(u32::MAX);
             crate::dock::set_badge(&app, count("waiting"), count("unread"));
             return Ok(json!({}));
+        }
+        // The app icon picked on this computer (ADR 0164): kept by the app, for every server's pages.
+        Some("appIcon") => {
+            if let Some(id) = request["icon"].as_str() {
+                crate::app_icon::set(&app, id)?;
+            }
+            return Ok(json!({ "icon": crate::app_icon::current(&app).id }));
         }
         Some("orgs") => {
             // A new organization on the server here: this computer works for it within seconds.

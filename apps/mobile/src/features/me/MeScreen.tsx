@@ -1,5 +1,6 @@
 import { useAuthConfig, useIssues, useMe, useOverview } from "@agenteschat/client";
 import { showsAbout } from "@agenteschat/client/lib/about";
+import { appIconNameKey } from "@agenteschat/client/lib/app-icons";
 import { isPersonal, modeKey } from "@agenteschat/client/lib/workspace-mode";
 import { isAppLocale, localeInfo, readyLocales } from "@agenteschat/i18n/locale";
 import Constants from "expo-constants";
@@ -38,8 +39,9 @@ import { useTasksUnreadMarks, useUnreadThreads } from "../shared/queries";
 import { useMyPerson, usePresenceOf } from "../status/hooks";
 import { personLine } from "../status/logic";
 import { openStatus } from "../status/StatusScreen";
+import { useAppIcon } from "./app-icon";
 import { openIssuesWithMe, workspacesBeyond } from "./logic";
-import { useLanguageChoice, usePushSwitch, useSoundLabel, useStartLabel } from "./PreferencePages";
+import { AppIconPicture, useLanguageChoice, usePushSwitch, useSoundLabel, useStartLabel } from "./PreferencePages";
 import { useWorkspacesAcross, WorkspaceMark } from "./WorkspacesPages";
 
 /** The rows of Você's Work group. */
@@ -99,6 +101,7 @@ export function MeScreen() {
   const personal = isPersonal(org.org);
   const { groups, elsewhere } = useWorkspacesAcross();
   const theme = useTheme();
+  const appIcon = useAppIcon();
   const dir = useDirectory();
   const c = useColors();
   const insets = useSafeAreaInsets();
@@ -415,6 +418,17 @@ export function MeScreen() {
               menu
               onPress={pickTheme}
             />
+            {/* The app icon (ADR 0164): only where this build carries the others. */}
+            {appIcon.supported && appIcon.icon ? (
+              <GroupedRow
+                key="appIcon"
+                leading={<AppIconPicture id={appIcon.icon} />}
+                label={t("appIcon.title")}
+                value={t(appIconNameKey(appIcon.icon))}
+                chevron
+                onPress={() => open("/me/app-icon")}
+              />
+            ) : null}
             <GroupedRow
               key="language"
               icon="globe"

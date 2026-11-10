@@ -1266,6 +1266,21 @@
     "moveDown": "Aşağı taşı",
     "restoreOrder": "Varsayılan sırayı geri yükle"
   },
+  "appIcon": {
+    "title": "Uygulama simgesi",
+    "hintWeb": "Bu tarayıcının sekmelerindeki simge.",
+    "hintMac": "Uygulama açıkken Dock'taki simge. Finder ve Launchpad varsayılanı korur.",
+    "hintDesktop": "Uygulama açıkken görev çubuğundaki simge.",
+    "hintAndroid": "Bazı ana ekranların yeni simgeyi göstermesi birkaç saniye sürer.",
+    "failed": "Simge değiştirilemedi. Yeniden deneyin.",
+    "names": {
+      "night": "Gece",
+      "moon": "Ay",
+      "sky": "Gökyüzü",
+      "peekNight": "Gece gözetleyen",
+      "peekSky": "Gökyüzünde gözetleyen"
+    }
+  },
   "legal": {
     "updated": "Son güncelleme: {{date}}",
     "contents": "Bu sayfada",

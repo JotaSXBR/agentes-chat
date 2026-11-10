@@ -1266,6 +1266,21 @@
     "moveDown": "Nach unten",
     "restoreOrder": "Standardreihenfolge wiederherstellen"
   },
+  "appIcon": {
+    "title": "App-Symbol",
+    "hintWeb": "Das Symbol in den Tabs dieses Browsers.",
+    "hintMac": "Das Dock-Symbol, solange die App geöffnet ist. Finder und Launchpad behalten das Standardsymbol.",
+    "hintDesktop": "Das Taskleisten-Symbol, solange die App geöffnet ist.",
+    "hintAndroid": "Manche Startbildschirme brauchen ein paar Sekunden, bis das neue Symbol erscheint.",
+    "failed": "Das Symbol konnte nicht geändert werden. Versuch es noch einmal.",
+    "names": {
+      "night": "Nacht",
+      "moon": "Mond",
+      "sky": "Himmel",
+      "peekNight": "Neugierig bei Nacht",
+      "peekSky": "Neugierig am Himmel"
+    }
+  },
   "legal": {
     "updated": "Zuletzt aktualisiert am {{date}}",
     "contents": "Auf dieser Seite",

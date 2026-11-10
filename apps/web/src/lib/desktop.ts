@@ -159,7 +159,7 @@ export const browserSignInUrl = (provider: SignInProvider, requestId: string, ac
  * What the site may ask of this computer (ADR 0036, `this_mac` in main_window.rs): which of this server's
  * organizations it works for, pairing it with one (the app asks the person in its own dialog first; the site
  * then confirms the runner's code with its own session), reconnecting it, the app's Preferences on a tab, its
- * access requests, the badge and notifications. Nothing else reaches the computer.
+ * access requests, the badge, notifications and the app's icon (ADR 0164). Nothing else reaches the computer.
  */
 export interface ThisMacStatus {
   orgs: { orgId: string; machineId: string | null; connection: string }[];
@@ -224,6 +224,8 @@ export const thisMac = {
   openPrefs: (tab: "folders" | "tools" | "updates") => invoke<unknown>({ kind: "prefs", tab }),
   /** The menu bar's popover, where access requests are answered. */
   showRequests: () => invoke<unknown>({ kind: "requests" }),
+  /** The app icon on this computer (ADR 0164): with an id, the app keeps and shows it; it answers the one kept. */
+  appIcon: (icon?: string) => invoke<{ icon?: string }>({ kind: "appIcon", ...(icon ? { icon } : {}) }),
   /** The Dock's badge: how many wait on the person, and unread (a dot when nothing waits). */
   badge: (waiting: number, unread: number) => invoke<unknown>({ kind: "badge", waiting, unread }),
   /** The Mac's Go menu: the person's organizations (⌘⌥1–9). */
@@ -263,6 +265,10 @@ export const desktopListsWorkspaces = () =>
 /** The app takes `otherServer` (`servers` in `window.__agentesDesktop`); older apps refuse it. */
 export const desktopPicksServer = () =>
   inDesktopApp() && (window as { __agentesDesktop?: { servers?: unknown } }).__agentesDesktop?.servers === true;
+
+/** The app keeps the person's app icon (`appIcon` in `window.__agentesDesktop`, ADR 0164); older apps refuse it. */
+export const desktopPicksAppIcon = () =>
+  inDesktopApp() && (window as { __agentesDesktop?: { appIcon?: unknown } }).__agentesDesktop?.appIcon === true;
 
 /** The app takes `revealFiles` (`files` in `window.__agentesDesktop`); older apps refuse it. */
 export const desktopRevealsFiles = () =>

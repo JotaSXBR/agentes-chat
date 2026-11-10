@@ -1266,6 +1266,21 @@
     "moveDown": "Omlaag",
     "restoreOrder": "Standaardvolgorde herstellen"
   },
+  "appIcon": {
+    "title": "App-icoon",
+    "hintWeb": "Het icoon op de tabbladen van deze browser.",
+    "hintMac": "Het Dock-icoon zolang de app open is. Finder en Launchpad houden het standaardicoon.",
+    "hintDesktop": "Het taakbalkicoon zolang de app open is.",
+    "hintAndroid": "Sommige startschermen doen er een paar seconden over om het nieuwe icoon te tonen.",
+    "failed": "Kon het icoon niet wijzigen. Probeer het opnieuw.",
+    "names": {
+      "night": "Nacht",
+      "moon": "Maan",
+      "sky": "Lucht",
+      "peekNight": "Gluren in de nacht",
+      "peekSky": "Gluren in de lucht"
+    }
+  },
   "legal": {
     "updated": "Laatst bijgewerkt op {{date}}",
     "contents": "Op deze pagina",

@@ -1302,6 +1302,21 @@
     "moveDown": "Descendre",
     "restoreOrder": "Rétablir l'ordre par défaut"
   },
+  "appIcon": {
+    "title": "Icône de l'app",
+    "hintWeb": "L'icône dans les onglets de ce navigateur.",
+    "hintMac": "L'icône du Dock tant que l'app est ouverte. Le Finder et le Launchpad gardent celle par défaut.",
+    "hintDesktop": "L'icône de la barre des tâches tant que l'app est ouverte.",
+    "hintAndroid": "Certains écrans d'accueil mettent quelques secondes à afficher la nouvelle icône.",
+    "failed": "Impossible de changer l'icône. Réessayez.",
+    "names": {
+      "night": "Nuit",
+      "moon": "Lune",
+      "sky": "Ciel",
+      "peekNight": "Coup d'œil nocturne",
+      "peekSky": "Coup d'œil dans le ciel"
+    }
+  },
   "legal": {
     "updated": "Dernière mise à jour le {{date}}",
     "contents": "Sur cette page",

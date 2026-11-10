@@ -1302,6 +1302,21 @@
     "moveDown": "Bajar",
     "restoreOrder": "Restaurar el orden predeterminado"
   },
+  "appIcon": {
+    "title": "Icono de la app",
+    "hintWeb": "El icono en las pestañas de este navegador.",
+    "hintMac": "El icono del Dock mientras la app está abierta. Finder y Launchpad mantienen el predeterminado.",
+    "hintDesktop": "El icono de la barra de tareas mientras la app está abierta.",
+    "hintAndroid": "Algunas pantallas de inicio tardan unos segundos en mostrar el icono nuevo.",
+    "failed": "No se pudo cambiar el icono. Inténtalo de nuevo.",
+    "names": {
+      "night": "Noche",
+      "moon": "Luna",
+      "sky": "Cielo",
+      "peekNight": "Asomándose de noche",
+      "peekSky": "Asomándose en el cielo"
+    }
+  },
   "legal": {
     "updated": "Última actualización: {{date}}",
     "contents": "En esta página",

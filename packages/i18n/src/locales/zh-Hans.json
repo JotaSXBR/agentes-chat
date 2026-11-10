@@ -1230,6 +1230,21 @@
     "moveDown": "下移",
     "restoreOrder": "恢复默认顺序"
   },
+  "appIcon": {
+    "title": "应用图标",
+    "hintWeb": "此浏览器标签页上的图标。",
+    "hintMac": "应用打开时 Dock 中的图标。访达和启动台仍显示默认图标。",
+    "hintDesktop": "应用打开时任务栏中的图标。",
+    "hintAndroid": "部分主屏幕需要几秒钟才会显示新图标。",
+    "failed": "无法更换图标，请重试。",
+    "names": {
+      "night": "夜晚",
+      "moon": "月亮",
+      "sky": "天空",
+      "peekNight": "夜里探头",
+      "peekSky": "天空探头"
+    }
+  },
   "legal": {
     "updated": "最后更新于 {{date}}",
     "contents": "本页内容",

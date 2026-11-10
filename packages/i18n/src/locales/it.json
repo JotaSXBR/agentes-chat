@@ -1302,6 +1302,21 @@
     "moveDown": "Sposta giù",
     "restoreOrder": "Ripristina ordine predefinito"
   },
+  "appIcon": {
+    "title": "Icona dell'app",
+    "hintWeb": "L'icona nelle schede di questo browser.",
+    "hintMac": "L'icona nel Dock mentre l'app è aperta. Finder e Launchpad mantengono quella predefinita.",
+    "hintDesktop": "L'icona nella barra delle applicazioni mentre l'app è aperta.",
+    "hintAndroid": "Alcune schermate Home impiegano qualche secondo a mostrare la nuova icona.",
+    "failed": "Impossibile cambiare l'icona. Riprova.",
+    "names": {
+      "night": "Notte",
+      "moon": "Luna",
+      "sky": "Cielo",
+      "peekNight": "Sbirciando di notte",
+      "peekSky": "Sbirciando nel cielo"
+    }
+  },
   "legal": {
     "updated": "Ultimo aggiornamento: {{date}}",
     "contents": "In questa pagina",

@@ -1230,6 +1230,21 @@
     "moveDown": "下へ移動",
     "restoreOrder": "デフォルトの順番に戻す"
   },
+  "appIcon": {
+    "title": "アプリのアイコン",
+    "hintWeb": "このブラウザのタブに表示されるアイコン。",
+    "hintMac": "アプリが開いている間のDockのアイコン。FinderとLaunchpadは標準のままです。",
+    "hintDesktop": "アプリが開いている間のタスクバーのアイコン。",
+    "hintAndroid": "ホーム画面によっては、新しいアイコンが表示されるまで数秒かかります。",
+    "failed": "アイコンを変更できませんでした。もう一度お試しください。",
+    "names": {
+      "night": "夜",
+      "moon": "月",
+      "sky": "空",
+      "peekNight": "夜にのぞく",
+      "peekSky": "空からのぞく"
+    }
+  },
   "legal": {
     "updated": "最終更新日 {{date}}",
     "contents": "このページの内容",

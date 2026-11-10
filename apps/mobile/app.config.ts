@@ -76,6 +76,8 @@ export const APP_LINK_PATTERNS = [
   "/org/*/settings/computers/*",
   "/org/*/settings/devices/*",
 ];
+/** The app icons (ADR 0164), one folder each: packages/ui/scripts/app-icons.mjs writes them. */
+const ICONS = "./assets/app-icons";
 // Our EAS project on expo.dev (not a secret: it only names the project).
 const projectId = process.env.EAS_PROJECT_ID ?? "8514d5b3-87e0-4980-89a0-4c692f6f4702";
 // expo-image-picker and expo-camera both set iOS's camera text: one text for both uses.
@@ -99,10 +101,18 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   version: "0.1.0",
   // Upright everywhere (the plugin below); only the agent's screen, in control, lies down (`useSideways`).
   orientation: "default",
-  icon: "./assets/images/icon.png",
+  // The icon the app ships with (ADR 0164); the others a person may pick are added by ./plugins/with-app-icons.
+  // All of them come from packages/ui/scripts/app-icons.mjs.
+  icon: `${ICONS}/night/ios.png`,
   userInterfaceStyle: "automatic",
   ios: {
     bundleIdentifier: `chat.agentes.app${suffix}`,
+    // Light, dark and tinted (iOS 18).
+    icon: {
+      light: `${ICONS}/night/ios.png`,
+      dark: `${ICONS}/night/ios-dark.png`,
+      tinted: `${ICONS}/night/ios-tinted.png`,
+    },
     supportsTablet: false,
     usesAppleSignIn: true,
     associatedDomains: [`applinks:${linkHost}`],
@@ -114,11 +124,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     // brings its own Firebase project.
     ...(process.env.GOOGLE_SERVICES_JSON ? { googleServicesFile: process.env.GOOGLE_SERVICES_JSON } : {}),
     ...(process.env.ANDROID_VERSION_CODE ? { versionCode: Number(process.env.ANDROID_VERSION_CODE) } : {}),
-    // Two layers (the night sky, the tilted agent), so the launcher's mask and motion cut them like the iOS icon.
+    // Two layers (the night sky, the agent), so the launcher's mask and motion cut them like the iOS icon, and the
+    // agent alone in one color for Android 13's themed icons.
     adaptiveIcon: {
-      foregroundImage: "./assets/images/adaptive-icon.png",
-      backgroundImage: "./assets/images/adaptive-icon-background.png",
-      backgroundColor: "#02060f",
+      foregroundImage: `${ICONS}/night/android-foreground.png`,
+      backgroundImage: `${ICONS}/night/android-background.png`,
+      monochromeImage: `${ICONS}/night/android-monochrome.png`,
+      backgroundColor: "#03101f",
     },
     predictiveBackGestureEnabled: false,
     intentFilters: [
@@ -186,6 +198,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ],
     // Android release builds signed with the upload key from the environment (the Android build workflow).
     "./plugins/with-android-release-signing",
+    // The app icons a person may pick (ADR 0164): iOS's alternate icons and Android's launcher aliases.
+    "./plugins/with-app-icons",
     [
       "expo-image-picker",
       {

@@ -1280,6 +1280,22 @@ export const ptBR = {
     moveDown: "Mover para baixo",
     restoreOrder: "Restaurar ordem padrão",
   },
+  /** The icon a person picks for the app on this device (ADR 0164): Settings › Account › This device, and the phone's You. */
+  appIcon: {
+    title: "Ícone do app",
+    hintWeb: "O ícone nas abas deste navegador.",
+    hintMac: "O ícone no Dock enquanto o app está aberto. O Finder e o Launchpad mantêm o padrão.",
+    hintDesktop: "O ícone na barra de tarefas enquanto o app está aberto.",
+    hintAndroid: "Algumas telas iniciais levam alguns segundos para mostrar o ícone novo.",
+    failed: "Não deu para trocar o ícone. Tente de novo.",
+    names: {
+      night: "Noite",
+      moon: "Lua",
+      sky: "Céu",
+      peekNight: "Espiando à noite",
+      peekSky: "Espiando no céu",
+    },
+  },
   legal: {
     updated: "Atualizado em {{date}}",
     contents: "Nesta página",

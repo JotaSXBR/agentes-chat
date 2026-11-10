@@ -3068,6 +3068,39 @@
   "contextMenu.restoreOrder": {
     "value": "Restore default order"
   },
+  "appIcon.title": {
+    "value": "App icon"
+  },
+  "appIcon.hintWeb": {
+    "value": "The icon on this browser's tabs."
+  },
+  "appIcon.hintMac": {
+    "value": "The Dock's icon while the app is open. Finder and Launchpad keep the default one."
+  },
+  "appIcon.hintDesktop": {
+    "value": "The taskbar's icon while the app is open."
+  },
+  "appIcon.hintAndroid": {
+    "value": "Some home screens take a few seconds to show the new icon."
+  },
+  "appIcon.failed": {
+    "value": "Couldn't change the icon. Try again."
+  },
+  "appIcon.names.night": {
+    "value": "Night"
+  },
+  "appIcon.names.moon": {
+    "value": "Moon"
+  },
+  "appIcon.names.sky": {
+    "value": "Sky"
+  },
+  "appIcon.names.peekNight": {
+    "value": "Peeking at night"
+  },
+  "appIcon.names.peekSky": {
+    "value": "Peeking in the sky"
+  },
   "legal.updated": {
     "value": "Last updated {{date}}"
   },

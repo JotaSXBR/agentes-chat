@@ -1230,6 +1230,21 @@
     "moveDown": "아래로 이동",
     "restoreOrder": "기본 순서로 되돌리기"
   },
+  "appIcon": {
+    "title": "앱 아이콘",
+    "hintWeb": "이 브라우저 탭에 표시되는 아이콘이에요.",
+    "hintMac": "앱이 열려 있는 동안 Dock에 표시되는 아이콘이에요. Finder와 Launchpad에는 기본 아이콘이 유지돼요.",
+    "hintDesktop": "앱이 열려 있는 동안 작업 표시줄에 표시되는 아이콘이에요.",
+    "hintAndroid": "일부 홈 화면은 새 아이콘을 표시하는 데 몇 초가 걸려요.",
+    "failed": "아이콘을 바꾸지 못했어요. 다시 시도해 주세요.",
+    "names": {
+      "night": "밤",
+      "moon": "달",
+      "sky": "하늘",
+      "peekNight": "밤에 빼꼼",
+      "peekSky": "하늘에서 빼꼼"
+    }
+  },
   "legal": {
     "updated": "최종 업데이트 {{date}}",
     "contents": "이 페이지의 내용",

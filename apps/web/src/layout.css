@@ -13792,6 +13792,52 @@ html:not([data-pointer]) .settings-row--open:focus-visible {
   height: 28px;
   font-size: 12px;
 }
+/* The app icon (ADR 0164): its picture rounded like a home screen's, as wide as the other lines' icons in the row
+   and larger in the picker, whose lines are the role templates' (roles.css). */
+.app-icon-pic {
+  display: block;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 22.5%;
+  box-shadow: 0 0 0 1px var(--line);
+}
+.app-icon-pic.settings-row__app-icon {
+  width: 28px;
+  height: 28px;
+}
+.app-icons {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 -12px;
+}
+.app-icons__item {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+.app-icons__item:hover {
+  background: var(--plate);
+}
+.app-icons__item[aria-checked="true"] {
+  background: linear-gradient(180deg, var(--card-face-top), var(--raised));
+  box-shadow: var(--card-key);
+}
+html:not([data-pointer]) .app-icons__item:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+.app-icons__name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
 /* On a phone the icon, the words and a switch or a chevron stay on one line. Any other control (a choice of several,
    a select, a field, buttons) goes under the words, from their edge (the 28px icon and the 12px gap), so the rows of
    one card start their controls on one edge. */

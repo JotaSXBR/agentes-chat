@@ -386,7 +386,7 @@ function IdleAgentRow({ agentId, backlog, divider }: { agentId: string; backlog:
         <Text variant="title" numberOfLines={1} style={styles.shrink}>
           {name}
         </Text>
-        <Text variant="footnote" tone="muted" numberOfLines={2}>
+        <Text variant="footnote" tone="muted">
           {line}
         </Text>
       </View>

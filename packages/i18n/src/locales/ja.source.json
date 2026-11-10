@@ -36951,6 +36951,24 @@
   "taskManager.free": {
     "value": "Free"
   },
+  "taskManager.todo": {
+    "value": {
+      "one": "{{count}} to do",
+      "other": "{{count}} to do"
+    }
+  },
+  "taskManager.idle.room": {
+    "value": "starts when there's room"
+  },
+  "taskManager.idle.plan": {
+    "value": "plan until {{when}}"
+  },
+  "taskManager.idle.planLimit": {
+    "value": "plan at its limit"
+  },
+  "taskManager.idle.budget": {
+    "value": "budget until {{when}}"
+  },
   "taskManager.hiddenTasks": {
     "value": {
       "one": "{{count}} task you can't see",
@@ -37094,6 +37112,30 @@
   },
   "taskManager.wait.answerNext": {
     "value": "Goes on once someone answers"
+  },
+  "taskManager.wait.question": {
+    "value": "Waits for {{name}} to answer"
+  },
+  "taskManager.wait.questionYou": {
+    "value": "Waits for your answer"
+  },
+  "taskManager.wait.secret": {
+    "value": "Waits for a key from {{name}}"
+  },
+  "taskManager.wait.secretYou": {
+    "value": "Waits for a key from you"
+  },
+  "taskManager.wait.screen": {
+    "value": "Waits for {{name}} on its screen"
+  },
+  "taskManager.wait.screenYou": {
+    "value": "Waits for you on its screen"
+  },
+  "taskManager.wait.decision": {
+    "value": "Waits for a decision"
+  },
+  "taskManager.wait.defaultNext": {
+    "value": "Goes on with {{answer}} at {{time}}"
   },
   "taskManager.wait.back": {
     "value": "Back {{when}}"

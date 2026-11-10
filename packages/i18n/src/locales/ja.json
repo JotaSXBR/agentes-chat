@@ -14731,6 +14731,13 @@
     "agentTasks": "{{name}}のタスク",
     "tasks_other": "{{count}}件のタスク",
     "free": "対応可能",
+    "todo_other": "未着手{{count}}件",
+    "idle": {
+      "room": "空きができたら始まります",
+      "plan": "プランは{{when}}まで上限",
+      "planLimit": "プランが上限です",
+      "budget": "予算は{{when}}まで上限"
+    },
     "hiddenTasks_other": "表示できないタスク{{count}}件",
     "hiddenLine_other": "表示できない会話に、ほかに{{count}}件のタスクがあります。",
     "helpers_other": "手伝い{{count}}件",
@@ -14785,6 +14792,14 @@
       "computerBusyNext": "空きができたら始まります",
       "okNext": "誰かが承認すると続きます",
       "answerNext": "誰かが回答すると続きます",
+      "question": "{{name}}さんの回答待ち",
+      "questionYou": "あなたの回答待ち",
+      "secret": "{{name}}さんからのキー待ち",
+      "secretYou": "あなたからのキー待ち",
+      "screen": "画面で{{name}}さんを待っています",
+      "screenYou": "画面であなたを待っています",
+      "decision": "判断待ち",
+      "defaultNext": "{{time}}に「{{answer}}」で進めます",
       "back": "再開: {{when}}",
       "whenRenews": "リセット後",
       "whenSoon": "まもなく"

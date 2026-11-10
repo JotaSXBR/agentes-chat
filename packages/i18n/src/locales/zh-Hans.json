@@ -14899,6 +14899,13 @@
     "agentTasks": "{{name}} 的任务",
     "tasks_other": "{{count}} 个任务",
     "free": "空闲",
+    "todo_other": "{{count}} 个待办",
+    "idle": {
+      "room": "有空位时开始",
+      "plan": "套餐限额到 {{when}}",
+      "planLimit": "套餐已达限额",
+      "budget": "预算到 {{when}} 前已用完"
+    },
     "hiddenTasks_other": "{{count}} 个你看不到的任务",
     "hiddenLine_other": "你看不到的对话里还有 {{count}} 个任务。",
     "helpers_other": "{{count}} 个协助者",
@@ -14953,6 +14960,14 @@
       "computerBusyNext": "有空位时开始",
       "okNext": "有人审批后继续",
       "answerNext": "有人回答后继续",
+      "question": "等待 {{name}} 回答",
+      "questionYou": "等待你的回答",
+      "secret": "等待 {{name}} 提供密钥",
+      "secretYou": "等待你提供密钥",
+      "screen": "等待 {{name}} 在屏幕上操作",
+      "screenYou": "等待你在屏幕上操作",
+      "decision": "等待决定",
+      "defaultNext": "{{time}} 按 {{answer}} 继续",
       "back": "{{when}}继续",
       "whenRenews": "重置后",
       "whenSoon": "马上"

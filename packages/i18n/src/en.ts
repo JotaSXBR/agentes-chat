@@ -15218,6 +15218,16 @@ export const en = {
     tasks_one: "{{count}} task",
     tasks_other: "{{count}} tasks",
     free: "Free",
+    /** An agent's card: its tasks on the board still to do. */
+    todo_one: "{{count}} to do",
+    todo_other: "{{count}} to do",
+    /** After "Free · 15 to do": why they haven't started. `when`: a time, or a day and a time. */
+    idle: {
+      room: "starts when there's room",
+      plan: "plan until {{when}}",
+      planLimit: "plan at its limit",
+      budget: "budget until {{when}}",
+    },
     /** An agent's card: its tasks the viewer may not see, counted. */
     hiddenTasks_one: "{{count}} task you can't see",
     hiddenTasks_other: "{{count}} tasks you can't see",
@@ -15274,6 +15284,16 @@ export const en = {
       computerBusyNext: "Starts when there's room",
       okNext: "Goes on once someone approves",
       answerNext: "Goes on once someone answers",
+      /** A task waiting on a person, named: an answer, a key, help on its screen, a mission's decision. */
+      question: "Waits for {{name}} to answer",
+      questionYou: "Waits for your answer",
+      secret: "Waits for a key from {{name}}",
+      secretYou: "Waits for a key from you",
+      screen: "Waits for {{name}} on its screen",
+      screenYou: "Waits for you on its screen",
+      decision: "Waits for a decision",
+      /** A question with a default: `answer` is what it goes on with, `time` when. */
+      defaultNext: "Goes on with {{answer}} at {{time}}",
       back: "Back {{when}}",
       whenRenews: "when it renews",
       whenSoon: "in a moment",

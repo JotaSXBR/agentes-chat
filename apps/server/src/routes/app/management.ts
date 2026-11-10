@@ -469,6 +469,18 @@ const ManagedTask = z
         description:
           "Why a `waiting_input` run waits: its code, the plan or budget (`key` groups the runs on the same one), how far a pause got, when the limit resets, and whether you may press Continuar agora.",
       }),
+    asks: z
+      .object({
+        kind: z.enum(["approval", "question", "secret", "screen", "decision"]),
+        forUserId: z.string().nullable(),
+        defaultAnswer: z.string().nullable(),
+        decideAt: z.string().nullable(),
+      })
+      .nullable()
+      .openapi({
+        description:
+          "What a run waiting on a person waits on: an approval, an answer (for whom, and a question's default with when it applies), a key, help on its screen, or a mission's decision.",
+      }),
   })
   .openapi("ManagedTask");
 const EndedTask = z
@@ -509,6 +521,18 @@ const TaskManagerView = z
     activity: z
       .record(z.string(), z.array(z.number().int()))
       .openapi({ description: "Per agent: tool calls per minute over the last 60 minutes, oldest first." }),
+    backlog: z
+      .record(
+        z.string(),
+        z.object({
+          todo: z.number().int(),
+          out: z.object({ reason: z.enum(["plan", "budget"]), until: z.string().nullable() }).nullable(),
+        }),
+      )
+      .openapi({
+        description:
+          "Per agent with tasks to do on the board you see: how many, and whether its plan or budget is spent until a reset (else they start when there's room).",
+      }),
   })
   .openapi("TaskManagerView");
 

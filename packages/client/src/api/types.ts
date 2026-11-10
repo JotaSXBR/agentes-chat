@@ -6707,6 +6707,25 @@ export interface ManagedTask {
   } | null;
   /** Why a `waiting_input` run waits (absent on an older server). */
   wait?: TaskWait | null;
+  /** What a task waiting on a person waits on (absent on an older server). */
+  asks?: TaskAsk | null;
+}
+
+/** A person's step a waiting task needs: an approval, an answer, a key, help on its screen, a mission's decision. */
+export interface TaskAsk {
+  kind: "approval" | "question" | "secret" | "screen" | "decision";
+  /** The one person it waits on; null: anyone in the conversation, or whoever decides an approval. */
+  forUserId: string | null;
+  /** A question's default and when the run goes on with it. */
+  defaultAnswer: string | null;
+  decideAt: string | null;
+}
+
+/** An agent's board: its tasks to do, and while it is free, what keeps them from starting. */
+export interface AgentBacklog {
+  todo: number;
+  /** Its plan or budget is spent until `until` (null: unknown). Null: they start when there's room. */
+  out: { reason: "plan" | "budget"; until: string | null } | null;
 }
 
 /** What a task waits on, in the words the apps need to say why. */
@@ -6780,6 +6799,8 @@ export interface TaskManagerView {
   computers?: ComputerSummary[];
   /** Per agent with work in the last hour: tool calls per minute, 60 points, oldest first. */
   activity: Record<string, number[]>;
+  /** Per agent with tasks to do on the board (absent on an older server). */
+  backlog?: Record<string, AgentBacklog>;
 }
 
 /** A one-off reminder in a conversation (`reminders.*`; also a routine in Rotinas). */

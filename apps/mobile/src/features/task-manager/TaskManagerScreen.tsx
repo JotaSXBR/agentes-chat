@@ -1,6 +1,7 @@
-import type { ComputerSummary, EndedTask, ManagedTask } from "@agenteschat/client";
+import type { AgentBacklog, ComputerSummary, EndedTask, ManagedTask } from "@agenteschat/client";
 import {
   type AgentTasks,
+  agentCardLine,
   agentSummary,
   endedState,
   endedText,
@@ -136,6 +137,10 @@ function TaskManager() {
       return next;
     });
   const askedCount = groups.reduce((n, g) => n + g.tasks.length, 0);
+  // Free agents with tasks to do on the board: why those haven't started.
+  const idle = Object.entries(view?.backlog ?? {}).filter(
+    ([id, b]) => b.todo > 0 && !all.some((task) => task.agentId === id) && hiddenCount(view?.hidden, id) === 0,
+  );
   const delegatedCount = delegated.reduce((n, g) => n + g.tasks.length, 0);
   const computers = view?.computers ?? [];
   return (
@@ -220,6 +225,14 @@ function TaskManager() {
                     now={now}
                     meId={meId}
                   />
+                ))}
+              </Animated.View>
+            ) : null}
+            {idle.length > 0 ? (
+              <Animated.View {...fade} layout={layout}>
+                <SectionHeader title={t("issues.status.todo")} count={idle.length} />
+                {idle.map(([id, backlog], i) => (
+                  <IdleAgentRow key={id} agentId={id} backlog={backlog} divider={i > 0} />
                 ))}
               </Animated.View>
             ) : null}
@@ -356,6 +369,31 @@ function AgentGroup({
   );
 }
 
+/** A free agent with tasks to do on the board: its face, its name and why they haven't started. */
+function IdleAgentRow({ agentId, backlog, divider }: { agentId: string; backlog: AgentBacklog; divider: boolean }) {
+  const { t, i18n } = useTranslation();
+  const c = useColors();
+  const dir = useDirectory();
+  const name = dir.nameOf({ type: "agent", id: agentId }) || t("channel.unknownAgent");
+  const line = agentCardLine(t, 0, 0, { backlog, locale: i18n.language });
+  return (
+    <View style={styles.agent} accessible accessibilityLabel={`${name}, ${line}`}>
+      {divider ? <View style={[styles.divider, styles.agentDivider, { backgroundColor: c.line2 }]} /> : null}
+      <OpensAgent agentId={agentId}>
+        <AgentFace agentId={agentId} size={GROUP_FACE} mode="idle" live={false} />
+      </OpensAgent>
+      <View style={styles.grow}>
+        <Text variant="title" numberOfLines={1} style={styles.shrink}>
+          {name}
+        </Text>
+        <Text variant="footnote" tone="muted" numberOfLines={2}>
+          {line}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 /**
  * A task, a 60-point row: its title on one line, its state under it (the orbit while it runs, the time; amber while it
  * waits on you) and a chevron, since it opens its own screen, where it is stopped. Under its agent's row it starts
@@ -382,7 +420,10 @@ function TaskRow({
   const dir = useDirectory();
   const title = taskTitle(t, task);
   const sub = taskSubline(t, task, meId, title, (id) => dir.anyAgent(id)?.name);
-  const words = taskStateWords(t, i18n.language, task, state, now);
+  const words = taskStateWords(t, i18n.language, task, state, now, {
+    meId,
+    nameOf: (id) => dir.memberById.get(id)?.name,
+  });
   const agent = dir.nameOf({ type: "agent", id: task.agentId });
   const line = flat ? [agent, sub].filter(Boolean).join(" · ") : sub;
   return (

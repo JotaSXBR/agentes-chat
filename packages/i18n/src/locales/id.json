@@ -14831,6 +14831,13 @@
     "agentTasks": "Tugas {{name}}",
     "tasks_other": "{{count}} tugas",
     "free": "Luang",
+    "todo_other": "{{count}} belum dikerjakan",
+    "idle": {
+      "room": "mulai saat ada tempat",
+      "plan": "paket sampai {{when}}",
+      "planLimit": "paket mencapai batas",
+      "budget": "anggaran sampai {{when}}"
+    },
     "hiddenTasks_other": "{{count}} tugas yang tidak kamu lihat",
     "hiddenLine_other": "{{count}} tugas lagi di percakapan yang tidak kamu lihat.",
     "helpers_other": "{{count}} pembantu",
@@ -14885,6 +14892,14 @@
       "computerBusyNext": "Mulai saat ada tempat",
       "okNext": "Lanjut saat ada yang menyetujui",
       "answerNext": "Lanjut saat ada yang menjawab",
+      "question": "Menunggu jawaban {{name}}",
+      "questionYou": "Menunggu jawabanmu",
+      "secret": "Menunggu kunci dari {{name}}",
+      "secretYou": "Menunggu kunci darimu",
+      "screen": "Menunggu {{name}} di layarnya",
+      "screenYou": "Menunggumu di layarnya",
+      "decision": "Menunggu keputusan",
+      "defaultNext": "Lanjut dengan {{answer}} pukul {{time}}",
       "back": "Lanjut {{when}}",
       "whenRenews": "saat diperbarui",
       "whenSoon": "sebentar lagi"

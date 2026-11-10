@@ -15432,6 +15432,16 @@ export const ptBR = {
     tasks_one: "{{count}} tarefa",
     tasks_other: "{{count}} tarefas",
     free: "Livre",
+    /** An agent's card: its tasks on the board still to do. */
+    todo_one: "{{count}} a fazer",
+    todo_other: "{{count}} a fazer",
+    /** After "Livre · 15 a fazer": why they haven't started. `when`: a time, or a day and a time. */
+    idle: {
+      room: "começa quando houver espaço",
+      plan: "plano até {{when}}",
+      planLimit: "plano no limite",
+      budget: "orçamento até {{when}}",
+    },
     /** An agent's card: its tasks the viewer may not see, counted. */
     hiddenTasks_one: "{{count}} tarefa que você não vê",
     hiddenTasks_other: "{{count}} tarefas que você não vê",
@@ -15488,6 +15498,16 @@ export const ptBR = {
       computerBusyNext: "Começa quando tiver espaço",
       okNext: "Segue quando alguém aprovar",
       answerNext: "Segue quando alguém responder",
+      /** A task waiting on a person, named: an answer, a key, help on its screen, a mission's decision. */
+      question: "Espera {{name}} responder",
+      questionYou: "Espera sua resposta",
+      secret: "Espera uma chave de {{name}}",
+      secretYou: "Espera uma chave sua",
+      screen: "Espera {{name}} na tela",
+      screenYou: "Espera você na tela",
+      decision: "Espera uma decisão",
+      /** A question with a default: `answer` is what it goes on with, `time` when. */
+      defaultNext: "Segue com {{answer}} às {{time}}",
       back: "Volta {{when}}",
       whenRenews: "quando renovar",
       whenSoon: "em instantes",

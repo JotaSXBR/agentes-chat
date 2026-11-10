@@ -14724,6 +14724,13 @@
     "agentTasks": "{{name}}의 작업",
     "tasks_other": "작업 {{count}}개",
     "free": "작업 없음",
+    "todo_other": "할 일 {{count}}개",
+    "idle": {
+      "room": "자리가 나면 시작해요",
+      "plan": "요금제 {{when}}까지 한도",
+      "planLimit": "요금제 한도 도달",
+      "budget": "예산 {{when}}까지 소진"
+    },
     "hiddenTasks_other": "볼 수 없는 작업 {{count}}개",
     "hiddenLine_other": "볼 수 없는 대화에 작업이 {{count}}개 더 있어요.",
     "helpers_other": "도우미 {{count}}명",
@@ -14778,6 +14785,14 @@
       "computerBusyNext": "자리가 나면 시작해요",
       "okNext": "누군가 승인하면 이어서 해요",
       "answerNext": "누군가 답하면 이어서 해요",
+      "question": "{{name}}님의 답변 대기 중",
+      "questionYou": "내 답변 대기 중",
+      "secret": "{{name}}님의 키 대기 중",
+      "secretYou": "내 키 대기 중",
+      "screen": "화면에서 {{name}}님 대기 중",
+      "screenYou": "화면에서 나를 기다리는 중",
+      "decision": "결정 대기 중",
+      "defaultNext": "{{time}}에 {{answer}}(으)로 진행해요",
       "back": "다시 시작: {{when}}",
       "whenRenews": "초기화 후",
       "whenSoon": "곧"

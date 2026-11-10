@@ -11,6 +11,7 @@ import {
   tasksOf,
   taskWaitWords,
   taskWhere,
+  type WaitPeople,
   waitsFor,
   waitsOnPerson,
 } from "@agenteschat/client/lib/task-manager";
@@ -66,14 +67,15 @@ export const isHeld = (state: RowState): state is HeldState =>
 export function taskStateWords(
   t: TFunction,
   locale: string,
-  task: Pick<ManagedTask, "status" | "held" | "line" | "wait">,
+  task: Pick<ManagedTask, "status" | "held" | "line" | "wait"> & Partial<Pick<ManagedTask, "asks">>,
   state: RowState,
   now: number,
+  people?: WaitPeople,
 ): { state: string; next: string | null } {
   if (state === "working") return { state: t("taskManager.state.working"), next: null };
   if (state === "queued") return { state: t("taskManager.state.queued"), next: null };
   if (state === "stopping") return { state: t("taskManager.state.stopping"), next: null };
-  return taskWaitWords(t, locale, task, now) ?? { state: t("taskManager.state.answer"), next: null };
+  return taskWaitWords(t, locale, task, now, people) ?? { state: t("taskManager.state.answer"), next: null };
 }
 
 /** A computer on the task manager: "Cheio · 2 na fila · 3 trabalhando", "Tem espaço · 1 trabalhando". */

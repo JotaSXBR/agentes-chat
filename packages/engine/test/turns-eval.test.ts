@@ -105,11 +105,13 @@ const size = (r: ModelRequest) =>
  * with `request_permission` down to one reason (`why`) and the task board on by default, 45,803 with `ask_user`'s
  * `person` and the rule that what is said in a DM stays there, 45,216 with the `ask_user` rule leaving to its
  * description what that says already, 45,437 with each choice question's written answer (`ask_choices`, its
- * other words tightened for it), and 45,632 with the rule that people can't see or use the agent's tools (ADR 0147
- * addendum); the ceiling leaves a little room. Where each workspace gets its own computer, `workspaceComputerText`
+ * other words tightened for it), 45,632 with the rule that people can't see or use the agent's tools (ADR 0147
+ * addendum), 46,423 before the trust batch, and 46,831 with it: the tasks an agent gives that wait for a person's go,
+ * a question's default and a routine's creator asked first, with the system text 71 shorter (ADR 0147 addendum
+ * 2026-11-10); the ceiling leaves a little room. Where each workspace gets its own computer, `workspaceComputerText`
  * adds its 441 to that.
  */
-const OI_CEILING_CHARS = 46_100;
+const OI_CEILING_CHARS = 47_400;
 
 test("a DM 'oi' stays under the size ceiling", async () => {
   const [request] = await play(TURNS.find((t) => t.id === "greet-dm") as ScriptedTurn);

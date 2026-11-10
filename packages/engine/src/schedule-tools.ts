@@ -2,7 +2,7 @@ import { and, eq, inArray, isNull, or, schema, sql } from "@agenteschat/db";
 import { type AgentActionParams, recordAgentActions } from "./agent-actions";
 import { routineRow, routineSnapshot } from "./agent-undo";
 import { agentsByHandle, currentHandles, getAgentCached } from "./agents";
-import { cancelAheadApproval, cancelableAhead } from "./approvals";
+import { cancelAheadApproval, cancelableAhead, namesOf } from "./approvals";
 import { canTalkTo, speakerFor } from "./audience";
 import { runAuthorityById } from "./authority";
 import { cardPlace } from "./consultations";
@@ -25,11 +25,13 @@ import {
   ROUTINE_EVENTS,
   type RoutineDeps,
   type RoutineEvent,
+  type RoutineRow,
   type RoutineRunView,
   type RoutineTarget,
   type RoutineTrigger,
   type RoutineTriggerInput,
   type RoutineView,
+  requireRoutineEditor,
   routineTimezone,
   runRoutineNow,
   updateRoutine,
@@ -98,6 +100,54 @@ async function channelTarget(ctx: ToolContext, requester: string, raw: string) {
   if (!channel) throw new Error(`No channel #${name} that the person who asked is in.`);
   return { target: { type: "channel", channelId: channel.id } satisfies RoutineTarget, name: channel.name };
 }
+
+/**
+ * Who says yes before a routine changes: its creator, when someone else asked for the change and they are still in the
+ * workspace. Null: the person asking made it, nobody is left to ask, or the person may not change it at all (the
+ * change itself says why).
+ */
+async function creatorToAsk(ctx: ToolContext, routine: RoutineRow, requester: string) {
+  const creator = routine.createdByUserId;
+  if (!creator || creator === requester) return null;
+  if (
+    !(await requireRoutineEditor(ctx.db, requester, ctx.orgId, routine).then(
+      () => true,
+      () => false,
+    ))
+  )
+    return null;
+  const { organizationMembers } = schema;
+  const [member] = await ctx.db
+    .select({ id: organizationMembers.userId })
+    .from(organizationMembers)
+    .where(and(eq(organizationMembers.orgId, ctx.orgId), eq(organizationMembers.userId, creator)));
+  if (!member) return null;
+  const [name] = await namesOf(ctx.db, [creator]);
+  return { id: creator, name: name ?? "its creator" };
+}
+
+/** A routine's change or deletion asked for by someone other than its creator waits on the creator's card. */
+const creatorDecides: NonNullable<ToolDefinition["approvers"]> = async (input, ctx, requestedBy) => {
+  const routine = await routineRow(ctx.db, ctx.orgId, str(input.id));
+  const creator = routine && requestedBy ? await creatorToAsk(ctx, routine, requestedBy) : null;
+  if (!creator) return { ok: false, message: "This routine needs nobody's OK: call it again without `why`." };
+  return {
+    ok: true,
+    approvers: { userIds: [creator.id], label: creator.name, requestedBy, requesterDecides: false, required: true },
+  };
+};
+
+const CREATOR_WHY = {
+  type: "string",
+  minLength: WHY_MIN_CHARS,
+  maxLength: WHY_MAX_CHARS,
+  description:
+    "Only when the answer said the routine is someone else's: your reason, for them (who asked and why). They decide on a card.",
+};
+
+/** What the agent reads when a routine is someone else's: it asks them first, with `why`. */
+const askCreatorText = (name: string, tool: string) =>
+  `This routine is ${name}'s, so it changes only once they say yes. Call ${tool} again with the same input and \`why\` (who asked and why, for ${name}): they decide on a card. Tell the person you asked ${name}.`;
 
 /** Where a routine reports, for the agent to tell the person. */
 async function whereOf(ctx: ToolContext, r: RoutineView) {
@@ -598,7 +648,7 @@ export function createScheduleToolSource(deps: Omit<RoutineDeps, "db">): ToolSou
     {
       name: "create_routine",
       description:
-        'Create a routine: work you do on your own, in the background, on a schedule ("toda segunda às 9h", "dias úteis às 18h", "every hour") or when something happens (`trigger`). Each run gets `prompt` as its instructions and nobody watches it: it reports by handing its findings off to the conversation it reports to, where you then tell the people. It can do what you can (search the web, use your computer and browser, tell or ask other agents, post where the person can); changes in connected apps ask a person first, except the ones its job needs that you list in `own_actions` (the person asked for them, so setting it up approves them). That is this conversation by default; set `channel` (its name, with or without #) when the person wants it in a channel ("manda no #general"). `report` says when it speaks. Choose who performs it: when the person wants a specific other agent to do the work ("faz o @theo postar…", "have @theo send…"), set `agent` to that agent, so the routine is its own work, never yours relaying the ask each run. When the person says "when a new email arrives" or "when a new error comes in", use `trigger` (an email filter or an event), never a schedule that checks again and again; "when another service calls it" or "by webhook" is a webhook trigger. A routine runs at most every 15 minutes. Only admins or your owner can create routines; the person sees it with Undo.',
+        'Create a routine: work you do on your own, in the background, on a schedule ("toda segunda às 9h", "dias úteis às 18h", "every hour") or when something happens (`trigger`). Each run gets `prompt` as its instructions and nobody watches it: it reports by handing its findings off to the conversation it reports to, where you then tell the people. It can do what you can (search the web, use your computer and browser, tell or ask other agents, post where the person can); changes in connected apps ask a person first, except the ones its job needs that you list in `own_actions` (the person asked for them, so setting it up approves them). That is this conversation by default; set `channel` (its name, with or without #) when the person wants it in a channel ("manda no #general"). `report` says when it speaks. Choose who performs it: when the person wants a specific other agent to do the work ("faz o @theo postar…", "have @theo send…"), set `agent` to that agent, so the routine is its own work, never yours relaying the ask each run. When the person says "when a new email arrives" or "when a new error comes in", use `trigger` (an email filter or an event), never a schedule that checks again and again; "when another service calls it" or "by webhook" is a webhook trigger. A routine runs at most every 15 minutes. Only admins or your owner can create routines.',
       scope: SCHEDULE_SCOPE,
       inputSchema: {
         type: "object",
@@ -796,8 +846,10 @@ export function createScheduleToolSource(deps: Omit<RoutineDeps, "db">): ToolSou
     {
       name: "update_routine",
       description:
-        'Change a routine (id from list_routines) when the person asks: yours, or another agent\'s when the person may manage it. `title` renames it, `channel` moves where it reports ("manda no #general" — then nothing comes to the old conversation), `prompt` replaces its instructions (that routine\'s only: a person\'s rule that holds beyond it, a permission or where to send things, is `remember` kind rule), `schedule` its time ("dias úteis às 9h", "weekdays at 9am") or `trigger` what starts it (an email filter, a webhook with the HTTP `methods` it answers, or an event instead of a schedule), `report` when it speaks, `own_actions` what it does in connected apps without asking, `active` pauses or resumes it, `agent` hands it to another agent that should do the work. Only who created it, the agent\'s owner or an admin can change it; the person sees it with Undo.',
+        'Change a routine (id from list_routines) when the person asks: yours, or another agent\'s when the person may manage it. `title` renames it, `channel` moves where it reports ("manda no #general" — then nothing comes to the old conversation), `prompt` replaces its instructions (that routine\'s only: a person\'s rule that holds beyond it, a permission or where to send things, is `remember` kind rule), `schedule` its time ("dias úteis às 9h", "weekdays at 9am") or `trigger` what starts it (an email filter, a webhook with the HTTP `methods` it answers, or an event instead of a schedule), `report` when it speaks, `own_actions` what it does in connected apps without asking, `active` pauses or resumes it, `agent` hands it to another agent that should do the work. Only who created it, the agent\'s owner or an admin can change it, and one someone else created changes only once its creator says yes on a card.',
       scope: SCHEDULE_SCOPE,
+      whyAsks: true,
+      approvers: creatorDecides,
       inputSchema: {
         type: "object",
         properties: {
@@ -811,6 +863,7 @@ export function createScheduleToolSource(deps: Omit<RoutineDeps, "db">): ToolSou
           own_actions: OWN_ACTIONS_SCHEMA,
           active: { type: "boolean" },
           agent: { type: "string", maxLength: 40, description: "Hand it to this agent (its handle)" },
+          why: CREATOR_WHY,
         },
         required: ["id"],
         additionalProperties: false,
@@ -837,6 +890,16 @@ export function createScheduleToolSource(deps: Omit<RoutineDeps, "db">): ToolSou
           if (never) return never;
           const channel = str(input.channel).trim() ? await channelTarget(ctx, requester, str(input.channel)) : null;
           const owner = own.row.agentId;
+          // What it does (its instructions, its agent, new actions of its own) only its creator changes, after taking
+          // it over (`updateRoutine` says so): no card for that.
+          const allowed = own.row.ownActions;
+          const takesOver =
+            (str(input.prompt).trim() !== "" && str(input.prompt).trim() !== own.row.prompt) ||
+            (str(input.agent).trim() !== "" && performer.id !== owner) ||
+            (Array.isArray(input.own_actions) &&
+              stringsOf(input.own_actions).some((a) => a.trim() !== "" && !allowed.includes(a.trim())));
+          const creator = ctx.approved || takesOver ? null : await creatorToAsk(ctx, own.row, requester);
+          if (creator) return { content: askCreatorText(creator.name, "update_routine"), isError: true };
           const methodsOf = async () => (await routineHookKeys(ctx.db, [id])).get(id)?.methods ?? null;
           const methodsBefore = await methodsOf();
           const routine = await updateRoutine(routineDeps(ctx), requester, ctx.orgId, id, {
@@ -920,11 +983,13 @@ export function createScheduleToolSource(deps: Omit<RoutineDeps, "db">): ToolSou
     {
       name: "delete_routine",
       description:
-        "Delete one of your routines (id from list_routines) when the person asks: it stops for good (its history stays). The person sees it with Undo. To stop it for a while, pause it instead (update_routine with active false).",
+        "Delete one of your routines (id from list_routines) when the person asks: it stops for good (its history stays). One someone else created goes only once its creator says yes on a card. To stop it for a while, pause it instead (update_routine with active false).",
       scope: SCHEDULE_SCOPE,
+      whyAsks: true,
+      approvers: creatorDecides,
       inputSchema: {
         type: "object",
-        properties: { id: { type: "string", minLength: 36, maxLength: 36 } },
+        properties: { id: { type: "string", minLength: 36, maxLength: 36 }, why: CREATOR_WHY },
         required: ["id"],
         additionalProperties: false,
       },
@@ -936,6 +1001,8 @@ export function createScheduleToolSource(deps: Omit<RoutineDeps, "db">): ToolSou
           // The right hand deletes or runs any agent's routine the person may manage (checked as them).
           const own = await ownRoutine(ctx, id, isRightHand(await getAgentCached(ctx.db, ctx.orgId, ctx.agentId)));
           if (!own.row) return { content: own.error, isError: true };
+          const creator = ctx.approved ? null : await creatorToAsk(ctx, own.row, requester);
+          if (creator) return { content: askCreatorText(creator.name, "delete_routine"), isError: true };
           await deleteRoutine(routineDeps(ctx), requester, ctx.orgId, id);
           await recordAgentActions(ctx.db, ctx, [
             {
@@ -945,7 +1012,7 @@ export function createScheduleToolSource(deps: Omit<RoutineDeps, "db">): ToolSou
               before: routineSnapshot(own.row),
             },
           ]);
-          return { content: `Deleted routine ${id} "${own.row.name}". Tell the person (they can undo it).` };
+          return { content: `Deleted routine ${id} "${own.row.name}". Tell the person.` };
         } catch (error) {
           return failed(error);
         }

@@ -4,17 +4,21 @@ import { type ModelRequest, systemText } from "@agenteschat/providers";
 import {
   createAgent,
   createFakeJudge,
+  decideApproval,
   drainOutbox,
   insertMessageWithRuns,
   type JudgeQuestion,
   mentionNeedsNothing,
   openDm,
   postPersonMessage,
+  RIGHT_HAND,
   releaseHeldInbox,
+  rightHandPrompt,
   sendNote,
   startNoteRun,
 } from "../src";
-import { type Fixture, setup } from "./fixtures";
+import { addMember, type Fixture, setup } from "./fixtures";
+import { channelRoutine, routineRow } from "./routine-fixtures";
 
 /**
  * The right person, and hand-offs: moments where a hand-off reached the wrong agent, woke one twice, or waited hours
@@ -154,6 +158,77 @@ describe("a person's message in a DM answers only that DM's own agent", () => {
     const answeredBy = (await runs()).filter((r) => r.triggerMessageId === unrelated.id);
     expect(answeredBy.map((r) => r.agentId)).toEqual([f.agent.id]);
     expect((await runs()).find((r) => r.id === card?.runId)?.status).toBe("waiting_input");
+  });
+});
+
+describe("someone else's routine changes only once its creator says yes", () => {
+  const WHY = "A Ana pediu para pausar enquanto a campanha nova não começa, na segunda-feira.";
+  const rightHand = async () =>
+    (await f.db.select().from(schema.agents).where(eq(schema.agents.builtin, RIGHT_HAND)))[0];
+
+  test("pausing a routine a teammate made asks them on a card; only they decide, and their yes pauses it", async () => {
+    let routineId = "";
+    f = await setup({
+      scheduleTools: true,
+      reply: (req) => {
+        const last = lastText(req);
+        if (last.includes("changes only once they say yes"))
+          return {
+            chunks: [],
+            toolUses: [{ name: "update_routine", input: { id: routineId, active: false, why: WHY } }],
+          };
+        if (last.includes("tool_result")) return { chunks: ["Pausada."] };
+        return { chunks: [], toolUses: [{ name: "update_routine", input: { id: routineId, active: false } }] };
+      },
+    });
+    const bia = await addMember(f.db, f.org.id, "admin", "bia");
+    await f.db.insert(schema.channelMembers).values({ orgId: f.org.id, channelId: f.general.id, userId: bia.id });
+    routineId = (await channelRoutine(f, {}, bia.id)).id;
+    await say(f.general.id, "@dev pausa a rotina de avaliações");
+    await drainOutbox(f.db, f.handlers);
+
+    expect((await routineRow(f, routineId)).active).toBe(true);
+    const [card] = await f.db.select().from(schema.approvals);
+    expect(card).toMatchObject({
+      tool: "update_routine",
+      status: "pending",
+      why: WHY,
+      approvers: { userIds: [bia.id], required: true, requestedBy: f.owner.id },
+    });
+    // Whoever asked, an owner too, doesn't decide it for its creator.
+    await expect(
+      decideApproval({ db: f.db, pubsub: f.pubsub }, f.owner.id, f.org.id, card?.id ?? "", { decision: "approve" }),
+    ).rejects.toThrow();
+    await decideApproval({ db: f.db, pubsub: f.pubsub }, bia.id, f.org.id, card?.id ?? "", { decision: "approve" });
+    await drainOutbox(f.db, f.handlers);
+    expect((await routineRow(f, routineId)).active).toBe(false);
+  });
+
+  test("the person's own routine changes at once, with no card", async () => {
+    let routineId = "";
+    f = await setup({
+      scheduleTools: true,
+      reply: (req) =>
+        lastText(req).includes("tool_result")
+          ? { chunks: ["Pausada."] }
+          : { chunks: [], toolUses: [{ name: "update_routine", input: { id: routineId, active: false } }] },
+    });
+    routineId = (await channelRoutine(f)).id;
+    await say(f.general.id, "@dev pausa a rotina de avaliações");
+    await drainOutbox(f.db, f.handlers);
+    expect((await routineRow(f, routineId)).active).toBe(false);
+    expect(await f.db.select().from(schema.approvals)).toEqual([]);
+  });
+
+  test("the right hand never answers a teammate's question meant for a person", async () => {
+    f = await setup({ rightHand: true });
+    const lodi = await rightHand();
+    if (!lodi) throw new Error("no right hand");
+    const prompt = await rightHandPrompt(
+      { db: f.db },
+      { orgId: f.org.id, agent: lodi, personId: f.owner.id, inDm: true },
+    );
+    expect(prompt).toContain("is that person's to answer: never answer it for them, not by tell_agent either");
   });
 });
 

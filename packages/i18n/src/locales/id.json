@@ -2473,6 +2473,10 @@
     "forget": "Lupakan jawaban ini",
     "atOnce": "Pekerjaan sekaligus",
     "atOnceHelp": "Berapa banyak pekerjaan yang tidak diminta siapa pun yang dikerjakannya bersamaan. Sisanya menunggu giliran.",
+    "tasks": "Mengambil tugas berikutnya sendiri",
+    "tasksHelp": "Memulai tugas berikutnya yang diberikan seseorang begitu ada ruang, dan kembali ke tugas yang belum selesai. Mati: tugas menunggu sampai ada yang meminta.",
+    "tasksAtOnce": "Tugas sekaligus",
+    "tasksAtOnceHelp": "Berapa banyak tugasnya yang dikerjakan bersamaan. Sisanya menunggu di antreannya.",
     "prs": "Pull request per jam",
     "prsHelp": "Paling banyak yang dibuka pekerjaannya sendiri dalam satu jam.",
     "call": "Agen yang boleh dipanggil",
@@ -5974,6 +5978,8 @@
     "noAssignee": "Tanpa penanggung jawab",
     "agentRole": "Agen · {{role}}",
     "pr": "PR #{{number}}",
+    "queue": "Dalam antrean {{name}} · ke-{{position}}",
+    "queueShort": "Dalam antrean · ke-{{position}}",
     "open": "#{{number}} {{title}}",
     "empty": "Tugas menunjukkan siapa mengerjakan apa, orang atau agen, dan sejauh mana progresnya.",
     "emptyViewerTitle": "Lihat siapa mengerjakan apa",
@@ -6123,7 +6129,11 @@
       "files_removed": "menghapus {{names}} dari lampiran",
       "criterion_checked": "mencentang kriteria \"{{text}}\"",
       "criterion_unchecked": "menghapus centang kriteria \"{{text}}\"",
-      "agent_asked": "meminta {{name}} mengerjakannya"
+      "agent_asked": "meminta {{name}} mengerjakannya",
+      "agent_queued": "mengambilnya dari antrean",
+      "start_approved": "memberi {{name}} izin untuk mulai",
+      "blocked": "menandainya terhambat: {{text}}",
+      "unblocked": "membuka hambatannya"
     }
   },
   "routines": {
@@ -12568,6 +12578,8 @@
     "contextHelp": "Tulis seolah menjelaskan {{name}} ke orang yang baru mulai hari ini.",
     "timezone": "Zona waktu",
     "timezoneHelp": "Rutinitas dan ringkasan memakai zona waktu ini.",
+    "taskPump": "Agen mengambil tugas berikutnya sendiri",
+    "taskPumpHelp": "Setiap agen memulai tugas berikutnya yang diberikan seseorang begitu ada ruang, dan kembali ke tugas yang belum selesai. Setiap agen juga punya tombolnya sendiri.",
     "actionCheck": "Agen memeriksa apa yang sudah dilakukan tim",
     "actionCheckHelp": "Sebelum mengirim email, pesan, atau pull request, agen memeriksa apakah ada anggota tim yang sudah melakukannya ke orang atau tempat yang sama dalam 30 hari terakhir, dan tidak mengulanginya.",
     "telemetry": {
@@ -13027,7 +13039,8 @@
       "waiting_computer": "Terhambat · menunggu komputer",
       "paused": "Dijeda · batas paket",
       "failed": "Terhambat · tidak selesai",
-      "failedWhy": "Terhambat · tidak selesai: {{why}}"
+      "failedWhy": "Terhambat · tidak selesai: {{why}}",
+      "agent": "Terhambat · {{why}}"
     },
     "working": "Di latar belakang"
   },
@@ -13118,6 +13131,9 @@
       "agentNote": "Catatan dari {{from}}",
       "agentNoteAnon": "Catatan dari agen lain",
       "waitResult": "Yang ditunggu {{name}} sudah masuk",
+      "taskStart": "{{name}} mengambil tugas ini dari antrean",
+      "taskResume": "{{name}} kembali ke tugas ini",
+      "taskReview": "{{name}} mengambil tugas ini untuk meninjaunya",
       "followUp": "{{name}} akan kembali pukul {{time}} untuk «{{about}}»",
       "followUpOn": "{{name}} akan kembali pada {{day}} pukul {{time}} untuk «{{about}}»",
       "followUpDone": "{{name}} kembali pukul {{time}} untuk «{{about}}»",
@@ -13438,6 +13454,12 @@
       "general1": "Hai, kamu bisa apa saja?",
       "general2": "Ringkas apa yang terjadi hari ini",
       "general3": "Bantu aku merencanakan minggu ini?"
+    },
+    "tasksStart": {
+      "start_other": "Mulai",
+      "started": "{{name}} memberi izin mulai",
+      "someone": "Seseorang",
+      "failed": "Tidak bisa memulainya sekarang. Coba lagi."
     },
     "issueWork": {
       "label": "Tugas yang diminta",

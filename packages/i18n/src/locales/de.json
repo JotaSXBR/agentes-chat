@@ -2564,6 +2564,10 @@
     "forget": "Diese Antworten vergessen",
     "atOnce": "Aufgaben gleichzeitig",
     "atOnceHelp": "Wie viele Aufgaben, um die niemand gebeten hat, er gleichzeitig erledigt. Die anderen warten, bis sie dran sind.",
+    "tasks": "Nimmt die nächste Aufgabe selbst",
+    "tasksHelp": "Beginnt die nächste Aufgabe, die eine Person ihm gegeben hat, sobald Platz ist, und kehrt zu einer unfertigen zurück. Aus: Eine Aufgabe wartet, bis jemand darum bittet.",
+    "tasksAtOnce": "Aufgaben gleichzeitig",
+    "tasksAtOnceHelp": "An wie vielen seiner Aufgaben es gleichzeitig arbeitet. Die anderen warten in seiner Warteschlange.",
     "prs": "Pull Requests pro Stunde",
     "prsHelp": "Höchstens so viele öffnet seine eigene Arbeit in einer Stunde.",
     "call": "Agenten, die er rufen darf",
@@ -6171,6 +6175,8 @@
     "noAssignee": "Nicht zugewiesen",
     "agentRole": "Agent · {{role}}",
     "pr": "PR #{{number}}",
+    "queue": "In der Warteschlange von {{name}} · Nr. {{position}}",
+    "queueShort": "In der Warteschlange · Nr. {{position}}",
     "open": "#{{number}} {{title}}",
     "empty": "Eine Aufgabe sagt, wer was macht, Person oder Agent, und zeigt den Stand.",
     "emptyViewerTitle": "Sieh, wer was macht",
@@ -6320,7 +6326,11 @@
       "files_removed": "hat {{names}} aus den Anhängen entfernt",
       "criterion_checked": "hat das Kriterium „{{text}}“ abgehakt",
       "criterion_unchecked": "hat das Kriterium „{{text}}“ wieder geöffnet",
-      "agent_asked": "hat {{name}} gebeten, sie zu erledigen"
+      "agent_asked": "hat {{name}} gebeten, sie zu erledigen",
+      "agent_queued": "hat sie aus der Warteschlange übernommen",
+      "start_approved": "hat {{name}} das Startsignal gegeben",
+      "blocked": "hat sie als blockiert markiert: {{text}}",
+      "unblocked": "hat die Blockade aufgehoben"
     }
   },
   "routines": {
@@ -13004,6 +13014,8 @@
     "contextHelp": "Schreib es so, als würdest du {{name}} jemandem erklären, der heute angefangen hat.",
     "timezone": "Zeitzone",
     "timezoneHelp": "Routinen und Zusammenfassungen nutzen diese Zeitzone.",
+    "taskPump": "Agenten nehmen die nächste Aufgabe selbst",
+    "taskPumpHelp": "Jeder Agent beginnt die nächste Aufgabe, die eine Person ihm gegeben hat, sobald Platz ist, und kehrt zu einer unfertigen zurück. Jeder Agent hat auch einen eigenen Schalter.",
     "actionCheck": "Agenten prüfen, was das Team schon getan hat",
     "actionCheckHelp": "Vor einer E-Mail, einer Nachricht oder einem Pull Request prüft der Agent, ob jemand im Team das in den letzten 30 Tagen schon bei derselben Person oder am selben Ort getan hat, und wiederholt es nicht.",
     "telemetry": {
@@ -13482,7 +13494,8 @@
       "waiting_computer": "Blockiert · wartet auf den Computer",
       "paused": "Pausiert · Abo-Limit",
       "failed": "Blockiert · nicht fertig geworden",
-      "failedWhy": "Blockiert · nicht fertig geworden: {{why}}"
+      "failedWhy": "Blockiert · nicht fertig geworden: {{why}}",
+      "agent": "Blockiert · {{why}}"
     },
     "working": "Im Hintergrund"
   },
@@ -13576,6 +13589,9 @@
       "agentNote": "Notiz von {{from}}",
       "agentNoteAnon": "Notiz von einem anderen Agenten",
       "waitResult": "Worauf {{name}} gewartet hat, ist da",
+      "taskStart": "{{name}} hat diese Aufgabe aus der Warteschlange übernommen",
+      "taskResume": "{{name}} ist zu dieser Aufgabe zurückgekehrt",
+      "taskReview": "{{name}} hat diese Aufgabe zur Prüfung übernommen",
       "followUp": "{{name}} meldet sich um {{time}} wieder zu „{{about}}“",
       "followUpOn": "{{name}} meldet sich am {{day}} um {{time}} wieder zu „{{about}}“",
       "followUpDone": "{{name}} hat sich um {{time}} wieder gemeldet zu „{{about}}“",
@@ -13898,6 +13914,13 @@
       "general1": "Hallo, was kannst du?",
       "general2": "Fasse zusammen, was heute passiert ist",
       "general3": "Hilfst du mir, die Woche zu planen?"
+    },
+    "tasksStart": {
+      "start_one": "Starten",
+      "start_other": "Alle starten",
+      "started": "{{name}} hat das Startsignal gegeben",
+      "someone": "Jemand",
+      "failed": "Konnte sie jetzt nicht starten. Versuch es noch einmal."
     },
     "issueWork": {
       "label": "Angefragte Aufgabe",

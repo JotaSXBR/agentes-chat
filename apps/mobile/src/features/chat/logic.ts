@@ -273,6 +273,7 @@ const NOTICE_ICON: Record<string, EventLineView["icon"]> = {
   wait_result: "check",
   follow_up: "clock",
   wake_skipped: "info",
+  task_start: "agent",
 };
 
 export function eventLineOf(

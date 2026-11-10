@@ -370,6 +370,11 @@ export const organizationSettings = pgTable("organization_settings", {
    * or `owner`, only the person responsible for it. Open by default; Criar agente starts its own choice here.
    */
   newAgentAudience: text().$type<"everyone" | "owner">().notNull().default("everyone"),
+  /**
+   * Agents take the tasks people gave them by themselves as room frees (`task-pump.ts`): on by default, off leaves an
+   * assigned task waiting until someone asks the agent to do it. Each agent has its own switch too.
+   */
+  taskPump: boolean().notNull().default(true),
   updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 });
 

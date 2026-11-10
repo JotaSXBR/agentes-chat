@@ -10,6 +10,7 @@ import { useColors, useDirectory, useOrgId } from "../shared/hooks";
 
 const AT_ONCE = [1, 2, 3, 5, 10];
 const PRS = [0, 1, 2, 3, 5, 10];
+const TASKS_AT_ONCE = [1, 2, 3, 5];
 
 /** The next value of a short list, round: a row's tap steps through it. */
 const nextOf = (list: number[], now: number) => list[(list.indexOf(now) + 1) % list.length] ?? list[0] ?? now;
@@ -64,6 +65,24 @@ export function BrakesSection({ agent }: { agent: Agent }) {
           disabled={!editable}
           onPress={() => save({ maxPrsPerHour: nextOf(PRS, b.maxPrsPerHour) })}
         />
+        <GroupedRow
+          label={t("brakes.tasks")}
+          labelLines={2}
+          hint={{ name: t("common.about", { label: t("brakes.tasks") }), text: t("brakes.tasksHelp") }}
+          toggle={b.tasks}
+          disabled={!editable}
+          onPress={() => save({ tasks: !b.tasks })}
+        />
+        {b.tasks ? (
+          <GroupedRow
+            label={t("brakes.tasksAtOnce")}
+            labelLines={2}
+            hint={{ name: t("common.about", { label: t("brakes.tasksAtOnce") }), text: t("brakes.tasksAtOnceHelp") }}
+            value={String(b.tasksAtOnce)}
+            disabled={!editable}
+            onPress={() => save({ tasksAtOnce: nextOf(TASKS_AT_ONCE, b.tasksAtOnce) })}
+          />
+        ) : null}
         {b.go.length + b.never.length > 0 ? (
           <GroupedRow
             label={t("brakes.forget")}

@@ -248,6 +248,8 @@ export function blockedText(
     const why = errorWords(t, blocked.text);
     return why ? say("work.blocked.failedWhy", { why }) : say("work.blocked.failed");
   }
+  // Its agent said what stops it (`update_issue`), in its own words.
+  if (blocked.reason === "agent") return say("work.blocked.agent", { why: blocked.text ?? "" });
   const known = ["waiting_approval", "waiting_input", "waiting_computer", "paused"];
   return say(`work.blocked.${known.includes(blocked.reason) ? blocked.reason : "waiting_approval"}`);
 }

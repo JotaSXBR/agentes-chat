@@ -15,7 +15,7 @@ import {
   sql,
 } from "@agenteschat/db";
 import { plainLine, plainLines } from "@agenteschat/ui/markdown";
-import { getAgent } from "./agents";
+import { type Agent, getAgent } from "./agents";
 import { audienceError, canTalkTo, speakerFor } from "./audience";
 import { recordAudit } from "./audit";
 import { runAuthorityById, runPerson } from "./authority";
@@ -31,7 +31,15 @@ import {
 import { cutText } from "./format";
 import { boardColumns, columnForMove, columnOf, topRank } from "./issue-columns";
 import type { IssueWorkMeta } from "./issue-work";
-import { fileIdsOf, getMessage, insertMessage, type MessageView, messageView, postPersonMessage } from "./messages";
+import {
+  fileIdsOf,
+  getMessage,
+  insertMessage,
+  type Message,
+  type MessageView,
+  messageView,
+  postPersonMessage,
+} from "./messages";
 import { enqueueRunJob } from "./mission-runs";
 import { notifyIssueChanged } from "./notification-producers";
 import { can, getMembership, requireActiveMembership } from "./organizations";
@@ -45,6 +53,7 @@ import {
   type TaskConversationSummary,
   taskConversationSummaries,
 } from "./task-conversation";
+import { kickTaskPump, taskQueues } from "./task-pump";
 import { promptAnswer, promptPoll, toolDetail } from "./tool-detail";
 import { syncWikiLinks, withWikiLinks } from "./wiki-links";
 import { type WorkRow, type WorkView, workViews } from "./works";
@@ -56,7 +65,6 @@ const {
   channels,
   channelMembers,
   artifacts,
-  agentConsultations,
   agentRuns,
   agentRunSteps,
   notifications,
@@ -111,6 +119,8 @@ export interface IssueView {
   backgroundWork: WorkView | null;
   /** Its conversation (ADR 0145), once someone wrote or opened it: replies, who took part, an agent at work. */
   conversation: TaskConversationSummary | null;
+  /** Its place in its agent's queue (`task-pump.ts`, 1 = next): "Na fila de Ada · 2º". Null: not waiting in one. */
+  queue: { position: number } | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -547,6 +557,19 @@ async function views(db: Database, rows: IssueRow[], reader?: string): Promise<I
     backgroundWorksOf(db, rows, reader),
     taskConversationSummaries(db, rows),
   ]);
+  // Only an agent's open task nothing works on may wait in its queue.
+  const waiting = rows.filter(
+    (r) =>
+      r.assigneeType === "agent" &&
+      r.assigneeId &&
+      OPEN_FOR_WORK.has(r.status) &&
+      !r.blocked &&
+      (!work.get(r.id) || work.get(r.id)?.state === "stalled"),
+  );
+  const queues =
+    waiting.length && rows[0]
+      ? await taskQueues(db, rows[0].orgId, [...new Set(waiting.map((r) => r.assigneeId as string))])
+      : new Map<string, { position: number }>();
   const ids = [...new Set(rows.flatMap((r) => r.artifactIds))];
   const files = ids.length
     ? await db
@@ -585,6 +608,7 @@ async function views(db: Database, rows: IssueRow[], reader?: string): Promise<I
     blocked: r.blocked ?? null,
     backgroundWork: works.get(r.id) ?? null,
     conversation: conversations.get(r.id) ?? null,
+    queue: queues.has(r.id) ? { position: queues.get(r.id)?.position ?? 1 } : null,
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
   }));
@@ -742,7 +766,16 @@ function eventDetail(event: string | null, data: Record<string, unknown>) {
       return s(data.text)
         ? out(data.done ? "criterion_checked" : "criterion_unchecked", { text: s(data.text) as string })
         : {};
+    case "start_approved":
+      return s(data.agentName) ? out(event, { name: s(data.agentName) as string }) : {};
+    case "blocked":
+      return s(data.text) ? out(event, { text: s(data.text) as string }) : {};
+    case "unblocked":
+      return out(event);
     case "agent_asked":
+      // Its agent's queue took it (`task-pump.ts`).
+      if (data.auto === true)
+        return s(data.agentName) ? out("agent_queued", { name: s(data.agentName) as string }) : {};
       // `threadId`: the requester's DM thread where the work lives (only they can open it).
       return s(data.agentName)
         ? out(event, {
@@ -907,6 +940,8 @@ export async function createIssue(
   const view = await one(db, (await reload(db, row)) ?? row);
   await announce(deps, orgId, view, "issue.created");
   if (row.assigneeType === "person") await notifyIssueChanged(deps, author, null, row).catch(() => {});
+  // A person gave an agent a task: its queue takes it as soon as it has room.
+  if (actor.type === "person" && row.assigneeType === "agent") await kickTaskPump(db, orgId).catch(() => {});
   // Routines on `issue.created` (ADR 0053 §6.5): never for an issue a routine or an unattended run created
   // (a routine would trigger itself), only for routines whose creator can see the issue, and with its id,
   // not its title (the run reads it with its own tools).
@@ -1067,6 +1102,8 @@ export async function updateIssue(
     addFiles?: string[];
     /** Files to unlink: Desfazer on an agent's attach. */
     removeFiles?: string[];
+    /** What stops the work, in a line (an agent's `update_issue`): its agent's queue skips it; "" or null clears it. */
+    blocked?: string | null;
   },
 ): Promise<IssueView> {
   const { db } = deps;
@@ -1122,6 +1159,16 @@ export async function updateIssue(
     });
   }
   if (patch.labels !== undefined) set.labels = cleanLabels(patch.labels) ?? [];
+  if (patch.blocked !== undefined) {
+    const text = patch.blocked?.trim().slice(0, 300) ?? "";
+    if (text) {
+      set.blocked = { reason: "agent", since: new Date().toISOString(), text };
+      events.push({ text: `marked it blocked: ${text}`, event: "blocked", data: { text } });
+    } else if (current.blocked) {
+      set.blocked = null;
+      events.push({ text: "cleared what blocked it", event: "unblocked" });
+    }
+  }
   if (patch.githubUrl !== undefined) {
     const url = checkGithubUrl(patch.githubUrl);
     if (url !== current.githubUrl) {
@@ -1214,10 +1261,12 @@ export async function updateIssue(
   if (patch.assignee !== undefined || row.status !== current.status) {
     await notifyIssueChanged(deps, author, current, row).catch(() => {});
   }
+  if (actor.type === "person" && patch.assignee?.type === "agent") await kickTaskPump(db, orgId).catch(() => {});
   return view;
 }
 
-const reload = async (db: Database, row: IssueRow) => (await db.select().from(issues).where(eq(issues.id, row.id)))[0];
+const reload = async (db: Executor, row: Pick<IssueRow, "id">) =>
+  (await db.select().from(issues).where(eq(issues.id, row.id)))[0];
 
 /**
  * The criteria a person edited in place: a kept one keeps its id and its check (and who checked it), a new one
@@ -1493,6 +1542,13 @@ export async function announceTaskConversation(deps: IssueDeps, orgId: string, m
     .from(issues)
     .where(and(eq(issues.orgId, orgId), eq(issues.conversationChannelId, message.channelId)));
   if (!issue) return;
+  // A person answered in it: what the agent said blocked it is theirs to go on with, so its queue takes it again.
+  if (message.authorType === "person" && issue.blocked?.reason === "agent" && message.authorUserId) {
+    await updateIssue(deps, { type: "person", userId: message.authorUserId }, orgId, issue.id, { blocked: null }).catch(
+      () => null,
+    );
+    await kickTaskPump(deps.db, orgId).catch(() => {});
+  }
   const files = fileIdsOf(message.meta).filter((id) => !issue.artifactIds.includes(id));
   const row = files.length
     ? ((
@@ -1565,110 +1621,185 @@ export async function askAgentToImplement(
   orgId: string,
   issueId: string,
   agentId: string,
-  /**
-   * The right hand handing it on for `userId` from its run (ADR 0137 §13): the start is written as it, never in the
-   * person's name, and is a `note` row of that run, so what comes of it goes back to their DM (`reportHandOffs`).
-   */
-  by?: { agentId: string; runId: string; hop: number },
 ): Promise<IssueView> {
   const { db } = deps;
   if (!deps.pubsub) throw new Error("askAgentToImplement needs pub/sub");
-  const pubsub = deps.pubsub;
   const actor: IssueActor = { type: "person", userId };
   const issue = await findVisible(db, actor, orgId, { id: issueId });
   const agent = await getAgent(db, orgId, agentId);
   if (!agent || agent.archivedAt) throw new NotFoundError("Agent not found");
   if (!canTalkTo(agent, userId, await speakerFor(db, orgId, userId))) throw await audienceError(db, agent);
+  const reassign = issue.assigneeType !== "agent" || issue.assigneeId !== agentId;
+  // Asking for the work answers what its agent said blocked it: its queue may take it again afterwards.
+  const unblock = issue.blocked?.reason === "agent";
   const updated =
-    issue.assigneeType === "agent" && issue.assigneeId === agentId
-      ? await one(db, issue, userId)
-      : await updateIssue(deps, actor, orgId, issue.id, { assignee: { type: "agent", id: agentId } });
-  const conversation = await ensureTaskConversation(db, issue.id);
-  await admitTaskAgents(db, orgId, conversation.channelId, { ids: [agentId] });
-  const card: IssueWorkMeta = { issueId: issue.id, number: issue.number, title: issue.title, agentId };
-  const author: WorkActor = by ? { type: "agent", id: by.agentId } : { type: "person", id: userId };
-  const { start, runId } = await db.transaction(async (tx) => {
-    const consultationId = Bun.randomUUIDv7();
-    // What starts the run, in the conversation: short and human (shown in the person's language).
-    const start = await insertMessage(tx, {
-      orgId,
-      channelId: conversation.channelId,
-      threadId: conversation.rootId,
-      author: by ? { type: "agent", agentId: by.agentId, runId: by.runId, hop: by.hop } : { type: "person", userId },
-      body: `Please implement issue #${issue.number}.`,
-      meta: {
-        issueId: issue.id,
-        issueWorkStart: true,
-        bodyCode: "issue_work_start",
-        bodyParams: { number: issue.number },
-        ...(by ? { agentNote: { runId: by.runId }, consultation: { id: consultationId } } : {}),
-      },
-    });
-    const { run, steered } = await enqueueRunJob(tx, start, agentId);
-    const targetRunId = run?.id ?? steered;
-    if (by)
-      await tx.insert(agentConsultations).values({
-        id: consultationId,
-        orgId,
-        kind: "note",
-        askerRunId: by.runId,
-        askerAgentId: by.agentId,
-        targetAgentId: agentId,
-        channelId: conversation.channelId,
-        messageId: start.id,
-        targetRunId,
-        waitId: `async:${Bun.randomUUIDv7()}`,
-        question: `Work on task #${issue.number}: ${issue.title}`.slice(0, 2_000),
-        chain: [by.agentId],
-        expiresAt: new Date(Date.now() + TASK_HAND_OFF_TTL_MS),
-      });
-    return { start, runId: run?.id ?? null };
+    reassign || unblock
+      ? await updateIssue(deps, actor, orgId, issue.id, {
+          ...(reassign ? { assignee: { type: "agent" as const, id: agentId } } : {}),
+          ...(unblock ? { blocked: null } : {}),
+        })
+      : await one(db, issue, userId);
+  const started = await db.transaction(async (tx) => {
+    await lockAgentTasks(tx, agentId);
+    return startTaskWork(tx, (await reload(tx, issue)) ?? issue, agent, { by: "person", userId });
   });
-  await publishMessageCreated(pubsub, messageView(start));
-  if (runId) {
-    await publishChannelEvent(pubsub, {
-      type: "agent.thinking",
-      channelId: conversation.channelId,
-      threadId: conversation.rootId,
-      agentId,
-      runId,
-    });
-  }
-  await db.transaction(async (tx) => {
-    await addActivity(tx, issue, {
-      kind: "event",
-      author,
-      text: `asked ${agent.name} to implement`,
-      event: "agent_asked",
-      data: {
-        agentId,
-        agentName: agent.name,
-        channelId: conversation.channelId,
-        messageId: start.id,
-        threadId: conversation.rootId,
-        inConversation: true,
-      },
-    });
-    await recordAudit(tx, {
-      orgId,
-      actor: author,
-      action: "issue.agent_asked",
-      target: { type: "issue", id: issue.id },
-      details: { agentId },
-      ...(by ? { runId: by.runId, onBehalfOfUserId: userId } : {}),
-    });
-  });
-  await announceTaken(deps, issue, card);
-  await startedWork(deps, issue, agentId, runId ? [runId] : []);
+  await announceTaskStart(deps, started);
   const fresh = await reload(db, issue);
-  if (!fresh) return updated;
-  const view = await one(db, fresh);
-  await announce(deps, orgId, view, "issue.updated");
-  return view;
+  return fresh ? one(db, fresh, userId) : updated;
 }
 
-/** How long a hand-off of a task waits before it counts as hung while its agent hasn't started (the work extends it). */
-const TASK_HAND_OFF_TTL_MS = 15 * 60_000;
+/**
+ * A person's go for a task an agent made or handed on (the card on its reply, `startHeldTasks`): the task becomes
+ * theirs to start (a `start_approved` event, which `taskStarters` reads). Only a task they see, still that agent's
+ * and open, and an agent they may talk to. Returns the task, or null.
+ */
+export async function approveTaskStart(
+  deps: IssueDeps,
+  userId: string,
+  orgId: string,
+  issueId: string,
+  agentId: string,
+): Promise<IssueRow | null> {
+  const row = await findVisible(deps.db, { type: "person", userId }, orgId, { id: issueId });
+  if (row.assigneeType !== "agent" || row.assigneeId !== agentId || !OPEN_FOR_WORK.has(row.status)) return null;
+  const agent = await getAgent(deps.db, orgId, agentId);
+  if (!agent || agent.archivedAt || !canTalkTo(agent, userId, await speakerFor(deps.db, orgId, userId))) return null;
+  await addActivity(deps.db, row, {
+    kind: "event",
+    author: { type: "person", id: userId },
+    text: `gave ${agent.name} the go`,
+    event: "start_approved",
+    data: { agentId, agentName: agent.name },
+  });
+  return row;
+}
+
+/** A turn of the agent's queue (`task-pump.ts`): a task to start, one in progress nothing works on, one in review. */
+export type TaskLine = "start" | "resume" | "review";
+
+/**
+ * What starts a task's work: a person asking ("Pedir ao", written as them), or the agent's queue on behalf of the
+ * person who gave it the task (a `task_start` notice written as the agent: never in the person's name, yet theirs, so
+ * their "Aprovar sempre" and the agent's merge list apply and no routine's guard does).
+ */
+export type TaskStart = { by: "person"; userId: string } | { by: "queue"; userId: string; line: TaskLine };
+
+/** One agent's task starts at a time (`startTaskWork`): its queue counts what runs before it takes more. */
+export const lockAgentTasks = (tx: Executor, agentId: string) =>
+  tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`agent-tasks:${agentId}`}))`);
+
+/** What the agent reads on its queue's turn, by line (the notice's text). */
+const QUEUE_TURN: Record<TaskLine, (n: number) => string> = {
+  start: (n) =>
+    `Task #${n} was next in your queue: work on it now. Can't go on without someone: say what you need and mark it blocked (update_issue).`,
+  resume: (n) =>
+    `Task #${n} is still in progress and nothing is working on it: pick it up where you left off (read this conversation first). Done: say so and move it on. Can't go on without someone: say what you need and mark it blocked (update_issue).`,
+  review: (n) =>
+    `Task #${n} is in review: review it now (its pull requests and its acceptance criteria), then move it on or say here what is missing.`,
+};
+
+/** A task's start, made in the caller's transaction (`startTaskWork`), for `announceTaskStart` once it commits. */
+export interface TaskStarted {
+  issue: IssueRow;
+  agentId: string;
+  start: Message;
+  runId: string | null;
+  how: TaskStart;
+}
+
+/**
+ * Starts the agent's work on a task, the one way every start goes (a person's "Pedir ao", the right hand's card, the
+ * agent's queue): in the task's own conversation, a run on a start line rooted in a person (`TaskStart`). In `tx`,
+ * under `lockAgentTasks`; `announceTaskStart` after it commits. A run already at work in that thread takes the line
+ * instead (`enqueueRunJob`).
+ */
+export async function startTaskWork(
+  tx: Executor,
+  issue: IssueRow,
+  agent: Pick<Agent, "id" | "name">,
+  how: TaskStart,
+): Promise<TaskStarted> {
+  const conversation = await ensureTaskConversation(tx, issue.id);
+  await admitTaskAgents(tx, issue.orgId, conversation.channelId, { ids: [agent.id] });
+  const at = { orgId: issue.orgId, channelId: conversation.channelId, threadId: conversation.rootId };
+  const start =
+    how.by === "person"
+      ? // Short and human, shown in the person's language.
+        await insertMessage(tx, {
+          ...at,
+          author: { type: "person", userId: how.userId },
+          body: `Please implement issue #${issue.number}.`,
+          meta: {
+            issueId: issue.id,
+            issueWorkStart: true,
+            bodyCode: "issue_work_start",
+            bodyParams: { number: issue.number },
+          },
+        })
+      : await insertMessage(tx, {
+          ...at,
+          author: { type: "agent", agentId: agent.id, runId: null, hop: 0, stretchId: null },
+          body: QUEUE_TURN[how.line](issue.number),
+          meta: {
+            issueId: issue.id,
+            issueWorkStart: true,
+            notice: {
+              kind: "task_start",
+              text: QUEUE_TURN[how.line](issue.number),
+              refs: { personId: how.userId, issueId: issue.id, number: String(issue.number), line: how.line },
+            },
+          },
+        });
+  const { run } = await enqueueRunJob(tx, start, agent.id);
+  if (run) await tx.update(agentRuns).set({ issueId: issue.id }).where(eq(agentRuns.id, run.id));
+  const author: WorkActor = how.by === "person" ? { type: "person", id: how.userId } : { type: "agent", id: agent.id };
+  await addActivity(tx, issue, {
+    kind: "event",
+    author,
+    text: how.by === "person" ? `asked ${agent.name} to implement` : `${agent.name} took it from its queue`,
+    event: "agent_asked",
+    data: {
+      agentId: agent.id,
+      agentName: agent.name,
+      channelId: conversation.channelId,
+      messageId: start.id,
+      threadId: conversation.rootId,
+      inConversation: true,
+      ...(how.by === "queue" ? { auto: true, line: how.line, forUserId: how.userId } : {}),
+    },
+  });
+  await recordAudit(tx, {
+    orgId: issue.orgId,
+    actor: author,
+    action: "issue.agent_asked",
+    target: { type: "issue", id: issue.id },
+    details: { agentId: agent.id, ...(how.by === "queue" ? { queue: how.line } : {}) },
+    ...(how.by === "queue" ? { onBehalfOfUserId: how.userId } : {}),
+  });
+  return { issue, agentId: agent.id, start, runId: run?.id ?? null, how };
+}
+
+/** After a start commits (`startTaskWork`): the conversation hears it, the task moves on, the board sees it. */
+export async function announceTaskStart(deps: IssueDeps, started: TaskStarted) {
+  const { issue, agentId, start, runId } = started;
+  if (deps.pubsub) {
+    await publishMessageCreated(deps.pubsub, messageView(start));
+    if (runId)
+      await publishChannelEvent(deps.pubsub, {
+        type: "agent.thinking",
+        channelId: start.channelId,
+        threadId: start.threadId,
+        agentId,
+        runId,
+      });
+  }
+  // Where it came from hears it was taken once: never again for its agent's comebacks.
+  if (started.how.by === "person" || started.how.line === "start")
+    await announceTaken(deps, issue, { issueId: issue.id, number: issue.number, title: issue.title, agentId });
+  await startedWork(deps, issue, agentId, runId ? [runId] : []);
+  const fresh = await reload(deps.db, issue);
+  if (fresh) await announce(deps, issue.orgId, await one(deps.db, fresh), "issue.updated");
+}
 
 /** An issue made from a channel message: one discreet line there ("Ada took issue #24"), never a thread. */
 async function announceTaken(deps: IssueDeps, issue: IssueRow, card: IssueWorkMeta) {

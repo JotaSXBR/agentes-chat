@@ -736,6 +736,7 @@ export function buildEngine(o: EngineOptions) {
     contextMessages: config.AGENT_CONTEXT_MESSAGES,
     blockSpec: (orgId, artifactId, version) => blockSpecAt(artifacts, orgId, artifactId, version),
     maxHops: config.AGENT_MAX_HOPS,
+    taskStartsPerDay: config.AGENT_TASK_STARTS_PER_DAY,
     deltaFlushMs: o.deltaFlushMs,
     onTiming: o.onTiming,
     onRunProfile: o.onRunProfile,

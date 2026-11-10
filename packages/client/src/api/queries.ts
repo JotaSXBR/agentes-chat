@@ -4275,6 +4275,16 @@ export function useStartAgentOnTask(orgId: string) {
   });
 }
 
+/** "Começar estas" on an agent's reply: the go for its tasks (the reply's card says who gave it, live). */
+export function useStartTasks(orgId: string) {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (messageId: string) => api.issues.startTasks(orgId, messageId),
+    onSettled: () => void qc.invalidateQueries({ queryKey: keys.issues(orgId) }),
+  });
+}
+
 /** The board's columns; they live under the issues key, so any issue change refreshes them too. */
 export const useIssueColumns = (orgId: string) => {
   const api = useApi();

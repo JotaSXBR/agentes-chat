@@ -1257,8 +1257,8 @@ export async function reportHandOffs(deps: Pick<Deps, "db" | "pubsub">, asker: A
 }
 
 /**
- * Where a run may answer a question or a note: the agents' DM, or a task's conversation the right hand handed it
- * (`askAgentToImplement` with `by`, ADR 0137 §13).
+ * Where a run may answer a question or a note: the agents' DM, or a task's conversation, where a hand-off the right hand
+ * wrote as a note may be open (ADR 0137 §13). A task's start writes none (`startTaskWork`).
  */
 export const answersHandOffs = (channel: { kind: string; dmKey: string | null }) =>
   isAgentOnlyDm(channel) || channel.kind === "task";

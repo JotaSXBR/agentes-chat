@@ -1,0 +1,2 @@
+ALTER TABLE "organization_settings" ADD COLUMN "task_pump" boolean DEFAULT true NOT NULL;--> statement-breakpoint
+CREATE INDEX "issues_open_agent_idx" ON "issues" USING btree ("org_id") WHERE "issues"."assignee_type" = 'agent' and "issues"."status" in ('todo', 'in_progress', 'in_review');

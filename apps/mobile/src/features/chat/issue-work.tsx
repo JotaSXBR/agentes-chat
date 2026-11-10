@@ -1,11 +1,20 @@
-import { type Message, useIssue } from "@agenteschat/client";
-import { type HandedTask, handedTasksOf, type IssueWorkRef, issueTakenOf } from "@agenteschat/client/lib/issues";
+import { type Message, useIssue, useStartTasks } from "@agenteschat/client";
+import {
+  type HandedTask,
+  handedTasksOf,
+  type IssueWorkRef,
+  issueTakenOf,
+  tasksStartOf,
+} from "@agenteschat/client/lib/issues";
+import { can } from "@agenteschat/client/lib/permissions";
 import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, View } from "react-native";
-import { EventPill, Icon, Text } from "@/ui";
+import { useOrg } from "@/providers/org";
+import { Button, EventPill, Icon, Text } from "@/ui";
 import { router } from "@/ui/navigation";
 import { StateChip } from "../issues/parts";
 import { chatHref } from "../links/logic";
+import { useFailed } from "../routines/hooks";
 import { AgentFace } from "../shared/Face";
 import { useColors, useDirectory, useMeId, useOrgId, useWhen } from "../shared/hooks";
 import { useSurface } from "../shared/parts";
@@ -91,12 +100,56 @@ export function IssueTakenLine({ message, gap }: { message: Message; gap: number
 export function HandedTaskChips({ message }: { message: Message }) {
   const tasks = handedTasksOf(message.meta);
   if (tasks.length === 0) return null;
+  const start = tasksStartOf(message.meta);
   return (
     <View style={styles.chips}>
       {tasks.map((task) => (
         <HandedTaskChip key={task.issueId} task={task} />
       ))}
+      {start ? <TasksStart messageId={message.id} start={start} count={tasks.filter((x) => x.held).length} /> : null}
     </View>
+  );
+}
+
+/** "Começar estas", as on the web: the go for the tasks above, then who gave it. */
+function TasksStart({
+  messageId,
+  start,
+  count,
+}: {
+  messageId: string;
+  start: NonNullable<ReturnType<typeof tasksStartOf>>;
+  count: number;
+}) {
+  const { t } = useTranslation();
+  const c = useColors();
+  const dir = useDirectory();
+  const { orgId, org } = useOrg();
+  const startTasks = useStartTasks(orgId);
+  const failed = useFailed();
+  if (start.state === "started")
+    return (
+      <View style={styles.go}>
+        <Icon name="check" size={14} color={c.ink2} />
+        <Text variant="small" tone="muted" style={styles.grow}>
+          {t("chat.tasksStart.started", {
+            name: dir.nameOf({ type: "person", id: start.by }) || t("chat.tasksStart.someone"),
+          })}
+        </Text>
+      </View>
+    );
+  // As on the web: the go is for who may post.
+  if (!can(org, "post")) return null;
+  return (
+    <Button
+      variant="primary"
+      size="card"
+      wide
+      label={t("chat.tasksStart.start", { count })}
+      loading={startTasks.isPending}
+      disabled={startTasks.isSuccess}
+      onPress={() => startTasks.mutate(messageId, { onError: failed })}
+    />
   );
 }
 
@@ -129,6 +182,7 @@ function HandedTaskChip({ task }: { task: HandedTask }) {
 
 const styles = StyleSheet.create({
   chips: { gap: 6, marginTop: 6, alignItems: "flex-start" },
+  go: { flexDirection: "row", alignItems: "center", gap: 6 },
   chip: {
     flexDirection: "row",
     alignItems: "center",

@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
+import { eq, schema } from "@agenteschat/db";
+import { insertMessage } from "@agenteschat/engine";
 import { browser, createTestServer, seedOrg, signUp, type TestServer } from "./harness";
 
 let t: TestServer;
@@ -135,4 +137,71 @@ test("deleting a task: 204, gone from the list and its address; a member who did
   expect((await api("/issues/by-number/1")).status).toBe(404);
   expect(await (await api("/issues")).json()).toMatchObject({ issues: [] });
   expect((await api(`/issues/${created.id}`, { method: "DELETE" })).status).toBe(404);
+});
+
+test("Começar estas: the go for the tasks an agent gave agents in its reply, once, for who reads it", async () => {
+  await t.close();
+  t = await createTestServer({ env: { ALLOW_SIGNUP: "true" }, reply: () => ({ chunks: ["Feito."] }) });
+  const owner = browser(t);
+  await signUp(owner, "owner@example.com");
+  const { orgId, channelId, agentId } = await seedOrg(owner);
+  const api = (path: string, init?: Parameters<typeof owner>[1]) =>
+    owner(`/api/app/organizations/${orgId}${path}`, init);
+  const issue = (await (await api("/issues", { json: { title: "Ship the release notes" } })).json()) as {
+    id: string;
+    number: number;
+  };
+  const [made] = await t.db
+    .update(schema.issues)
+    .set({ assigneeType: "agent", assigneeId: agentId })
+    .where(eq(schema.issues.id, issue.id))
+    .returning();
+  const card = await insertMessage(t.db, {
+    orgId,
+    channelId,
+    author: { type: "agent", agentId, runId: null, hop: 1, stretchId: null },
+    body: "It's on the board.",
+    meta: {
+      tasks: [
+        {
+          issueId: issue.id,
+          number: issue.number,
+          title: "Ship the release notes",
+          agentId,
+          channelId,
+          rootId: made?.id,
+          held: true,
+        },
+      ],
+    },
+  });
+  const stranger = browser(t);
+  await signUp(stranger, "stranger@example.com");
+  const refused = await stranger(`/api/app/organizations/${orgId}/messages/${card.id}/start-tasks`, { json: {} });
+  expect(refused.status).toBe(404);
+
+  const go = await api(`/messages/${card.id}/start-tasks`, { json: {} });
+  expect(go.status).toBe(200);
+  expect(await go.json()).toEqual({ started: 1 });
+  expect(await (await api(`/messages/${card.id}/start-tasks`, { json: {} })).json()).toEqual({ started: 0 });
+  const activity = (await (await api(`/issues/${issue.id}/activity`)).json()) as {
+    activity: { event?: string; textCode?: string }[];
+  };
+  expect(activity.activity.find((a) => a.event === "start_approved")?.textCode).toBe("start_approved");
+  // Its agent takes it as it has room, on behalf of who gave the go.
+  await t.drain();
+  const runs = await t.db.select().from(schema.agentRuns).where(eq(schema.agentRuns.issueId, issue.id));
+  expect(runs.length).toBe(1);
+});
+
+test("the workspace's task switch: on by default, changed by who configures the workspace", async () => {
+  const owner = browser(t);
+  await signUp(owner, "owner@example.com");
+  const { orgId } = await seedOrg(owner);
+  const settings = (init?: Parameters<typeof owner>[1]) => owner(`/api/app/organizations/${orgId}/settings`, init);
+  expect(((await (await settings()).json()) as { taskPump: boolean }).taskPump).toBe(true);
+  const off = await settings({ method: "PATCH", json: { taskPump: false } });
+  expect(off.status).toBe(200);
+  expect(((await off.json()) as { taskPump: boolean }).taskPump).toBe(false);
+  expect(((await (await settings()).json()) as { taskPump: boolean }).taskPump).toBe(false);
 });

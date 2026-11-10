@@ -321,6 +321,7 @@ import { enabledSkills } from "./skills";
 import { billingHold, standingErrorDetail, standingRefusal } from "./standing";
 import { personAskedLately, rerootRun, runStretchOf } from "./stretch";
 import { isStuck, noteStep, STUCK_END_NOTE, STUCK_END_REPLY_NOTE, STUCK_NOTE, type StuckState } from "./stuck";
+import { kickTaskPump } from "./task-pump";
 import { archivedAgentsPrompt, FIND_AGENT_TOOL, renamedAgentsPrompt, teammateMeans } from "./team";
 import { linkRunChecks, runChecksForReply } from "./team-actions";
 import { carriesCredential, cliErrorWords, maskCredentials, maskCredentialsExcept, scrubSignIns } from "./tool-detail";
@@ -554,7 +555,7 @@ export interface Transcript {
   browser?: BrowserTrailStep[];
   /** Its desktop calls since the last post, for the card of what it did there (`meta.desktop`). */
   desktop?: BrowserTrailStep[];
-  /** Tasks the right hand handed on, not yet on a posted message (`meta.tasks`, its chips). */
+  /** Tasks it gave an agent, not yet on a posted message (`meta.tasks`, its chips and "Começar estas"). */
   tasks?: HandedTask[];
   /** The agent reacted (`react`) instead of replying: an empty final answer posts nothing. */
   reacted?: boolean;
@@ -1302,6 +1303,10 @@ async function executeRunInner(
     }
     // Its line ends with the run (checked on read); the apps refresh now (ADR 0084 §11).
     await announceAgentStatus(deps.pubsub, run.orgId, run.agentId).catch(() => {});
+    // A task run ended or parked: its agent has room for its next task (`task-pump.ts`). Known from memory, since
+    // every run ends here; one a tool tied to a task elsewhere waits for the minute's tick.
+    if (!run.background && (run.issueId || channelRow?.kind === "task"))
+      await kickTaskPump(db, run.orgId).catch(() => {});
     // Back from its plan or budget and over: the turns its note took in still wait, so the note speaks on for them.
     if (waitedOn && USAGE_WAIT_CODES.has(waitedOn) && status !== "waiting_input" && status !== "waiting_approval") {
       await usageNoteHandOn(deps, run).catch(() => {});
@@ -4828,9 +4833,11 @@ async function executeRunInner(
       // Or it sent a GIF or its sticker and wrote nothing after it, with no card left to attach: that was the answer.
       // Or it posted a mission report and has no card left to attach: the report is the answer. Coding CLIs
       // always close with a summary that repeats it, whatever the prompt says, so the text is dropped too.
-      const noCards = !transcript.artifacts?.length && !transcript.memoryUpdates?.length;
+      // Tasks it gave an agent wait for a person's go on the card a message carries: never left unposted.
+      const heldTasks = Boolean(transcript.tasks?.length);
+      const noCards = !transcript.artifacts?.length && !transcript.memoryUpdates?.length && !heldTasks;
       const silent =
-        (Boolean(transcript.reacted) && restatesReaction(said)) ||
+        (Boolean(transcript.reacted) && restatesReaction(said) && !heldTasks) ||
         (Boolean(transcript.mediaSent) && !said && noCards) ||
         (Boolean(transcript.reported) && noCards);
       // The message is the final answer only: the last model call's text. Without it, a short closing line.

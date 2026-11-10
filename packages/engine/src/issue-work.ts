@@ -1,6 +1,7 @@
-import { and, type Executor, eq, inArray, isNull, schema } from "@agenteschat/db";
+import { and, type Executor, eq, inArray, isNull, ne, or, schema, sql } from "@agenteschat/db";
+import { cutMarked } from "./format";
 
-const { issues, artifacts } = schema;
+const { issues, artifacts, agents, users, messages, channels } = schema;
 
 /**
  * "Ask Ada to implement" works in the task's own conversation (ADR 0145). Work asked before that lives in the
@@ -65,6 +66,7 @@ export async function issueWorkBrief(
       ? `You were asked to implement issue #${issue.number} "${issue.title}" (status: ${issue.status}).`
       : `This is the conversation of task #${issue.number} "${issue.title}" (status: ${issue.status}). Someone called you into it: answer what they ask about the task.`,
     issue.description.trim() ? `## Description\n${issue.description.trim()}` : "",
+    await taskOriginText(db, orgId, issue.id),
     criteria ? `## Acceptance criteria\n${criteria}` : "",
     prs ? `## Pull requests linked\n${prs}` : "",
     files.length
@@ -83,4 +85,113 @@ export async function issueWorkBrief(
   ]
     .filter(Boolean)
     .join("\n\n");
+}
+
+const SIBLINGS_SHOWN = 10;
+const QUOTE_MAX = 500;
+const minute = (at: Date) => `${at.toISOString().slice(0, 16).replace("T", " ")} UTC`;
+
+/** A person's name or an agent's @handle, as the agent reads them. */
+async function nameOf(db: Executor, orgId: string, type: string, id: string) {
+  if (type === "agent") {
+    const [a] = await db
+      .select({ handle: agents.handle })
+      .from(agents)
+      .where(and(eq(agents.orgId, orgId), sql`${agents.id}::text = ${id}`));
+    return a ? `@${a.handle}` : "an agent";
+  }
+  const [u] = await db.select({ name: users.name }).from(users).where(eq(users.id, id));
+  return u?.name ?? "someone";
+}
+
+/**
+ * Where a task comes from, as its agent reads it (the brief, `list_issues`): who made it and when, the message it was
+ * made from (its words only from a public channel: an agent given the task from outside a private conversation never
+ * reads the rest of it), the task it is a step of, and the other open tasks asked with it, by number and title only,
+ * so it doesn't redo them. "" when nothing is known.
+ */
+export async function taskOriginText(db: Executor, orgId: string, issueId: string): Promise<string> {
+  const [issue] = await db
+    .select()
+    .from(issues)
+    .where(and(eq(issues.id, issueId), eq(issues.orgId, orgId)));
+  if (!issue) return "";
+  const source = issue.source as { messageId?: unknown };
+  const messageId = typeof source.messageId === "string" ? source.messageId : null;
+  const [maker, [origin], [parent], siblings] = await Promise.all([
+    nameOf(db, orgId, issue.createdByType, issue.createdById),
+    messageId
+      ? db
+          .select({
+            body: messages.body,
+            createdAt: messages.createdAt,
+            channelId: messages.channelId,
+            authorType: messages.authorType,
+            authorId: sql<string>`coalesce(${messages.authorUserId}, ${messages.authorAgentId}::text, '')`,
+            kind: channels.kind,
+            visibility: channels.visibility,
+            channelName: channels.name,
+          })
+          .from(messages)
+          .innerJoin(channels, eq(channels.id, messages.channelId))
+          .where(and(eq(messages.orgId, orgId), eq(messages.id, messageId)))
+      : Promise.resolve([]),
+    issue.parentIssueId
+      ? db
+          .select({ number: issues.number, title: issues.title, status: issues.status })
+          .from(issues)
+          .where(and(eq(issues.orgId, orgId), eq(issues.id, issue.parentIssueId)))
+      : Promise.resolve([]),
+    issue.parentIssueId || messageId
+      ? db
+          .select({
+            number: issues.number,
+            title: issues.title,
+            status: issues.status,
+            assigneeType: issues.assigneeType,
+            assigneeId: issues.assigneeId,
+          })
+          .from(issues)
+          .where(
+            and(
+              eq(issues.orgId, orgId),
+              ne(issues.id, issue.id),
+              issue.parentIssueId ? ne(issues.id, issue.parentIssueId) : undefined,
+              inArray(issues.status, ["todo", "in_progress", "in_review"]),
+              issue.channelId === null ? isNull(issues.channelId) : eq(issues.channelId, issue.channelId),
+              eq(issues.restricted, issue.restricted),
+              sql`${issues.audienceUserIds} = ${`{${issue.audienceUserIds.join(",")}}`}::text[]`,
+              or(
+                issue.parentIssueId ? eq(issues.parentIssueId, issue.parentIssueId) : undefined,
+                messageId ? sql`${issues.source}->>'messageId' = ${messageId}` : undefined,
+              ),
+            ),
+          )
+          .orderBy(issues.number)
+          .limit(SIBLINGS_SHOWN)
+      : Promise.resolve([]),
+  ]);
+  const from = origin
+    ? `, from ${await nameOf(db, orgId, origin.authorType, origin.authorId)}'s message${
+        origin.kind === "channel" ? ` in #${origin.channelName}` : ""
+      } of ${minute(origin.createdAt)}${
+        origin.kind === "channel" && origin.visibility === "public"
+          ? `: "${cutMarked(origin.body.replace(/\s+/g, " ").trim(), QUOTE_MAX)}"`
+          : " (a private conversation)"
+      }`
+    : "";
+  const others = await Promise.all(
+    siblings.map(async (t) => {
+      const who = t.assigneeType && t.assigneeId ? `, ${await nameOf(db, orgId, t.assigneeType, t.assigneeId)}` : "";
+      return `- #${t.number} ${t.title} (${t.status}${who})`;
+    }),
+  );
+  return [
+    "## Where it comes from",
+    `Made by ${maker} at ${minute(issue.createdAt)}${from}.`,
+    parent ? `A step of #${parent.number} "${parent.title}" (${parent.status}).` : "",
+    others.length ? `Asked with it, still open (don't redo them):\n${others.join("\n")}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
 }

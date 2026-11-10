@@ -237,6 +237,11 @@ export async function setup(
     workTools?: boolean;
     /** Long work's safety net (ADR 0121 §1). None: off (no test moves by accident). */
     workAuto?: { afterMs?: number; afterCalls?: number; minMs?: number; tickMs?: number };
+    /**
+     * The task queue starts agents' tasks when a test drains the jobs (`tasks.pump`). Off: its jobs start nothing, so a
+     * task a test gives an agent waits as it did before the queue (`pumpTasks` called directly still starts them).
+     */
+    taskPump?: boolean;
   } = {},
 ) {
   const { db, close } = await createTestDatabase();
@@ -406,6 +411,7 @@ export async function setup(
     workAutoAfterCalls: options.workAuto?.afterCalls ?? 100_000,
     workAutoMinMs: options.workAuto?.minMs,
     workTickMs: options.workAuto?.tickMs ?? 60_000,
+    ...(options.taskPump ? {} : { taskStartsPerDay: 0 }),
   };
   const handlers = createJobHandlers(jobDeps);
 

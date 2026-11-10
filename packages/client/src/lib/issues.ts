@@ -62,6 +62,17 @@ export function issueEventText(t: TFunction, a: Pick<IssueActivity, "text" | "te
   return t(`issues.event.${a.textCode}`, { ...p, ...extra, defaultValue: a.text });
 }
 
+/**
+ * A task waiting in its agent's queue (`Issue.queue`): "Na fila de Ada · 2º", or "Na fila · 2º" where the agent is
+ * already named beside it. Null when it waits in none.
+ */
+export function queueText(t: TFunction, i: Pick<Issue, "queue">, agentName?: string | null) {
+  if (!i.queue) return null;
+  return agentName
+    ? t("issues.queue", { name: agentName, position: i.queue.position })
+    : t("issues.queueShort", { position: i.queue.position });
+}
+
 /** Description text → description + acceptance criteria (lines starting with "-", "*" or "[ ]"). */
 export function splitCriteria(text: string) {
   const criteria: string[] = [];
@@ -105,11 +116,13 @@ export const issueWorkOf = (meta: Record<string, unknown> | null | undefined) =>
 /** `meta.issueTaken`: the one line where the issue came from ("Ada took issue #24"). */
 export const issueTakenOf = (meta: Record<string, unknown> | null | undefined) => workRef(meta?.issueTaken);
 
-/** A task the right hand handed to an agent, as its reply carries it (`meta.tasks`): the chip opens its thread. */
+/** A task an agent gave an agent, as its reply carries it (`meta.tasks`): the chip opens its thread. */
 export interface HandedTask extends IssueWorkRef {
   /** Its conversation (a channel of kind `task`) and its root: the thread the chip opens. */
   channelId: string;
   rootId: string;
+  /** It waits for a person's go: the reply's "Começar estas" (`tasksStartOf`). */
+  held: boolean;
 }
 
 /** `meta.tasks`: the tasks a reply handed on (ADR 0137 §13), one chip each. */
@@ -117,9 +130,23 @@ export function handedTasksOf(meta: Record<string, unknown> | null | undefined):
   const list = Array.isArray(meta?.tasks) ? (meta.tasks as unknown[]) : [];
   return list.flatMap((v) => {
     const ref = workRef(v);
-    const { rootId, channelId } = v as { rootId?: unknown; channelId?: unknown };
-    return ref && typeof rootId === "string" && typeof channelId === "string" ? [{ ...ref, channelId, rootId }] : [];
+    const { rootId, channelId, held } = v as { rootId?: unknown; channelId?: unknown; held?: unknown };
+    return ref && typeof rootId === "string" && typeof channelId === "string"
+      ? [{ ...ref, channelId, rootId, held: held === true }]
+      : [];
   });
+}
+
+/**
+ * The "Começar estas" card of a reply: `waiting` while its tasks wait for a person's go, `started` once someone gave
+ * it (`by`, who). Null for a reply with no task waiting on it.
+ */
+export function tasksStartOf(
+  meta: Record<string, unknown> | null | undefined,
+): { state: "waiting" } | { state: "started"; by: string } | null {
+  if (!handedTasksOf(meta).some((t) => t.held)) return null;
+  const by = (meta?.tasksStarted as { byUserId?: unknown } | undefined)?.byUserId;
+  return typeof by === "string" ? { state: "started", by } : { state: "waiting" };
 }
 
 /**

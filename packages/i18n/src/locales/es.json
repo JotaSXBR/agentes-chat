@@ -2651,6 +2651,10 @@
     "forget": "Olvidar estas respuestas",
     "atOnce": "Trabajos a la vez",
     "atOnceHelp": "Cuántos trabajos que nadie pidió hace al mismo tiempo. Los demás esperan su turno.",
+    "tasks": "Toma su próxima tarea solo",
+    "tasksHelp": "Empieza la próxima tarea que una persona le dio en cuanto tiene espacio, y vuelve a una que dejó a medias. Apagado, la tarea espera hasta que alguien se lo pida.",
+    "tasksAtOnce": "Tareas a la vez",
+    "tasksAtOnceHelp": "Cuántas de sus tareas hace al mismo tiempo. Las demás esperan en su cola.",
     "prs": "Pull requests por hora",
     "prsHelp": "Lo máximo que su propio trabajo abre en una hora.",
     "call": "Agentes a los que puede llamar",
@@ -6339,6 +6343,8 @@
     "noAssignee": "Sin responsable",
     "agentRole": "Agente · {{role}}",
     "pr": "PR #{{number}}",
+    "queue": "En la cola de {{name}} · n.º {{position}}",
+    "queueShort": "En cola · n.º {{position}}",
     "open": "#{{number}} {{title}}",
     "empty": "Una tarea dice quién hace qué, persona o agente, y muestra cómo va.",
     "emptyViewerTitle": "Mira quién hace qué",
@@ -6496,7 +6502,11 @@
       "files_removed": "quitó {{names}} de los adjuntos",
       "criterion_checked": "marcó el criterio \"{{text}}\"",
       "criterion_unchecked": "desmarcó el criterio \"{{text}}\"",
-      "agent_asked": "le pidió a {{name}} que lo hiciera"
+      "agent_asked": "le pidió a {{name}} que lo hiciera",
+      "agent_queued": "la tomó de su cola",
+      "start_approved": "dio a {{name}} el visto bueno para empezar",
+      "blocked": "la marcó como bloqueada: {{text}}",
+      "unblocked": "quitó el bloqueo"
     }
   },
   "routines": {
@@ -13383,6 +13393,8 @@
     "contextHelp": "Escríbelo como si le explicaras {{name}} a alguien que empezó hoy.",
     "timezone": "Zona horaria",
     "timezoneHelp": "Las rutinas y los resúmenes usan esta zona horaria.",
+    "taskPump": "Los agentes toman su próxima tarea solos",
+    "taskPumpHelp": "Cada agente empieza la próxima tarea que una persona le dio en cuanto tiene espacio, y vuelve a una que dejó a medias. Cada agente también tiene su propio interruptor.",
     "actionCheck": "Los agentes revisan lo que el equipo ya hizo",
     "actionCheckHelp": "Antes de enviar un correo, un mensaje o un pull request, el agente revisa si alguien del equipo ya lo hizo con la misma persona o en el mismo lugar en los últimos 30 días, y no lo repite.",
     "telemetry": {
@@ -13880,7 +13892,8 @@
       "waiting_computer": "Bloqueado · esperando la computadora",
       "paused": "En pausa · límite del plan",
       "failed": "Bloqueado · no terminó",
-      "failedWhy": "Bloqueado · no terminó: {{why}}"
+      "failedWhy": "Bloqueado · no terminó: {{why}}",
+      "agent": "Bloqueada · {{why}}"
     },
     "working": "En segundo plano"
   },
@@ -13977,6 +13990,9 @@
       "agentNote": "Nota de {{from}}",
       "agentNoteAnon": "Nota de otro agente",
       "waitResult": "Llegó lo que {{name}} estaba esperando",
+      "taskStart": "{{name}} tomó esta tarea de su cola",
+      "taskResume": "{{name}} volvió a esta tarea",
+      "taskReview": "{{name}} tomó esta tarea para revisarla",
       "followUp": "{{name}} volverá a las {{time}} para «{{about}}»",
       "followUpOn": "{{name}} volverá el {{day}} a las {{time}} para «{{about}}»",
       "followUpDone": "{{name}} volvió a las {{time}} para «{{about}}»",
@@ -14301,6 +14317,14 @@
       "general1": "Hola, ¿qué puedes hacer?",
       "general2": "Resume lo que pasó hoy",
       "general3": "¿Me ayudas a planificar la semana?"
+    },
+    "tasksStart": {
+      "start_one": "Empezar esta",
+      "start_many": "Empezar estas",
+      "start_other": "Empezar estas",
+      "started": "{{name}} dio el visto bueno",
+      "someone": "Alguien",
+      "failed": "No se pudieron empezar ahora. Inténtalo de nuevo."
     },
     "issueWork": {
       "label": "Tarea pedida",

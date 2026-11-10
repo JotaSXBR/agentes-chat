@@ -85,6 +85,18 @@ describe("Configurações do workspace", () => {
     expect(state.calls.findLast((c) => c.method === "orgs.updateSettings")?.args[1]).toEqual({ actionCheck: false });
   });
 
+  test("agents take their next task by themselves: on by default, one switch turns it off", async () => {
+    const { state } = await go();
+    const toggle = screen().getByRole("switch", { name: "Agentes pegam a próxima tarefa sozinhos" });
+    expect(toggle.getAttribute("aria-checked")).toBe("true");
+    const hint = hintOf("Agentes pegam a próxima tarefa sozinhos");
+    expect(describedBy(toggle)).toEqual([hint.text]);
+    expect(hint.text).toContain("Cada agente também tem a própria opção");
+    await click(toggle);
+    await settle(4);
+    expect(state.calls.findLast((c) => c.method === "orgs.updateSettings")?.args[1]).toEqual({ taskPump: false });
+  });
+
   test("usage statistics: the installation's owner gets the switch and sees exactly what is sent", async () => {
     const { state } = await go(
       seedState({ telemetry: { enabled: true, envOff: false, report: { report: 1, people: { total: 3 } } } }),

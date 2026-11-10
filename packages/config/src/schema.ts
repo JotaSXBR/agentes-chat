@@ -363,6 +363,12 @@ export const envVars = {
       "How many background works (long tasks agents moved out of a conversation) may run at once in one workspace. Past it a new one waits in line and starts by itself when one ends. Each agent runs at most 3 at once.",
     section: "Agents",
   },
+  AGENT_TASK_STARTS_PER_DAY: {
+    schema: z.coerce.number().int().min(0).max(100_000).default(200),
+    description:
+      "How many tasks agents may start by themselves in one workspace in a day (the task pump: an agent takes its next assigned task as room frees, and picks up one it left unfinished). Each task starts by itself at most 3 times a day; 0 turns the pump off on this server.",
+    section: "Agents",
+  },
   AGENT_CONTEXT_MESSAGES: {
     schema: z.coerce.number().int().min(1).max(500).default(30),
     description: "How many recent channel (or thread) messages are included in an agent's context.",

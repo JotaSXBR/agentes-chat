@@ -26,6 +26,9 @@ export interface AutonomySettings {
   /** Its project (a repository, a product): agents of different projects don't call each other unless allowed. */
   project: string;
   otherProjects: boolean;
+  /** Takes its next assigned task by itself as room frees (`task-pump.ts`), up to `tasksAtOnce` at once. */
+  tasks: boolean;
+  tasksAtOnce: number;
 }
 
 /**
@@ -43,6 +46,8 @@ export const AUTONOMY_DEFAULTS: AutonomySettings = {
   callAgentIds: [],
   project: "",
   otherProjects: false,
+  tasks: true,
+  tasksAtOnce: 2,
 };
 
 const kinds = (v: unknown) =>
@@ -66,6 +71,8 @@ export function autonomySettings(raw: unknown): AutonomySettings {
       : [],
     project: typeof r.project === "string" ? r.project.trim().slice(0, 80) : "",
     otherProjects: r.otherProjects === true,
+    tasks: r.tasks !== false,
+    tasksAtOnce: count(r.tasksAtOnce, 1, 10, d.tasksAtOnce),
   };
 }
 

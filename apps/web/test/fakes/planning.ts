@@ -655,6 +655,15 @@ export function createMockPlanning(
         });
         return clone(i);
       },
+      // "Começar estas" (`startHeldTasks`): once, and the reply's card says who gave the go.
+      startTasks: async (orgId, messageId) => {
+        record("issues.startTasks", orgId, messageId);
+        const m = (await ctx.lookup.messages?.(orgId))?.find((x) => x.id === messageId);
+        if (!m || m.meta?.tasksStarted) return { started: 0 };
+        const tasks = Array.isArray(m.meta?.tasks) ? (m.meta.tasks as { held?: boolean }[]) : [];
+        m.meta = { ...m.meta, tasksStarted: { byUserId: (await me()).id, at: ctx.now().toISOString() } };
+        return { started: tasks.filter((t) => t.held).length };
+      },
       // Like the server (ADR 0145): a channel of its own and a root message, made on first use; the chat fake holds them.
       conversation: async (orgId, id) => {
         const i = await findIssue(orgId, id);

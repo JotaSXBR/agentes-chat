@@ -2,7 +2,7 @@ import type { Issue, IssueColumn } from "@agenteschat/client";
 import { useTaskUnread } from "@agenteschat/client";
 import { dueLabel } from "@agenteschat/client/lib/format";
 import { githubLinkLabel } from "@agenteschat/client/lib/github-link";
-import { conversationLine, isWorking } from "@agenteschat/client/lib/issues";
+import { conversationLine, isWorking, queueText } from "@agenteschat/client/lib/issues";
 import { blockedText, workPlanProgress } from "@agenteschat/client/lib/long-work";
 import { stepPhrase } from "@agenteschat/client/lib/work";
 import { type AgentColorName, gradientOf } from "@agenteschat/ui/agent/engine";
@@ -71,6 +71,9 @@ export function StateChip({ issue }: { issue: Issue }) {
     const agent = issue.assignee?.type === "agent" ? dir.agentById.get(issue.assignee.id) : undefined;
     return <Chip label={label} leading={<PixelOrbit color={agentLook(agent).color} size={10} />} />;
   }
+  // Waiting in its agent's queue: its place says more than "A fazer".
+  const queued = queueText(t, issue);
+  if (queued) return <Chip label={queued} icon="clock" />;
   return <Chip label={label} icon={STATE_ICON[state]} />;
 }
 

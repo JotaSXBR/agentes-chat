@@ -684,6 +684,9 @@ export interface AgentBrakes {
   callAgentIds: string[];
   project: string;
   otherProjects: boolean;
+  /** It takes its next assigned task by itself as room frees (the task pump), up to `tasksAtOnce` at once. */
+  tasks: boolean;
+  tasksAtOnce: number;
 }
 
 /** The brakes an agent has when none were set (`autonomySettings`' defaults on the server). */
@@ -697,6 +700,8 @@ export const BRAKES_DEFAULTS: AgentBrakes = {
   callAgentIds: [],
   project: "",
   otherProjects: false,
+  tasks: true,
+  tasksAtOnce: 2,
 };
 
 /** An agent no longer in the team (archived or deleted): what its messages and reports still show. */
@@ -2223,6 +2228,11 @@ export interface OrgSettings {
    * responsible for it. Criar agente starts its own choice here. Absent on older servers: everyone.
    */
   newAgentAudience?: "everyone" | "owner";
+  /**
+   * Agents take the tasks people gave them by themselves as room frees; each agent has its own switch too. On by
+   * default; absent on older servers.
+   */
+  taskPump?: boolean;
   /** Read only: this server has a speech engine. */
   voiceAvailable: boolean;
   /** Read only: this server can search GIFs (it has a GIF provider). */
@@ -3554,6 +3564,8 @@ export interface Issue {
   backgroundWork?: WorkView | null;
   /** Its conversation (ADR 0145), once opened or written: a thread of its own channel. */
   conversation?: IssueConversation | null;
+  /** Its place in its agent's queue of tasks (1 = next): "Na fila de Ada · 2º". Null or absent: in none. */
+  queue?: { position: number } | null;
   /** The issue this one is a sub-issue of. */
   parentIssueId?: string | null;
   /** On the detail: its sub-issues. */

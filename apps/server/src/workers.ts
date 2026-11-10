@@ -14,6 +14,7 @@ import {
   enqueueOverdueAccountDeletions,
   enqueueOverdueDeletions,
   enqueueSkillUpdates,
+  enqueueTaskPumps,
   enqueueTeamWeeks,
   enqueueVaultSyncs,
   enqueueWaitlistContacts,
@@ -149,6 +150,8 @@ export const WORKER_INTERVALS_MS = {
   teamWeek: 10 * 60_000,
   /** The coding plans' public lists of models, each replica for itself: also at boot. */
   planModels: 3600_000,
+  /** Agents take their next tasks as room frees: a pump per workspace with one waiting (its dedupe key: the minute). */
+  taskPump: 60_000,
 };
 
 /**
@@ -319,6 +322,10 @@ export function startWorkers(deps: WorkerDeps) {
   every("notifications", WORKER_INTERVALS_MS.notifications, async () => {
     const woke = await wakeSnoozedNotifications({ db, pubsub: deps.pubsub });
     if (woke > 0) log.info("snoozed notifications back", { woke });
+  });
+
+  every("taskPump", WORKER_INTERVALS_MS.taskPump, async () => {
+    if ((await enqueueTaskPumps(db)) > 0) void ticks.get("outbox")?.();
   });
 
   every("teamWeek", WORKER_INTERVALS_MS.teamWeek, async () => {

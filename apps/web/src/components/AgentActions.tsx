@@ -49,14 +49,14 @@ export function AgentActionReceipts({ message }: { message: Message }) {
   // The right hand's settings card says what was applied and has its own Desfazer (ADR 0137).
   const cardKind = actionCardOf(message.meta)?.kind;
   const onCard = cardKind === "settings_proposal";
-  // A task the right hand handed on is its chip (`HandedTaskChips`): its agent is at work on it already.
+  // A task the reply handed on is its chip (`HandedTaskChips`), with the card that starts it.
   const handed = new Set(handedTasksOf(message.meta).map((h) => h.issueId));
   const list = (message.actions ?? []).filter(
     (a) =>
       !(onCard && a.kind === "agent.settings_changed") &&
       // A workspace change's card says what was applied and has its own Desfazer, as a settings card does.
       !(cardKind === "workspace_action" && a.kind === "workspace.changed") &&
-      !(a.kind === "issue.created" && handed.has(a.target.id)),
+      !((a.kind === "issue.created" || a.kind === "issue.assigned") && handed.has(a.target.id)),
   );
   if (message.author.type !== "agent" || list.length === 0) return null;
   return <Receipts message={message} list={list} />;

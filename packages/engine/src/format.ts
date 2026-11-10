@@ -124,6 +124,30 @@ export function getOrMake<K, V>(map: Map<K, V>, key: K, make: () => V): V {
   return made;
 }
 
+/** Words that only link others, in the languages tasks are most often written in: left out when comparing two texts. */
+const CONNECTORS = new Set(
+  "a an the of for to in on at and with o os as um uma de do da dos das em no na nos nas para pra por com e el la los las del y con en".split(
+    " ",
+  ),
+);
+
+/**
+ * What a short text says, to tell whether two say the same: its words in lower case, without accents, connectors or a
+ * plural's final s, once each and sorted. "Migrate the billing access" and "migrate billing access" share it.
+ */
+export function meaningKey(text: string) {
+  const words =
+    text
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .toLowerCase()
+      .match(/[\p{L}\p{N}]+/gu) ?? [];
+  const kept = words
+    .filter((w) => !CONNECTORS.has(w))
+    .map((w) => (w.length > 3 && w.endsWith("s") ? w.slice(0, -1) : w));
+  return [...new Set(kept)].sort().join(" ");
+}
+
 /** Levenshtein distance: the fewest one-character insertions, deletions or substitutions from `a` to `b`. */
 export function editDistance(a: string, b: string): number {
   let prev = Array.from({ length: b.length + 1 }, (_, j) => j);

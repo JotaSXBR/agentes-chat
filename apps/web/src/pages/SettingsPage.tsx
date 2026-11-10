@@ -470,6 +470,27 @@ function GeneralSection() {
               />
             </div>
           </div>
+          <div className="settings-row ac-actrow">
+            <div className="settings-row__text ac-actrow__text">
+              <span className="ac-hintline">
+                <label className="settings-row__label" htmlFor="set-task-pump">
+                  {t("settings.taskPump")}
+                </label>
+                <InfoHint name={t("common.about", { label: t("settings.taskPump") })} id="set-task-pump-hint">
+                  {t("settings.taskPumpHelp")}
+                </InfoHint>
+              </span>
+            </div>
+            <div className="settings-row__control">
+              <Switch
+                id="set-task-pump"
+                checked={settings.data?.taskPump ?? true}
+                onCheckedChange={(on) => save({ taskPump: on })}
+                disabled={!editable || !settings.data}
+                aria-describedby="set-task-pump-hint"
+              />
+            </div>
+          </div>
         </div>
       </Card>
 

@@ -1394,6 +1394,8 @@ export function createHttpApi(options: TransportOptions = {}): HttpApi {
         }),
       askAgent: (orgId, id, agentId) =>
         request<Issue>(`${org(orgId)}/issues/${enc(id)}/ask-agent`, { json: { agentId } }),
+      startTasks: (orgId, messageId) =>
+        request<{ started: number }>(`${org(orgId)}/messages/${enc(messageId)}/start-tasks`, { json: {} }),
       conversation: (orgId, id) =>
         request<IssueConversationRef>(`${org(orgId)}/issues/${enc(id)}/conversation`, { method: "POST" }),
       columns: async (orgId) => (await request<{ columns: IssueColumn[] }>(`${org(orgId)}/issue-columns`)).columns,

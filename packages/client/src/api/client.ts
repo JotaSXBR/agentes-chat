@@ -1207,6 +1207,11 @@ export interface ApiClient {
     comment(orgId: string, id: string, text: string, attachmentIds?: string[]): Promise<IssueActivity>;
     /** "Pedir à Ada para implementar": assigns the agent and starts its work in the task's conversation. */
     askAgent(orgId: string, id: string, agentId: string): Promise<Issue>;
+    /**
+     * "Começar estas" on an agent's reply (`meta.tasks` marked `held`): the go for the tasks it gave agents; each agent
+     * takes them as room frees. `started`: how many got it (0: someone pressed it already).
+     */
+    startTasks(orgId: string, messageId: string): Promise<{ started: number }>;
     /** The task's conversation (made on first use): the thread the chat's routes read and post to (ADR 0145). */
     conversation(orgId: string, id: string): Promise<IssueConversationRef>;
     /** The board's columns, board order: by stage, then position. */

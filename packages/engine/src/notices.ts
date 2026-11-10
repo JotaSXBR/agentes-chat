@@ -10,7 +10,8 @@ import { untrustedBlock } from "./untrusted";
  * (`talker_reply`), what people decided on its proposal of a new agent or of
  * a change (`proposal_result`), how a vote it started came out (`poll_result`), its own follow-up (`follow_up`: the line it set, and at
  * its time the notice that wakes it, `refs.wake`), agents its @mention couldn't wake (`wake_skipped`, ADR 0097), a person stopping one of its tasks (`run_stopped`, ADR 0128),
- * something that happened on GitHub to an item it worked on or that names the app (`github_event`, `git/github-events.ts`). Stored on the notice
+ * something that happened on GitHub to an item it worked on or that names the app (`github_event`, `git/github-events.ts`),
+ * its turn on a task from its queue (`task_start`, `task-pump.ts`: `refs.personId` who gave it the task). Stored on the notice
  * message as `meta.notice`; the agent's context reads it as an event, never
  * as a person's words.
  *
@@ -31,7 +32,8 @@ export type NoticeKind =
   | "wake_skipped"
   | "work_check_in"
   | "run_stopped"
-  | "github_event";
+  | "github_event"
+  | "task_start";
 
 /**
  * Notices only for the agent they are for: another agent's note, the late result of a wait it stopped waiting on, what
@@ -65,7 +67,7 @@ export const agentOnlyNoticeSql = (meta: SQL): SQL =>
  * English. Conversation previews, unread counts, a thread's activity, notifications and search skip them, like the
  * agent-only ones.
  */
-export const QUIET_NOTICES: readonly NoticeKind[] = ["run_stopped", "follow_up", "wake_skipped"];
+export const QUIET_NOTICES: readonly NoticeKind[] = ["run_stopped", "follow_up", "wake_skipped", "task_start"];
 
 /** Agent-only or quiet (`QUIET_NOTICES`): never news, never found. */
 export const isQuietNotice = (meta: Record<string, unknown> | null | undefined) =>
@@ -208,6 +210,8 @@ export function noticeText(meta: Record<string, unknown> | null | undefined, cur
       }`;
     case "github_event":
       return githubEventText(n, from, current);
+    case "task_start":
+      return `[Your turn on task #${n.refs?.number ?? ""} from your queue]: ${n.text}`;
     default:
       return `[${from ?? "Notice"}]: ${n.text}`;
   }

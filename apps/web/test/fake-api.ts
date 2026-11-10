@@ -323,6 +323,7 @@ export interface FakeState {
   audit?: AuditRow[];
   /** The workspace switch "Agentes conferem o que o time já fez" (on when unset). */
   actionCheck?: boolean;
+  taskPump?: boolean;
   /** Who can talk to the workspace's new agents (everyone when unset). */
   newAgentAudience?: OrgSettings["newAgentAudience"];
   /** Automático's models per provider and tier (Settings › Chaves); none when unset. */
@@ -1794,6 +1795,7 @@ export function createFakeHttpApi(state: FakeState): Omit<HttpApi, FakedParts> {
         summaryModel: null,
         timezone: "America/Sao_Paulo",
         actionCheck: state.actionCheck ?? true,
+        taskPump: state.taskPump ?? true,
         autoModels: state.autoModels ?? {},
         newAgentAudience: state.newAgentAudience ?? "everyone",
         ...mediaSettings(state),
@@ -1806,6 +1808,7 @@ export function createFakeHttpApi(state: FakeState): Omit<HttpApi, FakedParts> {
         if (input.defaultCredentialId !== undefined) state.defaultCredentialId = input.defaultCredentialId;
         if (input.defaultAgentBudgetUsd !== undefined) state.defaultAgentBudgetUsd = input.defaultAgentBudgetUsd;
         if (input.actionCheck !== undefined) state.actionCheck = input.actionCheck;
+        if (input.taskPump !== undefined) state.taskPump = input.taskPump;
         if (input.newAgentAudience !== undefined) state.newAgentAudience = input.newAgentAudience;
         const { gifs, gifRating, agentStickers, agentMedia } = input;
         state.media = {
@@ -1831,6 +1834,7 @@ export function createFakeHttpApi(state: FakeState): Omit<HttpApi, FakedParts> {
           summaryModel: null,
           timezone: input.timezone ?? "America/Sao_Paulo",
           actionCheck: state.actionCheck ?? true,
+          taskPump: state.taskPump ?? true,
           autoModels: state.autoModels ?? {},
           newAgentAudience: state.newAgentAudience ?? "everyone",
           ...mediaSettings(state),

@@ -168,6 +168,10 @@ const Settings = z
     actionCheck: z.boolean().openapi({
       description: "Agents check what the team already did before acting outside (ADR 0064). On by default.",
     }),
+    taskPump: z.boolean().openapi({
+      description:
+        "Agents take the tasks people gave them by themselves as room frees; each agent has its own switch too. On by default.",
+    }),
     autoModels: z.record(z.string(), z.partialRecord(ModelTier, z.string())).openapi({
       description:
         "Per provider, the models Automático picks per tier where the workspace chose its own (`{ openrouter: { small, medium, large } }`, ADR 0087); a tier left out is the provider's default.",
@@ -580,6 +584,9 @@ export function managementRoutes(deps: AppDeps) {
             agentStickers: z.boolean().optional(),
             agentMedia: z.enum(AGENT_MEDIA_LEVELS).optional(),
             newAgentAudience: z.enum(NEW_AGENT_AUDIENCES).optional(),
+            taskPump: z.boolean().optional().openapi({
+              description: "Agents take the tasks people gave them by themselves as room frees.",
+            }),
           }),
         ),
       },

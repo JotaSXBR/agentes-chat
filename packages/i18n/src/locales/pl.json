@@ -2745,6 +2745,10 @@
     "forget": "Zapomnij te odpowiedzi",
     "atOnce": "Zadania jednocześnie",
     "atOnceHelp": "Ile zadań, o które nikt nie prosił, wykonuje jednocześnie. Pozostałe czekają na swoją kolej.",
+    "tasks": "Sam bierze następne zadanie",
+    "tasksHelp": "Zaczyna następne zadanie, które dała mu osoba, gdy tylko ma miejsce, i wraca do zadania zostawionego w połowie. Wyłączone: zadanie czeka, aż ktoś o nie poprosi.",
+    "tasksAtOnce": "Zadania jednocześnie",
+    "tasksAtOnceHelp": "Nad iloma swoimi zadaniami pracuje jednocześnie. Pozostałe czekają w jego kolejce.",
     "prs": "Pull requesty na godzinę",
     "prsHelp": "Najwięcej, ile jego własna praca otwiera w godzinę.",
     "call": "Agenci, których może wołać",
@@ -6585,6 +6589,8 @@
     "noAssignee": "Brak przypisanej osoby",
     "agentRole": "Agent · {{role}}",
     "pr": "PR #{{number}}",
+    "queue": "W kolejce {{name}} · nr {{position}}",
+    "queueShort": "W kolejce · nr {{position}}",
     "open": "#{{number}} {{title}}",
     "empty": "Zadanie mówi, kto co robi, osoba czy agent, i pokazuje, na jakim etapie jest.",
     "emptyViewerTitle": "Zobacz, kto co robi",
@@ -6744,7 +6750,11 @@
       "files_removed": "usunął(ęła) {{names}} z załączników",
       "criterion_checked": "zaznaczył(a) kryterium „{{text}}”",
       "criterion_unchecked": "odznaczył(a) kryterium „{{text}}”",
-      "agent_asked": "poprosił(a) o wykonanie: {{name}}"
+      "agent_asked": "poprosił(a) o wykonanie: {{name}}",
+      "agent_queued": "wziął je z kolejki",
+      "start_approved": "dał zielone światło dla {{name}}",
+      "blocked": "oznaczył jako zablokowane: {{text}}",
+      "unblocked": "zdjął blokadę"
     }
   },
   "routines": {
@@ -13908,6 +13918,8 @@
     "contextHelp": "Napisz to tak, jak opisał(a)byś {{name}} komuś, kto zaczął dziś.",
     "timezone": "Strefa czasowa",
     "timezoneHelp": "Rutyny i podsumowania używają tej strefy czasowej.",
+    "taskPump": "Agenci sami biorą następne zadanie",
+    "taskPumpHelp": "Każdy agent zaczyna następne zadanie, które dała mu osoba, gdy tylko ma miejsce, i wraca do zadania zostawionego w połowie. Każdy agent ma też własny przełącznik.",
     "actionCheck": "Agenci sprawdzają, co zespół już zrobił",
     "actionCheckHelp": "Przed e-mailem, wiadomością lub pull requestem agent sprawdza, czy ktoś z zespołu nie zrobił już tego samego wobec tej samej osoby lub miejsca w ciągu ostatnich 30 dni, i tego nie powtarza.",
     "telemetry": {
@@ -14418,7 +14430,8 @@
       "waiting_computer": "Zablokowane · czeka na komputer",
       "paused": "Wstrzymane · limit planu",
       "failed": "Zablokowane · nie zakończono",
-      "failedWhy": "Zablokowane · nie zakończono: {{why}}"
+      "failedWhy": "Zablokowane · nie zakończono: {{why}}",
+      "agent": "Zablokowane · {{why}}"
     },
     "working": "W tle"
   },
@@ -14529,6 +14542,9 @@
       "agentNote": "Notatka od: {{from}}",
       "agentNoteAnon": "Notatka od innego agenta",
       "waitResult": "Dotarło to, na co czeka {{name}}",
+      "taskStart": "{{name}} wziął to zadanie z kolejki",
+      "taskResume": "{{name}} wrócił do tego zadania",
+      "taskReview": "{{name}} wziął to zadanie do sprawdzenia",
       "followUp": "{{name}} wróci o {{time}} w sprawie «{{about}}»",
       "followUpOn": "{{name}} wróci {{day}} o {{time}} w sprawie «{{about}}»",
       "followUpDone": "{{name}}: powrót o {{time}} w sprawie «{{about}}»",
@@ -14856,6 +14872,15 @@
       "general1": "Cześć, co potrafisz?",
       "general2": "Podsumuj, co się dziś wydarzyło",
       "general3": "Pomożesz mi zaplanować tydzień?"
+    },
+    "tasksStart": {
+      "start_one": "Zacznij je",
+      "start_few": "Zacznij je",
+      "start_many": "Zacznij je",
+      "start_other": "Zacznij je",
+      "started": "{{name}} dał zielone światło",
+      "someone": "Ktoś",
+      "failed": "Nie udało się ich teraz zacząć. Spróbuj ponownie."
     },
     "issueWork": {
       "label": "Zlecone zadanie",

@@ -2463,6 +2463,10 @@
     "forget": "이 답변 잊기",
     "atOnce": "동시에 하는 작업",
     "atOnceHelp": "아무도 요청하지 않은 작업을 동시에 몇 개까지 하는지. 나머지는 차례를 기다립니다.",
+    "tasks": "다음 작업을 스스로 맡아요",
+    "tasksHelp": "사람이 맡긴 다음 작업을 여유가 생기는 대로 시작하고, 하다 만 작업으로도 돌아가요. 끄면 누군가 요청할 때까지 작업이 기다려요.",
+    "tasksAtOnce": "동시에 하는 작업 수",
+    "tasksAtOnceHelp": "자기 작업을 몇 개까지 동시에 할지예요. 나머지는 대기열에서 기다려요.",
     "prs": "시간당 풀 리퀘스트",
     "prsHelp": "자신의 작업이 한 시간에 여는 최대 개수입니다.",
     "call": "부를 수 있는 에이전트",
@@ -5941,6 +5945,8 @@
     "noAssignee": "담당자 없음",
     "agentRole": "에이전트 · {{role}}",
     "pr": "PR #{{number}}",
+    "queue": "{{name}}의 대기열 · {{position}}번째",
+    "queueShort": "대기 중 · {{position}}번째",
     "open": "#{{number}} {{title}}",
     "empty": "작업은 사람이든 에이전트든 누가 무엇을 하는지, 어디까지 왔는지 보여 줘요.",
     "emptyViewerTitle": "누가 무엇을 하는지 볼 수 있어요",
@@ -6086,7 +6092,11 @@
       "files_removed": "{{names}}을(를) 첨부 파일에서 뺐어요",
       "criterion_checked": "조건 \"{{text}}\"을(를) 체크했어요",
       "criterion_unchecked": "조건 \"{{text}}\"의 체크를 해제했어요",
-      "agent_asked": "{{name}}에게 맡겼어요"
+      "agent_asked": "{{name}}에게 맡겼어요",
+      "agent_queued": "대기열에서 가져갔어요",
+      "start_approved": "{{name}}에게 시작을 허락했어요",
+      "blocked": "막힘으로 표시했어요: {{text}}",
+      "unblocked": "막힘을 풀었어요"
     }
   },
   "routines": {
@@ -12509,6 +12519,8 @@
     "contextHelp": "오늘 처음 온 사람에게 {{name}}을(를) 설명하듯이 적어 주세요.",
     "timezone": "시간대",
     "timezoneHelp": "루틴과 요약은 이 시간대를 사용해요.",
+    "taskPump": "에이전트가 다음 작업을 스스로 맡아요",
+    "taskPumpHelp": "각 에이전트가 사람이 맡긴 다음 작업을 여유가 생기는 대로 시작하고, 하다 만 작업으로도 돌아가요. 에이전트마다 따로 끄고 켤 수도 있어요.",
     "actionCheck": "에이전트가 팀이 이미 한 일을 확인해요",
     "actionCheckHelp": "이메일, 메시지, 풀 리퀘스트를 보내기 전에 지난 30일 동안 팀의 누군가가 같은 사람이나 같은 곳에 이미 같은 일을 했는지 확인하고, 반복하지 않아요.",
     "telemetry": {
@@ -12968,7 +12980,8 @@
       "waiting_computer": "막힘 · 컴퓨터 대기 중",
       "paused": "일시 중지 · 요금제 한도",
       "failed": "막힘 · 끝내지 못함",
-      "failedWhy": "막힘 · 끝내지 못함: {{why}}"
+      "failedWhy": "막힘 · 끝내지 못함: {{why}}",
+      "agent": "막힘 · {{why}}"
     },
     "working": "백그라운드"
   },
@@ -13059,6 +13072,9 @@
       "agentNote": "{{from}}의 메모",
       "agentNoteAnon": "다른 에이전트의 메모",
       "waitResult": "{{name}}이(가) 기다리던 결과가 도착했어요",
+      "taskStart": "{{name}}이(가) 대기열에서 이 작업을 가져갔어요",
+      "taskResume": "{{name}}이(가) 이 작업으로 돌아왔어요",
+      "taskReview": "{{name}}이(가) 이 작업을 검토하려고 가져갔어요",
       "followUp": "{{name}}이(가) {{time}}에 «{{about}}» 건으로 돌아올 거예요",
       "followUpOn": "{{name}}이(가) {{day}} {{time}}에 «{{about}}» 건으로 돌아올 거예요",
       "followUpDone": "{{name}}이(가) {{time}}에 «{{about}}» 건으로 돌아왔어요",
@@ -13379,6 +13395,12 @@
       "general1": "안녕하세요, 무엇을 할 수 있나요?",
       "general2": "오늘 있었던 일을 요약해 주세요",
       "general3": "이번 주 계획을 도와줄래요?"
+    },
+    "tasksStart": {
+      "start_other": "시작하기",
+      "started": "{{name}}이(가) 시작을 허락했어요",
+      "someone": "누군가",
+      "failed": "지금은 시작하지 못했어요. 다시 시도해 주세요."
     },
     "issueWork": {
       "label": "요청된 작업",

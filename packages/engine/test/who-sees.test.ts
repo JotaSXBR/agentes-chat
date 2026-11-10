@@ -585,8 +585,10 @@ describe("what an agent picks and reaches", () => {
   test("it picks from where it's made and says so; the person may ask for another", async () => {
     const { ana } = await team();
     const dm = await openPersonAgentDm(f.db, f.org.id, f.owner.id, f.agent.id);
+    let n = 0;
+    // Each its own title: an open task with the same one is refused.
     const made = async (channelId: string, more: Record<string, unknown> = {}) => {
-      const answer = await (await toolsIn(channelId))("create_issue", { title: "Tarefa", ...more });
+      const answer = await (await toolsIn(channelId))("create_issue", { title: `Tarefa ${++n}`, ...more });
       if (answer?.type !== "result") throw new Error("no result");
       const id = (answer.output.data as { issue: { id: string } }).issue.id;
       return { said: answer.output.content, task: await getIssue(f.db, person(f.owner.id), f.org.id, { id }) };

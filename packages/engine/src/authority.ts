@@ -14,7 +14,8 @@ const { agentRuns, messages, routineRuns } = schema;
  *   person behind the run that wrote it), or work came back to a run of theirs (an answer, a note's
  *   reply, the end of a wait or of a background task, a decision on a folder or on a proposed agent, a
  *   follow-up), or they wrote on GitHub with their linked account (a `github_event` notice's server-set
- *   `refs.personId`). Tools act on their behalf, within their permissions and the agent's scopes.
+ *   `refs.personId`), or they gave the agent the task its queue now starts (a `task_start` notice's, likewise). Tools
+ *   act on their behalf, within their permissions and the agent's scopes.
  * - `routine`: a routine's background run. Nobody is behind it: its creator set it up and stays
  *   accountable (notifications, approvals), but the run never acts as them. What it may do comes only
  *   from the agent's own permissions, like any run (ADR 0109), within a routine's bounds (`run-policy.ts`).
@@ -139,7 +140,8 @@ async function walkRoot(db: Executor, orgId: string, messageId: string, walked: 
     }
     // What happened on GitHub (`git/github-events.ts`): the member whose linked account wrote it, or who asked the
     // agent to answer it; nobody for anyone else.
-    if (notice?.kind === "github_event") {
+    // A task's turn from its agent's queue (`task-pump.ts`): the person who gave it the task, as the server wrote it.
+    if (notice?.kind === "github_event" || notice?.kind === "task_start") {
       const personId = notice.refs?.personId;
       return typeof personId === "string" && personId ? { kind: "person", personId } : { kind: "agent" };
     }

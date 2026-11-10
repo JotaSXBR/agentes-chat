@@ -4,8 +4,8 @@ import { setupDom } from "@agenteschat/ui/testing/dom";
 setupDom();
 
 import type { Message } from "@agenteschat/client";
-import { cleanup } from "@testing-library/react";
-import { IssueTakenLine, IssueWorkCard } from "@/components/IssueWork";
+import { act, cleanup, fireEvent } from "@testing-library/react";
+import { HandedTaskChips, IssueTakenLine, IssueWorkCard } from "@/components/IssueWork";
 import { ADA_ID, createFakeApi, ENG_ID, ORG_ID, seedState } from "./fake-api";
 import { renderPage, settle } from "./render";
 
@@ -58,5 +58,52 @@ describe("asking an agent to implement an issue", () => {
     expect(line.textContent).toMatch(/Ada pegou a tarefa #24 · Checkout quebra/);
     expect(line.querySelector("a")?.getAttribute("href")).toBe(`/org/${ORG_ID}/issues/24`);
     expect(line.textContent).not.toContain("iss_1");
+  });
+
+  test("an agent's tasks wait for a person's go: Começar estas under their chips, then who gave it", async () => {
+    const state = seedState();
+    const api = createFakeApi(state);
+    const one = await api.issues.create(ORG_ID, { title: "Ship the release notes" });
+    const two = await api.issues.create(ORG_ID, { title: "Fix the flaky upload test" });
+    const chip = (i: typeof one) => ({
+      issueId: i.id,
+      number: i.number,
+      title: i.title,
+      agentId: ADA_ID,
+      channelId: "c-task",
+      rootId: `r-${i.number}`,
+      held: true,
+    });
+    const message: Message = {
+      id: "m-tasks",
+      channelId: ENG_ID,
+      threadId: null,
+      author: { type: "agent", id: ADA_ID },
+      body: "Both are on the board.",
+      mentionedAgentIds: [],
+      agentRunId: null,
+      meta: { tasks: [chip(one), chip(two)] },
+      createdAt: new Date().toISOString(),
+    };
+    state.messages.push(message);
+    const view = await renderPage(<HandedTaskChips message={message} />, { api, org: true });
+    await settle(3);
+    const go = [...document.querySelectorAll("button")].find((b) => b.textContent === "Começar estas");
+    expect(go).toBeTruthy();
+    await act(async () => fireEvent.click(go as HTMLButtonElement));
+    await settle(2);
+    expect(state.calls.some((c) => c.method === "issues.startTasks" && c.args[1] === "m-tasks")).toBe(true);
+
+    view.unmount();
+    await renderPage(
+      <HandedTaskChips message={{ ...message, meta: { ...message.meta, tasksStarted: { byUserId: "nobody" } } }} />,
+      {
+        api,
+        org: true,
+      },
+    );
+    await settle(2);
+    expect(document.body.textContent).toContain("Alguém deu o ok");
+    expect([...document.querySelectorAll("button")].some((b) => b.textContent === "Começar estas")).toBe(false);
   });
 });

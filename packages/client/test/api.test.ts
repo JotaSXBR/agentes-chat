@@ -538,6 +538,7 @@ describe("HTTP client: drive, storage, issues, routines, calendar, custom MCP, i
       [`${org}/issues/i1/activity`]: { status: 200, body: { activity: [] } },
       [`POST ${org}/issues/i1/comments`]: { status: 201, body: { id: "x" } },
       [`POST ${org}/issues/i1/ask-agent`]: { status: 200, body: issue },
+      [`POST ${org}/messages/m1/start-tasks`]: { status: 200, body: { started: 2 } },
       [`${org}/routines`]: { status: 200, body: { routines: [] } },
       [`POST ${org}/routines/parse-schedule`]: { status: 200, body: { ok: false, error: "?" } },
       [`PATCH ${org}/routines/r1`]: { status: 200, body: { id: "r1" } },
@@ -554,6 +555,7 @@ describe("HTTP client: drive, storage, issues, routines, calendar, custom MCP, i
     expect(await api.issues.activity("o1", "i1")).toEqual([]);
     await api.issues.comment("o1", "i1", "oi");
     await api.issues.askAgent("o1", "i1", "ag");
+    expect(await api.issues.startTasks("o1", "m1")).toEqual({ started: 2 });
     expect(await api.routines.list("o1")).toEqual([]);
     expect(await api.routines.parseSchedule("o1", "quando der")).toEqual({ ok: false, error: "?" });
     await api.routines.setActive("o1", "r1", false);
@@ -568,6 +570,7 @@ describe("HTTP client: drive, storage, issues, routines, calendar, custom MCP, i
       '{"done":true}',
       '{"text":"oi"}',
       '{"agentId":"ag"}',
+      "{}",
       '{"phrase":"quando der"}',
       '{"active":false}',
       "{}",

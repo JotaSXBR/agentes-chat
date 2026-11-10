@@ -378,13 +378,13 @@ export function OwnerSelect({
   onChange,
   members,
   meId,
-  card = true,
+  card = false,
 }: {
   value: string;
   onChange: (value: string) => void;
   members: Member[];
   meId: string;
-  /** The agent forms' card-like picker; `false` in a stack of plain fields (a dialog), drawn as its selects are. */
+  /** The new-agent page's card-like picker, among its cards. Anywhere else (a dialog, a settings card) it is a select. */
   card?: boolean;
 }) {
   const { t } = useTranslation();

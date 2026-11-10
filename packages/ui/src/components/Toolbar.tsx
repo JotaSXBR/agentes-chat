@@ -15,12 +15,13 @@ import { CountChip } from "./Chip";
  * Segmented for views); don't style search inputs or filter rows per screen.
  * One shape for all of them, from the control ruler (tokens.css --control-*):
  * a Toolbar's row is compact (32, r10; 40 on touch), a SearchField on its own
- * is a default field (40, r12; `sm` 32 in dialogs and panels), the same field
- * background and hairline as FilterChip, filled neutral when pressed or set.
+ * is a default field (40, r12), a dialog's or a form's too, as tall as the
+ * inputs around it. The same field background and hairline as FilterChip,
+ * filled neutral when pressed or set.
  */
 
 export interface SearchFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "size"> {
-  /** 36px (default) or 32px (dialogs, panels, side lists). */
+  /** 40px (default), or 32px beside a row's compact controls and in a popover's list (40 on touch). */
   size?: "md" | "sm";
   /** Shows a × while there is text; it calls this (and keeps the focus in the field). */
   onClear?: () => void;

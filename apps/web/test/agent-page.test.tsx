@@ -369,6 +369,64 @@ describe("agent page: the budget on the overview", () => {
     expect(screen().queryByRole("dialog", { name: "Orçamento" })).toBeNull();
   });
 
+  test("Responsável's dialog holds a plain select; a long name wraps on its row and fits the select", async () => {
+    const state = seedState();
+    const maria = "Maria Aparecida dos Santos Figueiredo de Albuquerque";
+    state.members.push({
+      ...(state.members[1] as (typeof state.members)[number]),
+      userId: "u-maria",
+      name: maria,
+      email: "maria.aparecida@example.com",
+      handle: "maria",
+    });
+    const ada = state.agents.find((a) => a.id === ADA_ID);
+    if (ada) ada.ownerUserId = "u-maria";
+    await go("?tab=overview", state);
+    const row = within(screen().getByRole("region", { name: "Com quem" })).getByRole("button", { name: "Responsável" });
+    expect(row.textContent).toContain(maria);
+    await click(row);
+    const owner = within(screen().getByRole("dialog", { name: "Responsável" })).getByRole("combobox", {
+      name: "Responsável",
+    });
+    // The new-agent page's card-like picker stays on that page: here it is drawn as any select of a form.
+    expect(owner.closest(".newag__sel")).toBeNull();
+    expect(owner.textContent).toContain(maria);
+    await click(
+      within(screen().getByRole("dialog", { name: "Responsável" })).getByRole("button", { name: "Cancelar" }),
+    );
+  });
+
+  test("Responsável's list: a face row per person, and Sem responsável in the faces' column", async () => {
+    const state = seedState();
+    const ada = state.agents.find((a) => a.id === ADA_ID);
+    if (ada) ada.ownerUserId = null;
+    await go("?tab=overview", state);
+    await click(
+      within(screen().getByRole("region", { name: "Com quem" })).getByRole("button", { name: "Responsável" }),
+    );
+    const owner = within(screen().getByRole("dialog", { name: "Responsável" })).getByRole("combobox", {
+      name: "Responsável",
+    });
+    expect(owner.textContent).toBe("Sem responsável");
+    owner.focus();
+    await act(async () => fireEvent.keyDown(owner, { key: "Enter" }));
+    await settle(2);
+    const list = screen().getByRole("listbox", { name: "Responsável" });
+    const options = within(list).getAllByRole("option");
+    expect(options.map((o) => o.querySelector(".ac-menu__label > :first-child")?.textContent)).toEqual([
+      "Walter (você)",
+      "João",
+      "Sem responsável",
+    ]);
+    expect(options.slice(0, 2).every((o) => o.querySelector(".ac-menu__leading > .ac-avatar"))).toBe(true);
+    expect(options[2]?.querySelector(".ac-menu__leading > .newag__ib")).not.toBeNull();
+    await act(async () => fireEvent.keyDown(list, { key: "Escape" }));
+    await settle(2);
+    await click(
+      within(screen().getByRole("dialog", { name: "Responsável" })).getByRole("button", { name: "Cancelar" }),
+    );
+  });
+
   test("the Ficha's rows open their dialogs: who answers, who may talk, channels, what it may use", async () => {
     const { router } = await go("?tab=overview");
     const work = screen().getByRole("region", { name: "Como trabalha" });

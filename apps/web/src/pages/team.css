@@ -96,10 +96,12 @@
 .team-table__menu {
   width: 1%;
 }
-/* Its rows are MediaRows (the kit's `.ac-mediarow`): Restaurar and Apagar go under the name by the card's width. */
+/* Its rows are MediaRows (the kit's `.ac-mediarow`): Restaurar and Apagar go under the name by the card's width. A row's
+   plate stands `--archived-pad` from every edge of the card, its corners the card's less that room (concentric). */
 .team-archived {
+  --archived-pad: var(--action-clear);
   gap: 0;
-  padding: 8px;
+  padding: var(--archived-pad);
   container-type: inline-size;
 }
 .team-archived__head {
@@ -115,7 +117,8 @@
 }
 .team-archived__row {
   padding: var(--row-py) 8px;
-  border-radius: var(--radius-sm);
+  border-radius: calc(var(--radius-section) - var(--archived-pad)) calc(var(--radius-section) - var(--archived-pad))
+    calc(var(--radius-section) - var(--archived-pad)) var(--radius-cut);
 }
 .team-archived__row:hover {
   background: var(--plate-soft);

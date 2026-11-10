@@ -153,7 +153,6 @@ export function PeoplePicker({
         </TokenList>
       )}
       <SearchField
-        size="sm"
         aria-label={searchLabel}
         placeholder={searchLabel}
         value={query}

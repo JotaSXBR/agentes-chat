@@ -70,7 +70,6 @@ export function SaveToWikiDialog({
       <Locked when={action.isPending || busy}>
         <DialogBody>
           <SearchField
-            size="sm"
             aria-label={t("wiki.savePick")}
             placeholder={t("wiki.search")}
             value={q}

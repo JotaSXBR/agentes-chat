@@ -170,7 +170,7 @@ export function NewCategoryDialog({
                   <label key={c.id} htmlFor={id} className="scope-row">
                     <Checkbox id={id} checked={picked.has(c.id)} onCheckedChange={(on) => toggle(c.id, on)} />
                     <span className="scope-row__text">
-                      <span className="channel-category__channel">
+                      <span className="channel-category__channel ac-iconline">
                         <Icon name="channel" size={16} />
                         {c.name}
                       </span>

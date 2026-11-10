@@ -270,7 +270,7 @@ export function ToolBlock({
       <View style={[styles.block, { backgroundColor: c.raised, borderColor: c.line2 }]}>
         {plate}
         <View style={styles.one}>
-          <Line line={{ ...only.line, detail }} color={color} onToggle={onToggle} />
+          <Line one line={{ ...only.line, detail }} color={color} onToggle={onToggle} />
         </View>
       </View>
     );
@@ -350,10 +350,13 @@ function Line({
   line,
   color,
   onToggle,
+  one = false,
 }: {
   line: BlockLine;
   color: AgentColorName;
   onToggle?: (open: boolean) => void;
+  /** The block's only line: the block's corners less its room (`styles.oneLine`). */
+  one?: boolean;
 }) {
   const c = useColors();
   const reduced = useReducedMotion();
@@ -403,7 +406,7 @@ function Line({
   );
   return (
     // A failed call says so by its mark and its reason, on the block's own surface (no tinted plate).
-    <View style={styles.line}>
+    <View style={[styles.line, one && styles.oneLine]}>
       {opens ? (
         <Pressable
           onPress={() => {
@@ -414,12 +417,12 @@ function Line({
           accessibilityRole="button"
           accessibilityState={{ expanded: open }}
           accessibilityLabel={said}
-          style={({ pressed }) => [styles.row, pressed && { backgroundColor: c.plateSoft }]}
+          style={({ pressed }) => [styles.row, one && styles.oneLine, pressed && { backgroundColor: c.plateSoft }]}
         >
           {row}
         </Pressable>
       ) : (
-        <View style={styles.row} accessible accessibilityLabel={said}>
+        <View style={[styles.row, one && styles.oneLine]} accessible accessibilityLabel={said}>
           {row}
         </View>
       )}
@@ -904,6 +907,13 @@ const styles = StyleSheet.create({
   firstLine: { marginTop: (LOGO - 18) / 2 },
   level: { marginTop: (LOGO - 16) / 2 },
   one: { padding: 2 },
+  // Its plate concentric with the block: the block's corners (14, the cut one 6) less that room.
+  oneLine: {
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    borderBottomRightRadius: 12,
+    borderBottomLeftRadius: 4,
+  },
   logo: { width: LOGO, alignItems: "center" },
   why: { marginTop: -4, paddingLeft: PHRASE_AT, paddingRight: 8, paddingBottom: 8 },
   detail: { marginHorizontal: 8, marginBottom: 8, gap: 8 },

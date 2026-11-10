@@ -3121,6 +3121,10 @@ html:not([data-pointer]) .artifact-table__sort:focus-visible {
   flex-direction: column;
   gap: var(--space-2);
 }
+/* Its label is a field's: as far over the people picked or the search as a field's label over its input. */
+.people-picker > :is(.ac-field__label, .ac-hintline):first-child {
+  margin-block-end: calc(var(--field-gap) - var(--space-2));
+}
 .people-picker__results {
   max-height: 200px;
   overflow-y: auto;
@@ -5331,8 +5335,12 @@ html:not([data-pointer]) .mail-rules > summary:focus-visible {
 .tr-search {
   margin-bottom: 12px;
 }
+/* A row's plate stands `--tr-pad` from the card's sides, and from its bottom under the last subject, its corners the
+   card's less that room (concentric). */
 .tr-subjects {
-  border-radius: 18px;
+  --tr-r: 18px;
+  --tr-pad: var(--space-2);
+  border-radius: var(--tr-r);
   background: var(--raised);
   box-shadow: var(--e1), var(--top);
 }
@@ -5394,7 +5402,10 @@ html:not([data-pointer]) .tr-ok:focus-visible {
   transform: rotate(90deg);
 }
 .tr-subj__b {
-  padding: 2px 8px 10px;
+  padding: 2px var(--tr-pad) 10px;
+}
+.tr-subj:last-child > .tr-subj__b {
+  padding-bottom: var(--tr-pad);
 }
 @media (prefers-reduced-motion: no-preference) {
   .tr-subj__b {
@@ -5435,7 +5446,7 @@ html:not([data-pointer]) .tr-ok:focus-visible {
   gap: 12px;
   min-height: 46px;
   padding: 5px 8px;
-  border-radius: 12px;
+  border-radius: calc(var(--tr-r) - var(--tr-pad));
   transition: background 0.12s;
 }
 .tr-row:hover {
@@ -5641,8 +5652,11 @@ html:not([data-pointer]) .tr-ok:focus-visible {
     justify-self: start;
     width: 100%;
   }
+  .tr-subjects {
+    --tr-pad: var(--space-1);
+  }
   .tr-subj__b {
-    padding: 2px 4px 8px;
+    padding: 2px var(--tr-pad) 8px;
   }
   .tr-row {
     flex-wrap: wrap;
@@ -5686,8 +5700,11 @@ html:not([data-pointer]) .tr-ok:focus-visible {
     justify-self: start;
     width: 100%;
   }
+  .tr-subjects {
+    --tr-pad: var(--space-1);
+  }
   .tr-subj__b {
-    padding: 2px 4px 8px;
+    padding: 2px var(--tr-pad) 8px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -6396,6 +6413,8 @@ html:not([data-pointer]) .photo-drop:focus-visible {
   width: 300px;
   max-width: calc(100% - 32px);
   padding: var(--menu-pad);
+  /* A menu's corner (`.ac-menu`): its rows' plus its room, not the glass's own. */
+  border-radius: calc(var(--radius-item) + var(--menu-pad));
   z-index: var(--z-floating);
 }
 /* "Salvar na wiki" */
@@ -8709,6 +8728,14 @@ html:not([data-pointer]) .onb__step:focus-visible {
   width: var(--option-face);
   height: var(--option-face);
 }
+/* Chosen, in a select's trigger: its bare icon, as a maker's mark is there (`.ac-select__lead > .ac-brand`). The tile
+   would stand 5px from the edges of a 40px control; the new-agent page's 60px card picker keeps it. */
+.ac-select:not(.newag__sel) .ac-select__lead > .newag__ib {
+  width: auto;
+  height: auto;
+  background: none;
+  box-shadow: none;
+}
 /* The role step: "Do zero" first (its Cargo field right under it, one card's gap apart), then the groups of presets
    under small headings. */
 .newag__role-groups {
@@ -10155,13 +10182,17 @@ html:not([data-pointer]) .agp-tabs .ac-tab:focus-visible {
 }
 /*
  * The Ficha (Overview): how it works and who it works with, as two lists of rows on the root card's face. A row is
- * its key, what it is, the value and a chevron (or its own button); the whole row opens its dialog.
+ * its key, what it is, the value and a chevron (or its own button); the whole row opens its dialog. Its plate stands
+ * `--ficha-pad` from every edge of the card, its corners the card's less that room (concentric).
  */
 .agp-ficha__card {
+  --ficha-pad: var(--action-clear);
   container-type: inline-size;
   display: flex;
   flex-direction: column;
-  padding: 4px;
+  padding: var(--ficha-pad);
+  /* No hairlines of its own: Como trabalha is also an `.agp-workcard`, which draws them for the memory's counts. */
+  border: 0;
   border-radius: var(--radius-section) var(--radius-section) var(--radius-section) 4px;
   background: linear-gradient(180deg, var(--card-face-top), var(--surface-raised) 64px);
   box-shadow: var(--card-shadow);
@@ -10182,12 +10213,13 @@ html:not([data-pointer]) .agp-tabs .ac-tab:focus-visible {
   grid-template-areas: "key label value tail";
   gap: 0 12px;
   align-items: center;
-  width: calc(100% - 8px);
+  width: 100%;
   min-height: 40px;
-  margin: 0 4px;
+  margin: 0;
   padding: var(--row-py) 12px;
   border: 0;
-  border-radius: 13px 13px 13px 4px;
+  border-radius: calc(var(--radius-section) - var(--ficha-pad)) calc(var(--radius-section) - var(--ficha-pad))
+    calc(var(--radius-section) - var(--ficha-pad)) var(--radius-cut);
   background: none;
   box-shadow: none;
   overflow: visible;
@@ -12074,10 +12106,12 @@ html:not([data-pointer]) .sidebar__section-toggle:focus-visible {
 .sidebar :is([data-drop="into"], .sidebar__section[data-drop="true"]) {
   background: color-mix(in srgb, var(--agent) 9%, transparent);
 }
+/* Its # on the name's first line (`.ac-iconline`): a long name wraps under it, never around a # in its middle, and one
+   with no hyphen to break at wraps anywhere instead of running out of the list. */
 .channel-category__channel {
   display: inline-flex;
-  align-items: center;
   gap: 6px;
+  overflow-wrap: anywhere;
 }
 .channel-category__channel .ac-icon {
   color: var(--faint);

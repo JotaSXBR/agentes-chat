@@ -1449,6 +1449,7 @@ function NewAgentFlow({
         <Card as="div" className="newag__card">
           {managesAgents ? (
             <OwnerSelect
+              card
               value={owner}
               members={members.data ?? []}
               meId={me.user.id}

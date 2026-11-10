@@ -217,8 +217,7 @@ type IssueRow = typeof issues.$inferSelect;
 /** The columns that say who sees a task. */
 type TaskScope = Pick<IssueRow, "channelId" | "restricted" | "audienceUserIds">;
 /** What an agent's reach also reads of a task. */
-type TaskRef = TaskScope &
-  Partial<Pick<IssueRow, "id" | "assigneeType" | "assigneeId" | "conversationChannelId" | "parentIssueId" | "source">>;
+type TaskRef = TaskScope & Partial<Pick<IssueRow, "assigneeType" | "assigneeId" | "conversationChannelId">>;
 
 const WORKSPACE_SCOPE: TaskScope = { channelId: null, restricted: false, audienceUserIds: [] };
 
@@ -360,7 +359,6 @@ async function personSees(db: Database, userId: string, orgId: string, t: TaskSc
 async function agentReaches(db: Database, actor: AgentActor, orgId: string, t: TaskRef) {
   if (!t.restricted && !t.channelId) return true;
   if (t.conversationChannelId && actor.channelId === t.conversationChannelId) return true;
-  if (await sameRequest(db, actor.channelId, t)) return true;
   const assigned = t.assigneeType === "agent" && t.assigneeId === actor.agentId;
   if (t.restricted) {
     if (!assigned) return false;
@@ -387,34 +385,6 @@ async function agentReaches(db: Database, actor: AgentActor, orgId: string, t: T
     await db.execute(sql`select ${seenFromDmSql(orgId, actor.channelId, sql`${channelId}::uuid`)} as yes`),
   );
   return row?.yes === true || row?.yes === "t";
-}
-
-/** The message a task was made from (`IssueSource`), if it says. */
-const originOf = (source: unknown) => {
-  const id = (source as { messageId?: unknown } | null)?.messageId;
-  return typeof id === "string" && id ? id : null;
-};
-
-/**
- * In a task's conversation, the tasks asked with it: its parent, its steps, its parent's other steps and those made
- * from the same message, kept to the same people. Its agent sees what else is being done for the same request.
- */
-async function sameRequest(db: Database, conversationId: string, t: TaskRef) {
-  if (!t.id) return false;
-  const [here] = await db.select().from(issues).where(eq(issues.conversationChannelId, conversationId));
-  if (!here || here.id === t.id) return false;
-  const sameScope =
-    here.channelId === (t.channelId ?? null) &&
-    here.restricted === t.restricted &&
-    sameList(here.audienceUserIds, t.audienceUserIds);
-  const origin = originOf(here.source);
-  return (
-    sameScope &&
-    (t.id === here.parentIssueId ||
-      t.parentIssueId === here.id ||
-      (here.parentIssueId !== null && t.parentIssueId === here.parentIssueId) ||
-      (origin !== null && origin === originOf(t.source)))
-  );
 }
 
 /** By id, an agent working for a person also reaches what that person reaches (ADR 0151). */

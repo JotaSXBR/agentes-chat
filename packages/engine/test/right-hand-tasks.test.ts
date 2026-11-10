@@ -5,6 +5,7 @@ import {
   createAgent,
   createIssueToolSource,
   createToolGateway,
+  grantScopes,
   insertMessage,
   issueWorkBrief,
   listIssues,
@@ -225,13 +226,52 @@ describe("tasks people ask the right hand for are a list, not a crowd", () => {
     expect(brief).toContain("## Where it comes from");
     expect(brief).toContain("Made by @");
     expect(brief).toContain("from ana's message");
-    expect(brief).toContain("Plan the office move");
+    // A DM's words stay in it: its agent, given the task from outside, reads only that it came from there.
+    expect(brief).toContain("(a private conversation)");
+    expect(brief).not.toContain("Plan the office move");
     expect(brief).toContain('A step of #1 "Office move"');
     expect(brief).toContain("#3 Pick the furniture (todo, @ops)");
-
-    // From its own conversation, Dev sees the furniture task asked with it and their parent.
+    // Its reach doesn't widen: from its own conversation it still lists its own task only.
     const dev = { type: "agent" as const, agentId: f.agent.id, channelId: row.conversationChannelId ?? "" };
-    const seen = (await listIssues(f.db, dev, f.org.id)).map((i) => i.title).sort();
-    expect(seen).toEqual(["Office move", "Order the internet line", "Pick the furniture"]);
+    expect((await listIssues(f.db, dev, f.org.id)).map((i) => i.title)).toEqual(["Order the internet line"]);
+  });
+
+  test("a task made in a public channel quotes the message it came from", async () => {
+    f = await setup({ issueTools: true });
+    await grantScopes(f.db, f.org.id, f.agent.id, [{ connectionId: null, scope: "issues:write" }]);
+    const said = await insertMessage(f.db, {
+      orgId: f.org.id,
+      channelId: f.general.id,
+      author: { type: "person", userId: f.owner.id },
+      body: "@dev the checkout page is slow on phones, can you look?",
+    });
+    const [run] = await f.db
+      .insert(agentRuns)
+      .values({
+        orgId: f.org.id,
+        agentId: f.agent.id,
+        channelId: f.general.id,
+        threadRootId: said.id,
+        triggerMessageId: said.id,
+        trigger: "mention",
+        hop: 1,
+        status: "running",
+      })
+      .returning();
+    const ctx: ToolContext = {
+      db: f.db,
+      orgId: f.org.id,
+      agentId: f.agent.id,
+      runId: run?.id ?? "",
+      channelId: f.general.id,
+      threadRootId: said.id,
+      triggerMessageId: said.id,
+    };
+    const out = await call(ctx, "create_issue", { title: "Speed up the checkout page" });
+    expect(out.isError).toBeFalsy();
+    const [row] = await f.db.select().from(issues).where(eq(issues.title, "Speed up the checkout page"));
+    const brief = (await issueWorkBrief(f.db, f.org.id, row?.id ?? "")) ?? "";
+    expect(brief).toContain("from ana's message in #general");
+    expect(brief).toContain('"@dev the checkout page is slow on phones, can you look?"');
   });
 });

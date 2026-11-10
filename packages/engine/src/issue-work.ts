@@ -106,9 +106,9 @@ async function nameOf(db: Executor, orgId: string, type: string, id: string) {
 
 /**
  * Where a task comes from, as its agent reads it (the brief, `list_issues`): who made it and when, the message it was
- * made from (its words only where whoever reads the task read them: the conversation it is tied to, or a public
- * channel), the task it is a step of, and the other open tasks asked with it (`sameRequest` in `issues.ts`). "" when
- * nothing is known.
+ * made from (its words only from a public channel: an agent given the task from outside a private conversation never
+ * reads the rest of it), the task it is a step of, and the other open tasks asked with it, by number and title only,
+ * so it doesn't redo them. "" when nothing is known.
  */
 export async function taskOriginText(db: Executor, orgId: string, issueId: string): Promise<string> {
   const [issue] = await db
@@ -175,7 +175,7 @@ export async function taskOriginText(db: Executor, orgId: string, issueId: strin
     ? `, from ${await nameOf(db, orgId, origin.authorType, origin.authorId)}'s message${
         origin.kind === "channel" ? ` in #${origin.channelName}` : ""
       } of ${minute(origin.createdAt)}${
-        origin.channelId === issue.channelId || (origin.kind === "channel" && origin.visibility === "public")
+        origin.kind === "channel" && origin.visibility === "public"
           ? `: "${cutMarked(origin.body.replace(/\s+/g, " ").trim(), QUOTE_MAX)}"`
           : " (a private conversation)"
       }`

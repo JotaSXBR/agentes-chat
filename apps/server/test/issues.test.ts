@@ -140,6 +140,8 @@ test("deleting a task: 204, gone from the list and its address; a member who did
 });
 
 test("Começar estas: the go for the tasks an agent gave agents in its reply, once, for who reads it", async () => {
+  await t.close();
+  t = await createTestServer({ env: { ALLOW_SIGNUP: "true" }, reply: () => ({ chunks: ["Feito."] }) });
   const owner = browser(t);
   await signUp(owner, "owner@example.com");
   const { orgId, channelId, agentId } = await seedOrg(owner);

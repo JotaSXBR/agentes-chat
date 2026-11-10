@@ -519,6 +519,39 @@ describe("a reply held for another try is owed: a try that ends saying nothing p
     expect(await agentMessages()).toEqual(["Conferi: a tarefa veio do pedido da Rita de ontem."]);
     expect(await heldSteps()).toEqual([]);
   });
+
+  test("the try only reacts: the reaction answers nothing, so the held reply is posted", async () => {
+    const react: ToolSource = {
+      name: "react",
+      tools: async () => [
+        {
+          name: "react",
+          description: "React.",
+          scope: "",
+          inputSchema: { type: "object", properties: {}, additionalProperties: false },
+          describe: () => ({ title: "React" }),
+          execute: async () => ({ content: "Reacted.", data: { reacted: { messageId: "m", reaction: "👍" } } }),
+        },
+      ],
+    };
+    f = await setup({
+      toolSources: [react],
+      judge: untriedOnce(),
+      reply: (_req, n) =>
+        n === 1
+          ? { chunks: [HELD] }
+          : n === 2
+            ? { chunks: [], toolUses: [{ name: "react", input: {} }] }
+            : { chunks: [] },
+    });
+    await postPersonMessage({ db: f.db, pubsub: f.pubsub }, f.owner.id, f.org.id, f.general.id, {
+      body: "@dev o que está rodando no notebook da Rita?",
+    });
+    await drainOutbox(f.db, f.handlers);
+
+    expect(await agentMessages()).toEqual([HELD]);
+    expect(await runRow()).toMatchObject({ status: "done" });
+  });
 });
 
 describe("a task's own conversation is addressed to its agent (ADR 0145)", () => {

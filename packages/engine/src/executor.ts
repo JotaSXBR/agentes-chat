@@ -4853,8 +4853,9 @@ async function executeRunInner(
           saved ||
           closingSummary(transcript, anythingPosted) ||
           (result.executedCount > 0 && !anythingPosted ? DONE_TEXT : "");
-      // Nothing to say after a reply it held for another try: that reply is its answer after all.
-      const owed = silent || written ? "" : owedReply();
+      // Nothing to say after a reply it held for another try: that reply is its answer after all. A reaction alone
+      // doesn't answer what the person asked.
+      const owed = written || (silent && !transcript.reacted) ? "" : owedReply();
       // It changed something since its last message and wrote nothing more: its receipts still go out.
       const text =
         written || owed || (!silent && anythingPosted && (await hasUnpostedReceipts(db, run)) ? DONE_TEXT : "");

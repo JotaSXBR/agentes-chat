@@ -274,6 +274,17 @@ describe("the live work: what it read, when it read it", () => {
     expect(s.runs.r1?.text).toBe("Abri o WhatsApp Web: escaneie o QR code.");
   });
 
+  test("a reply held for another try leaves as the server opens the next call: a tool first never narrates it", () => {
+    const held = { ...delta(0, 1, "Me envie a senha por `request_secret`."), at: 0 } as Ev;
+    const opened = { ...delta(1, 2, ""), at: 0 } as Ev;
+    let s = run([held, opened, { type: "agent.tool", ...base, tool: "request_secret", toolUseId: "t1" } as Ev]);
+    expect(s.runs.r1?.text).toBe("");
+    expect(s.runs.r1?.work?.filter((w) => w.kind === "say")).toEqual([]);
+    // That call writes first instead: its words alone.
+    s = run([held, opened, { ...delta(2, 2, "Vou te mandar um campo seguro."), at: 0 } as Ev]);
+    expect(s.runs.r1?.text).toBe("Vou te mandar um campo seguro.");
+  });
+
   test("agent.passed: its row goes at once, and late deltas don't bring it back", () => {
     let s = run([delta(0, 1, "Hmm")]);
     expect(s.runs.r1).toBeDefined();

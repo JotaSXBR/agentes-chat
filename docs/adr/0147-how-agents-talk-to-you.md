@@ -48,3 +48,14 @@ Approval and action cards keep their own app-written text. What the agent writes
 - Replies to most people get shorter, with the action first; the details are one tap away.
 - A technical person's turns cost about 170 characters more.
 - The plain-words rule is now longer for everyone (about 90 characters more in a DM "oi").
+
+## Addendum (2026-11-09): a reply that names its tools is written again
+
+In a plain chat an agent asked a person to send a login "by `request_secret`": it named its own tool to someone who can't see or use it, instead of calling it. The plain-words rule listed tool names among paths and codes, with a way out for technical people, and nothing checked the reply.
+
+1. **The rule** (`OWN_TOOLS_LINE`, last of the tools part of "# What you can do", every run with tools): people can't see or use the agent's tools, so it calls them itself and names no tool, function or parameter the person didn't name first.
+2. **The check** (`toolsNamed`, the `tool_names` rule of `decideTurnEnd`, a cheap rule before the judgment, ADR 0097): a conversation reply that names one of the run's own tools (a name with an underscore, bare, in backticks or behind the bridge's `mcp__agentes__`) isn't posted, and the run writes it again once in plain words (`toolNamesNudge`). The next reply is posted as it is. Not when the person's message has that name, for a person who chose technical replies, in an agents' DM, a routine's record, or a reply at the turn cap.
+3. **Off the screen at once**: a held reply already showed live as it streamed. Any held reply (this one, a secret asked in the chat, a give-up judged untried) now opens the next model call at once with no text (`agent.delta`), so the apps drop it. Before, it stayed until the next call wrote, and a call that came first (`request_secret`, as told) kept it as that call's narration, the line its message opens with.
+4. **The fast reply** (`talker.ts`), which reads the task's steps by tool name, gets the same rule in its prompt.
+
+A DM "oi" grows by 195 characters (45,632 measured), and the `turns-eval` ceiling goes from 45,900 to 46,100.

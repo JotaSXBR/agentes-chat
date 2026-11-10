@@ -39,6 +39,7 @@ import { pendingConnectors } from "./access";
 import { linkRunActions, publishMessageActions } from "./agent-actions";
 import { withTimeout } from "./agent-media";
 import { announceAgentStatus, askRunStatus, startRunStatus, statusCandidates } from "./agent-status";
+import { TECHNICAL_STYLE_LINE } from "./agent-style";
 import { type Agent, getAgentCached } from "./agents";
 import { agentsDmReads, readerOfRun } from "./agents-dm-reads";
 import { type AgentAi, agentAiState, noAiReasonOf, ownNotSignedIn } from "./ai-status";
@@ -167,6 +168,7 @@ import {
   localPathsCited,
   reportRunFailure,
   type TurnEndDecision,
+  toolsNamed,
   triedCalls,
   verdictRecord,
 } from "./continuation";
@@ -525,7 +527,7 @@ export interface Transcript {
   promptKey?: string;
   /** "Automático": the model tier and effort chosen for this run; a resume thinks with the same. */
   autoModel?: AutoModelRecord;
-  /** Assistant text before this index was already posted to the chat (or was history). */
+  /** Assistant text before this index was already posted to the chat (or was history, or a reply held unposted). */
   postedUpTo: number;
   /** Chat messages this run posted so far. */
   postedCount: number;
@@ -4848,10 +4850,20 @@ async function executeRunInner(
               ),
             )
           : "";
+      // A person who chose technical replies welcomes tool names (ADR 0147).
+      const namedTools =
+        text && !capped && !t.system.some((b) => b.text === TECHNICAL_STYLE_LINE)
+          ? toolsNamed(
+              text,
+              [...granted, ...tools].map((x) => x.name),
+              t.request ?? triggerMessage?.body ?? triggerText,
+            )
+          : [];
       let decision = await decideTurnEnd({
         state,
         kind: betweenAgents ? "agents_dm" : "conversation",
         openRequest,
+        namedTools,
         executed: transcript.executedCalls ?? 0,
         bound: t.stuck?.endAt !== undefined ? "stuck" : t.wrapUpNoted ? "step_limit" : null,
         quiet: silent && !judged,
@@ -4916,6 +4928,7 @@ async function executeRunInner(
         untried: "untried",
         secret: "secret",
         open_request: "open_request",
+        tool_names: "tool_names",
       }[decision.rule];
       const { nudge: _, ...recorded } = { ...decision, count: t.continuation.count };
       later(() =>
@@ -4932,15 +4945,30 @@ async function executeRunInner(
         if (plan.kind !== "model") nextPrompt = decision.nudge;
         // Nothing to post first: it simply goes on. A give-up judged untried isn't posted either: it would send people
         // after something the next turn may do itself.
-        // Nor a secret asked in the chat (ADR 0109 addendum).
+        // Nor a secret asked in the chat (ADR 0109 addendum), nor a reply naming its tools to a person.
         if (
           decision.rule === "decision" ||
           // Nor one citing files on its computer, which nobody else can open.
           decision.rule === "local_paths" ||
           decision.rule === "answer" ||
           decision.rule === "untried" ||
-          decision.rule === "secret"
+          decision.rule === "secret" ||
+          decision.rule === "tool_names"
         ) {
+          if (said) {
+            // It showed live as it streamed: the next model call opens now with no text, so the apps take it away at
+            // once (a call coming first would keep it as the work's narration, the line its message opens with).
+            await publishChannelEvent(deps.pubsub, {
+              type: "agent.delta",
+              ...where,
+              seq: t.deltaSeq++,
+              turn: run.turns + 1,
+              text: "",
+              at: 0,
+            });
+            // Nor is it posted later: as the closing line of a turn that writes nothing, or what a stopped run wrote.
+            t.postedUpTo = t.messages.length;
+          }
           await saveTranscript(db, t);
           continue;
         }

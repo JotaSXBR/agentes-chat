@@ -22,9 +22,12 @@ import {
   STRETCH,
   STRETCH_JOB,
   STRETCH_REFUSAL,
+  saveAgentStyle,
+  type ToolSource,
   toolPolicy,
   wakeFollowUp,
 } from "../src";
+import { advance, decideTurnEnd, type TurnEnd, toolsNamed } from "../src/continuation";
 import { addMember, type Fixture, setup } from "./fixtures";
 
 /**
@@ -736,5 +739,131 @@ describe("between agents (ADR 0095)", () => {
       answer:
         "Passei a fila ao Ops; te digo quando ele terminar.\n\n[@ops, to whom @infra handed part of it]: Fila limpa.",
     });
+  });
+});
+
+describe("a reply that names its own tools to a person", () => {
+  const tools = ["request_secret", "vault_list", "remember", "github_createPullRequest"];
+
+  test("found bare, in backticks or behind the bridge's prefix; never a one-word tool, a longer name or one the person wrote", () => {
+    expect(toolsNamed("Salve no Vault (vault_list) ou me envie por `request_secret`.", tools, "")).toEqual([
+      "request_secret",
+      "vault_list",
+    ]);
+    expect(toolsNamed("Pedi com mcp__agentes__request_secret.", tools, "")).toEqual(["request_secret"]);
+    expect(toolsNamed("Abri com github_createPullRequest.", tools, "")).toEqual(["github_createPullRequest"]);
+    expect(toolsNamed("I remember: request_secrets and request_secret_card are other names.", tools, "")).toEqual([]);
+    const asked = "pra que serve o request_secret?";
+    expect(toolsNamed("O `request_secret` abre um campo seguro.", tools, asked)).toEqual([]);
+  });
+
+  const turn = (over: Partial<TurnEnd> = {}): TurnEnd => ({
+    state: { count: 0 },
+    kind: "conversation",
+    executed: 0,
+    bound: null,
+    quiet: false,
+    decided: null,
+    unanswered: false,
+    unreached: "",
+    judged: "Me envie por `request_secret`.",
+    mission: false,
+    namedTools: ["request_secret"],
+    wakesLater: async () => false,
+    verdict: async () => "done",
+    ...over,
+  });
+
+  test("written again once, judge or not; never between agents nor past a bound", async () => {
+    const d = await decideTurnEnd(turn());
+    expect(d).toMatchObject({ outcome: "continue", rule: "tool_names" });
+    expect(d.nudge).toContain("your reply names your tools (`request_secret`)");
+    const next = advance({ count: 0 }, d, 0);
+    expect(next).toEqual({ count: 0, toolsNudged: true });
+    expect(await decideTurnEnd(turn({ state: next }))).toMatchObject({ outcome: "done", rule: "judged" });
+    expect(await decideTurnEnd(turn({ verdict: null }))).toMatchObject({ rule: "tool_names" });
+    expect(await decideTurnEnd(turn({ kind: "agents_dm" }))).toMatchObject({ outcome: "done", rule: "judged" });
+    expect(await decideTurnEnd(turn({ bound: "stuck" }))).toMatchObject({ outcome: "done", rule: "stuck" });
+  });
+
+  /** Only its name matters here: the secure card's tool. */
+  const secrets: ToolSource = {
+    name: "secrets",
+    tools: async () => [
+      {
+        name: "request_secret",
+        description: "Ask a person for a password or a key on a secure card.",
+        scope: "",
+        inputSchema: { type: "object" },
+        execute: async () => ({ content: "asked" }),
+      },
+    ],
+  };
+
+  test("in a plain chat it is written again in plain words, and only that reply is posted", async () => {
+    f = await setup({
+      toolSources: [secrets],
+      // Told to, the next call uses the tool first, then says what it did.
+      reply: (_request, call): FakeReply =>
+        call === 1
+          ? { chunks: ["Manda a senha do painel. Salve no Vault ou me envie por `request_secret`."] }
+          : call === 2
+            ? { chunks: [], toolUses: [{ name: "request_secret", input: {} }] }
+            : { chunks: ["Te mandei um campo seguro para a senha do painel."] },
+    });
+    const live = f.listen(f.general.id);
+    await ask(f, "@dev entra no painel da Acme e baixa o relatório de outubro");
+    await drainOutbox(f.db, f.handlers);
+    expect(f.provider.calls.length).toBe(3);
+    expect(lastUserText(f.provider.calls[1]?.request as ModelRequest)).toContain(
+      "Not posted: your reply names your tools (`request_secret`)",
+    );
+    expect((await agentMessages(f)).map((m) => m.body)).toEqual(["Te mandei um campo seguro para a senha do painel."]);
+    const steps = await f.db.select().from(schema.agentRunSteps);
+    expect(steps.filter((s) => s.data.nudged === "tool_names").length).toBe(1);
+    // It showed live as it was written: the next call opens with no text before its tool starts, so the apps drop it
+    // instead of keeping it as that call's narration.
+    const order = live.flatMap((e) =>
+      e.type === "agent.delta"
+        ? [`${e.turn}:${e.text ? "text" : "open"}`]
+        : e.type === "agent.tool" && e.tool
+          ? [String(e.tool)]
+          : [],
+    );
+    expect(order).toContain("1:text");
+    const opened = order.indexOf("2:open");
+    expect(opened).toBeGreaterThan(order.lastIndexOf("1:text"));
+    expect(order.indexOf("request_secret")).toBeGreaterThan(opened);
+  });
+
+  test("held, it is never posted later as the closing line of a turn that writes nothing", async () => {
+    f = await setup({
+      toolSources: [secrets],
+      reply: (_request, call): FakeReply =>
+        call === 1
+          ? { chunks: ["Me envie a senha do painel por `request_secret`."] }
+          : call === 2
+            ? { chunks: [], toolUses: [{ name: "request_secret", input: {} }] }
+            : { chunks: [] },
+    });
+    await ask(f, "@dev entra no painel da Acme");
+    await drainOutbox(f.db, f.handlers);
+    const bodies = (await agentMessages(f)).map((m) => m.body);
+    expect(bodies).toHaveLength(1);
+    expect(bodies[0]).not.toContain("request_secret");
+  });
+
+  test("a person who wrote the name, or chose technical replies, gets the reply as it is", async () => {
+    const answer = "O `request_secret` abre um campo seguro: você digita a senha ali e eu nunca a vejo.";
+    f = await setup({ toolSources: [secrets], reply: () => ({ chunks: [answer] }) });
+    await ask(f, "@dev pra que serve o request_secret?");
+    await drainOutbox(f.db, f.handlers);
+    expect(f.provider.calls.length).toBe(1);
+
+    await saveAgentStyle(f.db, f.org.id, f.owner.id, "technical");
+    await ask(f, "@dev e como você me pede uma senha?");
+    await drainOutbox(f.db, f.handlers);
+    expect(f.provider.calls.length).toBe(2);
+    expect((await agentMessages(f)).map((m) => m.body)).toEqual([answer, answer]);
   });
 });

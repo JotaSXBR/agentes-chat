@@ -6,11 +6,13 @@ import {
   createAgentRuns,
   createApiKeyConnection,
   createConnectorToolSource,
+  createFakeJudge,
   createToolGateway,
   decideApproval,
   ForbiddenError,
   type InvokeResult,
   insertMessage,
+  type Judge,
   lowRisk,
   postPersonMessage,
   REVIEW_NO_APPROVAL,
@@ -32,7 +34,7 @@ const WHY = "The checks passed on this pull request and the reviewer asked for a
 const PR = { owner: "acme", repo: "app", pullNumber: 7 };
 const EXECUTOR = `composio_${COMPOSIO_EXECUTOR}`;
 
-async function world(level?: ApprovalLevel) {
+async function world(level?: ApprovalLevel, judge?: Judge) {
   f = await setup();
   const github = fakeGithubMcp({ writes: true });
   const deps = { db: f.db, keyWrappers: [f.keyWrapper], publicUrl: "https://agentes.test", connect: github.connect };
@@ -53,6 +55,7 @@ async function world(level?: ApprovalLevel) {
   const gateway = createToolGateway({
     sources: [createConnectorToolSource(deps)],
     ...(level ? { approvalLevel: async () => level } : {}),
+    ...(judge ? { judge } : {}),
   });
   return { github, gateway, connectionId: connection.id };
 }
@@ -248,6 +251,41 @@ describe("an agent's approval level (a hook, no setting yet)", () => {
       (await call(gateway, ctx, "github_add_issue_comment", { ...PR, issue_number: 7, body: "ok", why: WHY })).type,
     ).toBe("approval");
     expect(github.calls).toEqual([]);
+  });
+});
+
+describe("a message someone outside the company receives is never approved for good", () => {
+  /** Reads a comment that thanks the reporter as one the public sees; any other as staying inside. */
+  const judge = () =>
+    createFakeJudge((kind, id, state) =>
+      kind === "customer_message" && id === "outside" ? (String(state.call).includes("Thanks") ? 0.9 : 0.1) : undefined,
+    );
+  const rule = (connectionId: string) =>
+    f.db
+      .insert(schema.approvalRules)
+      .values({ orgId: f.org.id, agentId: f.agent.id, connectionId, tool: "add_issue_comment", action: "" });
+
+  test("a person's run: the comment kind approved for good doesn't send it; its card shows the text, no Aprovar sempre", async () => {
+    const { github, gateway, connectionId } = await world(undefined, judge());
+    await rule(connectionId);
+    const ctx = await personRun();
+    const reply = { ...PR, issue_number: 7, body: "Thanks for the report, the fix ships today." };
+    const card = asked(await call(gateway, ctx, "github_add_issue_comment", { ...reply, why: WHY }));
+    expect(card.params).toEqual(reply);
+    expect(card.approveAlways).toBeNull();
+    expect(github.calls).toEqual([]);
+  });
+
+  test("work a routine's report woke: the rule still covers a comment that stays inside, never one the public sees", async () => {
+    const { github, gateway, connectionId } = await world("risky", judge());
+    await rule(connectionId);
+    const ctx = await fedRun();
+    const internal = { ...PR, issue_number: 7, body: "Linked to the release checklist." };
+    expect((await call(gateway, ctx, "github_add_issue_comment", { ...internal, why: WHY })).type).toBe("result");
+    const reply = { ...PR, issue_number: 8, body: "Thanks for the report, the fix ships today." };
+    const card = asked(await call(gateway, ctx, "github_add_issue_comment", { ...reply, why: WHY }));
+    expect(card.approveAlways).toBeNull();
+    expect(github.calls.map((c) => c.args.issue_number)).toEqual([7]);
   });
 });
 

@@ -536,8 +536,7 @@ export function createToolGateway(deps: {
   /**
    * Why a call that wouldn't ask a person must, or null (`outside-sends.ts`). On a run a routine's reading feeds: a
    * command that names an env secret the agent holds, since such work never uses a saved key on its own (ADR 0053
-   * §3, ADR 0144 §2). On any other run: a message a customer or someone outside the company receives, sent by a
-   * connected app's write or by a command that writes with a stored key, unless the person gave that exact text.
+   * §3, ADR 0144 §2). On any other run: a message someone outside the company receives (`customerAsk`).
    */
   async function asksFirst(
     ctx: ToolContext,
@@ -545,12 +544,26 @@ export function createToolGateway(deps: {
     tool: ToolDefinition,
     input: Record<string, unknown>,
   ): Promise<{ code: string; content: string } | null> {
-    const code = isRunCode(tool) && typeof input.code === "string" ? input.code : "";
     if (fedByRoutine(authority)) {
+      const code = isRunCode(tool) && typeof input.code === "string" ? input.code : "";
       const named = code ? await envSecretsNamed(ctx.db, ctx.orgId, ctx.agentId, code) : [];
       return named.length > 0 ? { code: "tool.routine_key", content: routineKeyAsk(named) } : null;
     }
+    return customerAsk(ctx, authority, tool, input);
+  }
+
+  /**
+   * A message a customer or someone outside the company receives, sent by a connected app's write or by a command
+   * that writes with a stored key, unless the person gave that exact text: a person sees it first. Null without a judge.
+   */
+  async function customerAsk(
+    ctx: ToolContext,
+    authority: RunAuthority | null,
+    tool: ToolDefinition,
+    input: Record<string, unknown>,
+  ): Promise<{ code: string; content: string } | null> {
     if (!deps.judge) return null;
+    const code = isRunCode(tool) && typeof input.code === "string" ? input.code : "";
     // A mailbox's sends follow its own rule (who may receive mail without a card), set by its owner.
     const writes = tool.connectionId
       ? !tool.scope.startsWith("mail:") && toolKind(tool).kind === "external"
@@ -1255,12 +1268,16 @@ export function createToolGateway(deps: {
         why = given.length >= WHY_MIN_CHARS && given.length <= WHY_MAX_CHARS ? given : "";
         whyMissing = !why;
       }
-      // "Aprovar sempre": a call of a kind someone approved for good runs like an allowed one, why or not.
-      const remember = !approves
-        ? null
-        : tool.sqlReads
-          ? await rememberableSqlRead(tool, call.input, authority, decision)
-          : rememberable(tool, call.input, authority, decision);
+      // "Aprovar sempre": a call of a kind someone approved for good runs like an allowed one, why or not. Never one
+      // that had to ask first, nor a message someone outside receives where the run's policy asks anyway (a routine's
+      // reading woke it): a person sees each of those, so its card doesn't offer it and no level skips it.
+      const kind =
+        !approves || first
+          ? null
+          : tool.sqlReads
+            ? await rememberableSqlRead(tool, call.input, authority, decision)
+            : rememberable(tool, call.input, authority, decision);
+      const remember = kind && (tool.sqlReads || !(await customerAsk(ctx, authority, tool, call.input))) ? kind : null;
       if (remember) {
         const at = { orgId: ctx.orgId, agentId: ctx.agentId, connectionId: tool.connectionId ?? null };
         approvedBy = await coveringRules(ctx.db, at, remember);

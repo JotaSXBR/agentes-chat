@@ -105,6 +105,8 @@ export interface ActionDeps {
   /** What the channel screen's deletion passes: its missions stop on their computers, its mail routines' triggers go. */
   hub?: AgentDeletionDeps["hub"];
   mail?: AgentDeletionDeps["mail"];
+  /** The agent doing it at once at the person's word (`actNow`): a task it stops names it, not the person. */
+  byAgentId?: string;
 }
 
 export interface ServerLinks {
@@ -1331,7 +1333,10 @@ const stopWorkAction: WorkspaceAction = {
     let refused: unknown = null;
     for (const r of runs) {
       try {
-        await cancelRun(deps, actorId, orgId, r.id, { ...(str(input.reason) ? { reason: str(input.reason) } : {}) });
+        await cancelRun(deps, actorId, orgId, r.id, {
+          ...(str(input.reason) ? { reason: str(input.reason) } : {}),
+          ...(deps.byAgentId ? { byAgentId: deps.byAgentId } : {}),
+        });
         stopped++;
       } catch (error) {
         if (!(error instanceof ForbiddenError)) throw error;
@@ -1608,7 +1613,8 @@ export async function actNow(
   try {
     const done = await actWithUndo(
       ctx,
-      (db) => a.run({ db, pubsub: events.pubsub, server: deps.server }, person, ctx.orgId, input),
+      (db) =>
+        a.run({ db, pubsub: events.pubsub, server: deps.server, byAgentId: ctx.agentId }, person, ctx.orgId, input),
       (d) => recordOf(a, d),
     );
     await events.flush();

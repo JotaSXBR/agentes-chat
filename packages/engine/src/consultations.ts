@@ -22,7 +22,7 @@ import { canTalkTo, speakerFor, viaAgent } from "./audience";
 import { runAuthorityById } from "./authority";
 import { routineBriefOfRun } from "./background";
 import { type BrakeOutcome, brakeWakes, callableAgents, LATER_JOB, notCallableText } from "./brakes";
-import { canceledBy, stopRun } from "./cancel";
+import { stopRun } from "./cancel";
 import { publishDelivery } from "./delivery";
 import { INBOX_JOB, startOrJoinRun } from "./dispatch";
 import { isAgentOnlyDm, openAgentDm } from "./dms";
@@ -37,7 +37,7 @@ import { actingRoutineOfCall, personBehindCall, routineCreatorOf } from "./reque
 import { isRoutineRoomKey } from "./routine-brief";
 import { deliverNoticeToRun, resumeRunWithResult } from "./run-resume";
 import { tellAgentStopped } from "./run-stopped";
-import { type AgentRun, isTerminal, outageParkedSql, type RunStatus, replyThreadOf } from "./runs";
+import { type AgentRun, canceledBy, isTerminal, outageParkedSql, type RunStatus, replyThreadOf } from "./runs";
 import { MAX_HANDOFF_LINKS, refusedAtLimit } from "./stretch";
 import { noAgentText } from "./team";
 import type { ToolContext, ToolDefinition, ToolOutput, ToolSource } from "./tools/types";

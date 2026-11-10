@@ -6,6 +6,7 @@ import {
   isAgentOnlyNotice,
   isAnsweredNotice,
   isEventLine,
+  isQuietRestart,
   isTalkerReply,
   settledNotices,
 } from "./notices";
@@ -221,8 +222,15 @@ export function buildTimeline(
     if (entry.item.kind === "message") {
       const m = entry.item.message;
       // A routine's call written as its creator, a report the agent already told people about, a notice only its agent
-      // reads, an event that is over: not shown.
-      if (isRoutineCall(m) || isAnsweredNotice(m, answered) || isAgentOnlyNotice(m.meta) || settled.has(m.id)) continue;
+      // reads, an event that is over, a stop that started again with nothing said: not shown.
+      if (
+        isRoutineCall(m) ||
+        isAnsweredNotice(m, answered) ||
+        isAgentOnlyNotice(m.meta) ||
+        settled.has(m.id) ||
+        isQuietRestart(m)
+      )
+        continue;
       // A routine's answer (or an automatic line: a notice) always shows its own header, and nothing groups under it.
       const routine = Boolean(routineReplyOf(m)) || isEventLine(m.meta);
       const prevRoutine = Boolean(prev && (routineReplyOf(prev) || isEventLine(prev.meta)));

@@ -29,7 +29,7 @@ import {
 import { enqueue } from "./outbox";
 import { resumeRunWithResult } from "./run-resume";
 import { revokeRunToolTokens } from "./run-tool-tokens";
-import { isTerminal, type RunStatus, transitionRun } from "./runs";
+import { isTerminal, type RunStatus, stopError, transitionRun } from "./runs";
 import { pauseStretch, runStretchOf, stretchStop } from "./stretch";
 
 const {
@@ -649,7 +649,14 @@ export function createMissionEngine(deps: { pubsub?: PubSub; db: MissionDeps["db
 /** Cancels the agent's active runs in a thread, for the mission (not a person's own stop: no permission check here). */
 async function cancelThreadRuns(
   deps: { pubsub?: PubSub; db: MissionDeps["db"] },
-  input: { orgId: string; agentId: string; channelId: string; threadRootId: string; actorId: string | null },
+  input: {
+    orgId: string;
+    agentId: string;
+    channelId: string;
+    threadRootId: string;
+    actorId: string | null;
+    reason: string;
+  },
 ) {
   const active = await deps.db
     .select()
@@ -668,8 +675,13 @@ async function cancelThreadRuns(
     const from: RunStatus = run.status;
     if (isTerminal(from)) continue;
     const moved = await deps.db.transaction(async (tx) => {
+      // A new brain before Start plans again at once: no stop to show for it.
       const row = await transitionRun(tx, run.id, from, "canceled", {
-        error: `canceled_by:${input.actorId ?? "mission"}`,
+        error: stopError(
+          input.actorId
+            ? { type: "person", id: input.actorId, ...(input.reason === "executor_changed" ? { restarted: true } : {}) }
+            : { type: "system", reason: `mission_${input.reason}` },
+        ),
       });
       if (!row) return null;
       const now = new Date();

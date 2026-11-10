@@ -3,6 +3,7 @@ import {
   type AgentTasks,
   agentSummary,
   endedState,
+  endedText,
   groupTasks,
   hiddenCount,
   taskPlace,
@@ -53,7 +54,6 @@ import { useStopper, useTasksToday } from "./hooks";
 import {
   computerLine,
   endedLatestFirst,
-  endedText,
   groupLine,
   type RowState,
   rowState,
@@ -473,7 +473,7 @@ function EndedRow({ task, divider, meId }: { task: EndedTask; divider: boolean; 
   const title = taskTitle(t, task);
   const agentName = dir.nameOf({ type: "agent", id: task.agentId });
   const line = [agentName, taskPlace(t, task)].filter(Boolean).join(" · ");
-  const how = endedText(t, task, meId);
+  const how = endedText(t, task, meId, (id) => dir.nameOf({ type: "agent", id }) || undefined);
   const state = endedState(task);
   return (
     <Pressable

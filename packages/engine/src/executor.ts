@@ -101,7 +101,6 @@ import { browsersPrompt } from "./browser/tools";
 import { BROWSER_SCOPE } from "./browser/types";
 import { typingLogFor, waitForBurst } from "./burst";
 import {
-  canceledBy,
   isShutdown,
   RUN_HEARTBEAT_MS,
   RunInterruptedError,
@@ -303,6 +302,7 @@ import {
   NO_AI,
   OUR_ERROR,
   PERSON_LIMIT,
+  personStopOf,
   providerFailureOf,
   providerFailureText,
   type RunStatus,
@@ -2460,12 +2460,20 @@ async function executeRunInner(
     await deferred;
     const t = transcript as Transcript;
     const [row] = await db.select({ error: agentRuns.error }).from(agentRuns).where(eq(agentRuns.id, run.id));
-    const by = canceledBy(row?.error);
+    // Who stopped it (`stopError`): a person, the agent at their word, or the system's reason.
+    const stop = personStopOf(row?.error);
+    const by = stop?.userId || null;
+    const stopStep = {
+      reason: "canceled",
+      byUserId: by,
+      ...(stop?.agentId ? { byAgentId: stop.agentId } : {}),
+      ...(stop?.restarted ? { restarted: true } : {}),
+    };
     if (run.background) {
       if (partial.trim() && t.messages.at(-1)?.role !== "assistant")
         t.messages.push({ role: "assistant", content: [{ type: "text", text: partial.trim() }] });
       t.postedUpTo = t.messages.length;
-      await addRunStep(db, run, "error", { reason: "canceled", byUserId: by });
+      await addRunStep(db, run, "error", stopStep);
       await db
         .update(agentRuns)
         .set({ transcript: storedTranscript(t), updatedAt: new Date() })
@@ -2478,6 +2486,11 @@ async function executeRunInner(
       return;
     }
     const [person] = by ? await db.select({ name: users.name }).from(users).where(eq(users.id, by)) : [];
+    const [stopper] = stop?.agentId
+      ? await db.select({ name: schema.agents.name }).from(schema.agents).where(eq(schema.agents.id, stop.agentId))
+      : [];
+    // Nobody stopped it: its cause in the app's words (an archived agent, a paused workspace).
+    const cause = by ? null : runErrorDetail(row?.error);
     const wrote = [
       ...t.messages
         .slice(t.postedUpTo)
@@ -2493,16 +2506,22 @@ async function executeRunInner(
     // Cut mid-stream: what it was writing stays in the transcript too ("Continuar" picks up from there).
     if (partial.trim() && t.messages.at(-1)?.role !== "assistant")
       t.messages.push({ role: "assistant", content: [{ type: "text", text: partial.trim() }] });
-    const note = `_Stopped${person ? ` by ${person.name}` : ""}._`;
+    const note = `_Stopped${person ? ` by ${stopper ? `${stopper.name} for ` : ""}${person.name}` : ""}._`;
     const message = await db.transaction(async (tx) => {
       const m = await post(tx, replyThreadId, shown ? `${shown}\n\n${note}` : note, {
         ...(takeMemoryUpdates(t) ?? {}),
-        // `text`: what the agent wrote; the app adds "Stopped by …" in the person's language.
-        canceled: { byUserId: by, text: shown },
+        // `text`: what the agent wrote; the app adds who stopped it, or why, in the person's language.
+        canceled: {
+          byUserId: by,
+          ...(stop?.agentId ? { byAgentId: stop.agentId } : {}),
+          ...(stop?.restarted ? { restarted: true } : {}),
+          ...(cause ? { code: cause.errorCode } : {}),
+          text: shown,
+        },
       });
       t.postedUpTo = t.messages.length;
       t.postedCount++;
-      await addRunStep(tx, run, "error", { reason: "canceled", byUserId: by, messageId: m.id });
+      await addRunStep(tx, run, "error", { ...stopStep, messageId: m.id });
       await tx
         .update(agentRuns)
         .set({ replyMessageId: m.id, transcript: storedTranscript(t), updatedAt: new Date() })
@@ -2516,8 +2535,9 @@ async function executeRunInner(
     // Stopped by a "Parar e mandar" (a computer brain): it starts again from that message (and takes
     // the rest of its unread messages along).
     if (by) {
-      const { restartAfterStopAndSend } = await import("./continue-run");
-      await restartAfterStopAndSend(deps, run.id, { id: message.id, threadId: message.threadId }, t).catch(() => null);
+      const { restartAfterStopAndSend, setStopRestarted } = await import("./continue-run");
+      const restarted = Boolean(await restartAfterStopAndSend(deps, run.id, message, t).catch(() => null));
+      if (restarted !== Boolean(stop?.restarted)) await setStopRestarted(deps, message, restarted).catch(() => null);
     }
     // Anything else sent to it and not read gets a run of its own (the "stop" itself was dropped by `stopRun`),
     // unless its workspace stopped it.

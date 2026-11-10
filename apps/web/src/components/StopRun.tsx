@@ -84,11 +84,16 @@ export function useContinueRun() {
   });
 }
 
-/** This stopped run was already continued (here, by someone else, or before a reload). */
+/**
+ * This stopped run was already continued (here, by someone else, or before a reload): `continued` hides Continuar,
+ * also when a refusal here left it no job (continued elsewhere, the agent busy); `goneOn`, only once a run took it up,
+ * hides the stop itself.
+ */
 export function useWasContinued(runId: string | null | undefined, message?: Pick<Message, "id" | "meta">) {
   const here = useLive((s) => (runId ? s.continued[runId] : undefined));
   const heard = useContinuedRun(message?.id ?? "");
-  return here !== undefined || Boolean(heard) || Boolean(message && continuedRunIdOf(message));
+  const goneOn = Boolean(here || heard || (message && continuedRunIdOf(message)));
+  return { continued: here !== undefined || goneOn, goneOn };
 }
 
 /** "rodando código há 2 min", "escrevendo a resposta", "pensando há 1 min". */

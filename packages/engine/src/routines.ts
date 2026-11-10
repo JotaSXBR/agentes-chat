@@ -24,7 +24,6 @@ import { recordAudit } from "./audit";
 import { UUID } from "./authority";
 import { brainOf } from "./brain-settings";
 import { BRAIN_PLAN_NAMES, type BrainKind, isComputerBrain } from "./brains/types";
-import { canceledBy } from "./cancel";
 import { requireChannelAccess } from "./channels";
 import {
   type ConnectorEventId,
@@ -90,7 +89,7 @@ import {
   ruleToCron,
   type ScheduleRule,
 } from "./rrule";
-import { providerFailure } from "./runs";
+import { canceledBy, providerFailure } from "./runs";
 import { describeWhen, parseSchedule, readSchedule, type ScheduleParse } from "./schedule";
 import { assertCanWork, deletionPending, standingRefusal } from "./standing";
 import { alwaysAsks } from "./tools/gateway";

@@ -507,6 +507,38 @@ describe("the task manager page", () => {
     expect(rows[1]).toContain("João parou");
   });
 
+  test("Terminadas hoje never says 'Você parou' for a stop that wasn't mine", async () => {
+    const view = busy();
+    view.ended = [
+      // The workspace stopped it (an archived agent, a paused workspace): nobody did.
+      ended({ runId: "r-sys", agentId: ADA_ID, status: "canceled", label: "Arquivar os logs" }),
+      // The right hand stopped it at my word: it goes by its name.
+      ended({
+        runId: "r-hand",
+        agentId: ADA_ID,
+        status: "canceled",
+        label: "Rever o contrato",
+        stoppedBy: { userId: "u-walter", name: "Walter", agentId: ATLAS_ID },
+      }),
+      ended({
+        runId: "r-mine",
+        agentId: ADA_ID,
+        status: "canceled",
+        label: "Limpar a fila",
+        stoppedBy: { userId: "u-walter", name: "Walter" },
+      }),
+    ];
+    await open(seedState({ taskManager: view }), "task-manager");
+    await click(screen().getByRole("button", { name: /Terminadas hoje/ }));
+    const row = (label: string) =>
+      [...document.querySelectorAll(".tm-row--ended")].find((r) => r.textContent?.includes(label))?.textContent ?? "";
+    expect(row("Arquivar os logs")).toContain("Parada");
+    expect(row("Arquivar os logs")).not.toContain("Você parou");
+    expect(row("Rever o contrato")).toContain("Atlas parou");
+    expect(row("Rever o contrato")).not.toContain("Você parou");
+    expect(row("Limpar a fila")).toContain("Você parou");
+  });
+
   test("a finished row opens its panel like one still on: how it ended, how long as people say it, its message", async () => {
     const view = busy();
     view.ended = [
@@ -1118,6 +1150,16 @@ describe("the stopped notice in the conversation", () => {
     const after = document.querySelector(".cn-stopped") as HTMLElement;
     expect(after.textContent).toContain("Motivo: «Já resolvi por outro caminho»");
     expect(within(after).queryByRole("button", { name: "Dizer o motivo" })).toBeNull();
+  });
+
+  test("the right hand stopped it at my word: its name, not 'Você', and I can still say why", async () => {
+    const state = withDm();
+    state.messages.push(notice({ byUserId: "u-walter", byName: "Walter", byAgentId: ATLAS_ID, byAgentName: "Atlas" }));
+    await open(state, `dm/agent/${ADA_ID}`);
+    const line = document.querySelector(".cn-stopped") as HTMLElement;
+    expect(line.textContent).toContain("Atlas parou a Ada");
+    expect(line.textContent).not.toContain("Você parou");
+    expect(within(line).getByRole("button", { name: "Dizer o motivo" })).toBeTruthy();
   });
 
   test("someone else stopped it: their name, the reason they gave, and no Add a reason for me", async () => {

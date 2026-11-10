@@ -1219,12 +1219,40 @@ describe("an agent's turn as one block", () => {
   });
 
   test("a stopped reply: who stopped it and whether it was continued", () => {
-    expect(stoppedOf({ canceled: { byUserId: "u1" } })).toEqual({ byUserId: "u1", continuedRunId: null });
-    expect(stoppedOf({ canceled: true })).toEqual({ byUserId: null, continuedRunId: null });
+    const none = { byAgentId: null, restarted: false, code: null, continuedRunId: null };
+    expect(stoppedOf({ canceled: { byUserId: "u1" } })).toEqual({ byUserId: "u1", ...none });
+    expect(stoppedOf({ canceled: true })).toEqual({ byUserId: null, ...none });
     expect(stoppedOf({})).toBeNull();
+    // The right hand at a person's word, a restart from their message, the system's cause.
+    expect(stoppedOf({ canceled: { byUserId: "u1", byAgentId: "lodi" } })).toMatchObject({ byAgentId: "lodi" });
+    expect(stoppedOf({ canceled: { byUserId: "u1", restarted: true } })).toMatchObject({ restarted: true });
+    expect(stoppedOf({ canceled: { byUserId: null, code: "run.agent_archived" } })).toMatchObject({
+      byUserId: null,
+      code: "run.agent_archived",
+    });
     const next = withContinued({ canceled: { byUserId: "u1", text: "Oi" }, other: 1 }, "r2");
     expect(next).toEqual({ canceled: { byUserId: "u1", text: "Oi", continuedRunId: "r2" }, other: 1 });
     expect(stoppedOf(next)?.continuedRunId).toBe("r2");
+  });
+
+  test("a stop that started again from the person's message with nothing said: no row; one that wrote keeps it", () => {
+    const dev = { type: "agent" as const, id: "dev" };
+    const rows = buildRows([
+      message({ id: "ask", createdAt: at(12) }),
+      message({
+        id: "quiet",
+        author: dev,
+        meta: { canceled: { byUserId: "u1", restarted: true, text: "" } },
+        createdAt: at(11),
+      }),
+      message({
+        id: "said",
+        author: dev,
+        meta: { canceled: { byUserId: "u1", restarted: true, text: "Lendo." } },
+        createdAt: at(10),
+      }),
+    ]).flatMap((r) => (r.kind === "message" ? [r.message.id] : []));
+    expect(rows).toEqual(["ask", "said"]);
   });
 
   test("a reply at the step limit: whether it was continued, marked in its own meta", () => {

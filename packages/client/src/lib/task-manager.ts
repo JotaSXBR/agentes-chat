@@ -2,6 +2,7 @@ import type { TFunction } from "i18next";
 import type { EndedTask, HiddenTasks, ManagedTask, TaskNow, TaskWait } from "../api/types";
 import { type Activity, toolActivity } from "./activity";
 import { etaMinutes } from "./computer-queue";
+import { stopperOf } from "./notices";
 import { usageWhenShort } from "./plan-usage";
 import { usageWindowText } from "./usage-pause";
 
@@ -438,6 +439,26 @@ export function activityLine(activity: Record<string, number[]>, agentId: string
 /** How a task ended, for "Terminadas hoje": done, stopped (by whom) or couldn't. */
 export const endedState = (e: Pick<EndedTask, "status">): "done" | "stopped" | "failed" =>
   e.status === "done" ? "done" : e.status === "canceled" ? "stopped" : "failed";
+
+/**
+ * How a task ended, in words: done, couldn't finish, or stopped: "Você parou" only for who stopped it, the name of
+ * anyone else or of the agent that stopped it at their word, and a plain "Parada" when no person did.
+ */
+export function endedText(
+  t: TFunction,
+  task: Pick<EndedTask, "status" | "stoppedBy">,
+  meId: string | null | undefined,
+  agentName: (id: string) => string | undefined = () => undefined,
+): string {
+  const state = endedState(task);
+  if (state === "done") return t("taskManager.ended.done");
+  if (state === "failed") return t("taskManager.ended.failed");
+  const by = task.stoppedBy;
+  const stopper = by ? stopperOf({ byUserId: by.userId, byAgentId: by.agentId }, meId) : null;
+  if (stopper?.kind === "you") return t("taskManager.ended.stopped");
+  const name = stopper?.kind === "agent" ? agentName(stopper.agentId) : by?.name;
+  return name ? t("taskManager.ended.stoppedBy", { name }) : t("taskManager.state.stopped");
+}
 
 /** Since when "Terminadas hoje" counts: the local midnight. */
 export function todayStart(now = new Date()): string {

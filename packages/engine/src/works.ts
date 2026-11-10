@@ -16,7 +16,7 @@ import { missionOfThread } from "./missions";
 import { enqueue } from "./outbox";
 import { ACTIVE_RUN_STATUSES } from "./run-inbox";
 import { deliverNoticeToRun } from "./run-resume";
-import { type AgentRun, isTerminal, replyThreadOf, runErrorDetail } from "./runs";
+import { type AgentRun, canceledBy, isTerminal, personStopOf, replyThreadOf, runErrorDetail } from "./runs";
 import { ago, stepLine } from "./talker-snapshot";
 import { nameConversation } from "./thread-assess";
 import { maskCredentials } from "./tool-detail";
@@ -295,7 +295,7 @@ export async function workViews(db: Executor, orgId: string, ids: string[]): Pro
       resultMessageId: w.resultMessageId,
       queuePosition: state === "queued" ? Math.max(1, mine.findIndex((l) => l.id === w.id) + 1) : null,
       pausedUntil: state === "paused" ? (run?.until ?? null) : null,
-      canceledByUserId: status === "canceled" && run?.error?.startsWith("canceled_by:") ? run.error.slice(12) : null,
+      canceledByUserId: status === "canceled" ? canceledBy(run?.error) : null,
       errorCode: detail?.errorCode ?? (w.resultMessageId ? (reportCodes.get(w.resultMessageId) ?? null) : null),
     });
   }
@@ -864,10 +864,16 @@ export async function endWork(
     if (!resultId) {
       const detail = status === "failed" ? runErrorDetail(run.error) : null;
       const minutes = Math.max(1, Math.round((now.getTime() - work.startedAt.getTime()) / 60_000));
-      const byUserId = run.error?.startsWith("canceled_by:") ? run.error.slice(12) : null;
+      const stop = personStopOf(run.error);
+      const byUserId = stop?.userId || null;
       const locale = await localeOf(tx, work.requestedByUserId);
       const last = status !== "done" && work.updateSeq > 0 ? work.lastUpdateText : null;
-      const [by] = byUserId ? await tx.select({ name: users.name }).from(users).where(eq(users.id, byUserId)) : [];
+      // "Parado por Lodi" when the right hand stopped it at someone's word, else the person who stopped it.
+      const [by] = stop?.agentId
+        ? await tx.select({ name: schema.agents.name }).from(schema.agents).where(eq(schema.agents.id, stop.agentId))
+        : byUserId
+          ? await tx.select({ name: users.name }).from(users).where(eq(users.id, byUserId))
+          : [];
       end = await insertMessage(tx, {
         orgId: work.orgId,
         channelId: work.channelId,

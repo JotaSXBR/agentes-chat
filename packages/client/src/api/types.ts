@@ -6736,6 +6736,8 @@ export interface TaskAsk {
 /** An agent's board: its tasks to do, and while it is free, what keeps them from starting. */
 export interface AgentBacklog {
   todo: number;
+  /** Its queue takes some of them by itself as room frees; false: they wait on a person's go. Absent on older servers. */
+  starts?: boolean;
   /** Its plan or budget is spent until `until` (null: unknown). Null: they start when there's room. */
   out: { reason: "plan" | "budget"; until: string | null } | null;
 }

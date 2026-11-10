@@ -530,12 +530,13 @@ const TaskManagerView = z
         z.string(),
         z.object({
           todo: z.number().int(),
+          starts: z.boolean(),
           out: z.object({ reason: z.enum(["plan", "budget"]), until: z.string().nullable() }).nullable(),
         }),
       )
       .openapi({
         description:
-          "Per agent with tasks to do on the board you see: how many, and whether its plan or budget is spent until a reset (else they start when there's room).",
+          "Per agent with tasks to do on the board you see: how many, whether its queue takes any of them by itself (`starts`; else they wait on a person's go), and whether its plan or budget is spent until a reset.",
       }),
   })
   .openapi("TaskManagerView");

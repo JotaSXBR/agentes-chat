@@ -458,16 +458,18 @@ export function agentCardLine(
   const backlog = board?.backlog;
   if (!board || !backlog?.todo) return head;
   const todo = say(t)("taskManager.todo", { count: backlog.todo });
-  return shown + hidden > 0
-    ? `${head} · ${todo}`
-    : `${head} · ${todo} · ${idleWhy(t, board.locale, backlog, board.now)}`;
+  const why = shown + hidden > 0 ? null : idleWhy(t, board.locale, backlog, board.now);
+  return why ? `${head} · ${todo} · ${why}` : `${head} · ${todo}`;
 }
 
-/** Why a free agent's tasks to do haven't started: its plan or budget until a reset, else they start when there's room. */
+/**
+ * Why a free agent's tasks to do haven't started: its plan or budget until a reset, else they start when there's room;
+ * null when its queue takes none of them by itself (they wait on a person's go, or its queue is off).
+ */
 function idleWhy(t: TFunction, locale: string, backlog: AgentBacklog, now = Date.now()) {
   const s = say(t);
   const out = backlog.out;
-  if (!out) return s("taskManager.idle.room");
+  if (!out) return backlog.starts === false ? null : s("taskManager.idle.room");
   // A budget always comes back with the month; a plan may not have said when.
   if (!out.until) return s("taskManager.idle.planLimit");
   return s(`taskManager.idle.${out.reason}`, { when: clockAt(locale, out.until, new Date(now)) });

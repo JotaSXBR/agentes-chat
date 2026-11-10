@@ -12,6 +12,7 @@ import { outOfOffice } from "./out-of-office";
 import { pendingIds } from "./recovery";
 import { personStopOf, shownStatusSql } from "./runs";
 import { taskSeenSql } from "./task-access";
+import { taskQueues } from "./task-pump";
 import { mayContinuePause } from "./usage-pause";
 
 /**
@@ -163,6 +164,8 @@ export interface TaskAsk {
 export interface AgentBacklog {
   /** Tasks assigned to it still to do (`todo`), the caller's to see. */
   todo: number;
+  /** Its queue takes some of them by itself as room frees (`taskQueues`); else they wait on a person's go. */
+  starts: boolean;
   /** Out of office (`outOfOffice`): its plan or budget is spent until `until` (null: the plan didn't say). */
   out: { reason: "plan" | "budget"; until: string | null } | null;
 }
@@ -549,17 +552,17 @@ async function asksOf(db: Database, orgId: string, runIds: string[]): Promise<Ma
 }
 
 /**
- * Each agent's tasks to do on the board that the caller sees, and for one with any, whether it is out of office
- * (`outOfOffice`: its plan or its budget spent until a reset), the reason they don't start while it is free.
+ * Each agent's tasks to do on the board that the caller sees, and for one with any, whether its queue takes any of
+ * them by itself and whether it is out of office (`outOfOffice`: its plan or its budget spent until a reset), the
+ * reasons they don't start while it is free.
  */
 async function backlogOf(db: Database, orgId: string, userId: string, now: Date) {
-  const rows = rowsOf<{ agent_id: string; n: number | string }>(
-    await db.execute(sql`select i.assignee_id as agent_id, count(*) as n from ${schema.issues} i
+  const rows = rowsOf<{ agent_id: string; id: string }>(
+    await db.execute(sql`select i.assignee_id as agent_id, i.id from ${schema.issues} i
       where i.org_id = ${orgId}::uuid and i.assignee_type = 'agent' and i.status = 'todo'
-        and ${taskSeenSql("i", sql`${userId}`)}
-      group by i.assignee_id`),
+        and ${taskSeenSql("i", sql`${userId}`)}`),
   );
-  const ids = rows.map((r) => r.agent_id).filter((id) => UUID.test(id));
+  const ids = [...new Set(rows.map((r) => r.agent_id))].filter((id) => UUID.test(id));
   if (ids.length === 0) return {};
   const list = await db
     .select({
@@ -574,14 +577,24 @@ async function backlogOf(db: Database, orgId: string, userId: string, now: Date)
     })
     .from(agents)
     .where(and(eq(agents.orgId, orgId), inArray(agents.id, ids), isNull(agents.archivedAt)));
-  const away = await outOfOffice(db, orgId, list, { now });
+  const [away, queues] = await Promise.all([
+    outOfOffice(db, orgId, list, { now }),
+    taskQueues(
+      db,
+      orgId,
+      list.map((a) => a.id),
+      now.getTime(),
+    ),
+  ]);
   return Object.fromEntries(
     list.map((a): [string, AgentBacklog] => {
       const out = away.get(a.id);
+      const todo = rows.filter((r) => r.agent_id === a.id);
       return [
         a.id,
         {
-          todo: Number(rows.find((r) => r.agent_id === a.id)?.n ?? 0),
+          todo: todo.length,
+          starts: todo.some((r) => queues.has(r.id)),
           out: out ? { reason: out.reason, until: out.until?.toISOString() ?? null } : null,
         },
       ];

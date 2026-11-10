@@ -198,6 +198,14 @@ test("a free agent with tasks to do says how many and why they haven't started; 
   expect(agentCardLine(t, 0, 0, { backlog: { todo: 0, out: null }, locale: "en" })).toBe("taskManager.free");
 });
 
+test("a free agent whose queue takes none of its tasks to do (they wait on a person's go) never says they start", () => {
+  const board = { backlog: { todo: 4, starts: false, out: null }, locale: "en" };
+  expect(agentCardLine(t, 0, 0, board)).toBe('taskManager.free · taskManager.todo {"count":4}');
+  expect(agentCardLine(t, 0, 0, { ...board, backlog: { ...board.backlog, starts: true } })).toBe(
+    'taskManager.free · taskManager.todo {"count":4} · taskManager.idle.room',
+  );
+});
+
 test("a task waiting on a person names who, and a question's default says what it goes on with and when", () => {
   const people = { meId: "me", nameOf: (id: string) => (id === "ana" ? "Ana" : undefined) };
   const asking = (asks: ManagedTask["asks"]) => task(null, null, { asks });

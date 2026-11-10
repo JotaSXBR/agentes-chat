@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { schema } from "@agenteschat/db";
 import type { ModelRequest } from "@agenteschat/providers";
-import { createIssue, drainOutbox, postPersonMessage, taskManager, updateAgent } from "../src";
+import { createIssue, drainOutbox, postPersonMessage, taskManager, updateAgent, updateOrgSettings } from "../src";
 import { addMember, type Fixture, setup } from "./fixtures";
 
 setDefaultTimeout(30_000);
@@ -30,7 +30,22 @@ describe("why a free agent's tasks to do haven't started (a computer read 'room'
     await toDo(3);
     const view = await taskManager(f.db, f.owner.id, f.org.id);
     expect(view.tasks).toEqual([]);
-    expect(view.backlog).toEqual({ [f.agent.id]: { todo: 3, out: null } });
+    expect(view.backlog).toEqual({ [f.agent.id]: { todo: 3, starts: true, out: null } });
+  });
+
+  test("a task an agent gave waits for a person's go, and a queue switched off takes none: neither starts by itself", async () => {
+    f = await setup();
+    const agent = { type: "agent" as const, agentId: f.agent.id, channelId: f.general.id };
+    await createIssue({ db: f.db, pubsub: f.pubsub }, agent, f.org.id, {
+      title: "Check the error logs",
+      assignee: { type: "agent", id: f.agent.id },
+    });
+    const backlog = async () => (await taskManager(f.db, f.owner.id, f.org.id)).backlog[f.agent.id];
+    expect(await backlog()).toEqual({ todo: 1, starts: false, out: null });
+    await toDo(1);
+    expect(await backlog()).toEqual({ todo: 2, starts: true, out: null });
+    await updateOrgSettings(f.db, f.owner.id, f.org.id, { taskPump: false });
+    expect(await backlog()).toEqual({ todo: 2, starts: false, out: null });
   });
 
   test("its budget spent: they wait until the month renews", async () => {
@@ -52,7 +67,7 @@ describe("why a free agent's tasks to do haven't started (a computer read 'room'
       });
     const view = await taskManager(f.db, f.owner.id, f.org.id);
     const nextMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)).toISOString();
-    expect(view.backlog[f.agent.id]).toEqual({ todo: 2, out: { reason: "budget", until: nextMonth } });
+    expect(view.backlog[f.agent.id]).toEqual({ todo: 2, starts: true, out: { reason: "budget", until: nextMonth } });
   });
 
   test("only the tasks the viewer may see count", async () => {

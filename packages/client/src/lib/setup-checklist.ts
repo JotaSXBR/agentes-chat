@@ -1,6 +1,6 @@
 import type { TFunction } from "i18next";
 import type { Agent, AgentSetupChecklist, ConnectorDef, SetupStep } from "../api/types";
-import { ROLE_DEFAULTS, ROLE_IDS, type RoleId } from "./new-agent";
+import { PERSONAL_STARTER_APPS, ROLE_DEFAULTS, ROLE_IDS, type RoleId } from "./new-agent";
 import { providerLabel } from "./providers";
 
 /*
@@ -217,22 +217,6 @@ const TEMPLATE_ROLES: Record<string, RoleId> = {
   bia: "support",
 };
 
-/**
- * The apps (catalog connector ids) a personal template's agents use (ADR 0159; mirror of the personal `MEMBERS` in
- * packages/engine/src/team-templates.ts), by handle: a person's calendar, files and lists rather than a team's tools.
- */
-const PERSONAL_TEMPLATE_APPS: Record<string, readonly string[]> = {
-  clara: ["google-calendar", "todoist"],
-  duda: ["google-sheets", "drive"],
-  leo: ["google-calendar"],
-  mel: ["todoist", "google-docs"],
-  gabi: ["notion", "google-docs"],
-  lu: ["google-docs", "notion"],
-  rosa: ["todoist", "google-calendar"],
-  vic: ["google-calendar", "drive"],
-  rui: ["google-calendar", "google-docs", "google-sheets"],
-};
-
 /** A template handle without its taken-name suffix (`iara-2` is Iara's). */
 const templateHandle = (handle: string) => handle.replace(/-\d+$/, "");
 
@@ -247,7 +231,7 @@ export function firstRunApps(team: readonly Pick<Agent, "handle" | "setup">[]): 
     const role = teamRole(a);
     const apps = role
       ? Object.keys(ROLE_DEFAULTS[role].levels)
-      : (PERSONAL_TEMPLATE_APPS[templateHandle(a.handle)] ?? []);
+      : (PERSONAL_STARTER_APPS[templateHandle(a.handle)] ?? []);
     for (const id of apps) count.set(id, (count.get(id) ?? 0) + 1);
   }
   return [...count.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id);

@@ -29,7 +29,7 @@ import type { CommandApproval } from "./missions";
 import { recordOperatorEvent } from "./operator-events";
 import { can, getMembership, type Membership, requirePermission } from "./organizations";
 import { isRightHand, RIGHT_HAND_EDITABLE, refuseRightHand, rightHandPermanent } from "./right-hand";
-import { newSetup, setupOf } from "./setup-checklist";
+import { newSetup, type SetupExtras, setupOf } from "./setup-checklist";
 import {
   CONNECTOR_ALL,
   DEFAULT_AGENT_SCOPES,
@@ -200,8 +200,12 @@ export async function createAgent(
   input: AgentInput & {
     autonomy?: CommandApproval;
     audienceMode?: Agent["audienceMode"];
-    /** The ready-made role it starts from, which the right hand's first run suggests apps by (ADR 0155); null: none. */
-    setup?: { role: string | null };
+    /**
+     * The ready-made role it starts from, which the right hand's first run suggests apps by (ADR 0155); null: none.
+     * From its card (ADR 0164): how it introduced itself, the personal starter it began as and the apps it was made to
+     * use.
+     */
+    setup?: { role: string | null } & SetupExtras;
   },
   defaults: { model: string },
   /** `via`: the agent whose card it was created from (the audit's "via"). */
@@ -256,8 +260,8 @@ export async function createAgent(
         machineId: home?.id ?? null,
         orgId,
         ownerUserId,
-        // Every new agent keeps the role it was made from, whichever way it was made (ADR 0155).
-        setup: newSetup(setup?.role),
+        // Every new agent keeps the role it was made from and what its card said, whichever way it was made (ADR 0155).
+        setup: newSetup(setup?.role, setup),
         ...(autonomy ? { missionCommandApproval: autonomy } : {}),
         audienceMode: audience,
         // The moment of this insert, not its transaction's start (`now()`): agents made together (a template team)

@@ -70,7 +70,7 @@ import { DEFAULT_KEY } from "@/components/AgentFields";
 import { AgentAiForm } from "@/components/ai/AgentAi";
 import { usePlanHold } from "@/components/ai/ConnectAiSteps";
 import { useConnectAi } from "@/components/ConnectAi";
-import { CommandBlock } from "@/components/Machines";
+import { CommandBlock } from "@/components/machine-bits";
 import { useOrg } from "@/components/org-context";
 import {
   OpenPrefsButton,

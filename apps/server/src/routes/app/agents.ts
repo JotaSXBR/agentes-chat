@@ -924,11 +924,27 @@ export function agentRoutes(deps: AppDeps) {
                   .string()
                   .regex(/^[a-z][a-z_-]{0,31}$/)
                   .nullable(),
+                hello: z.string().max(500).optional().openapi({
+                  description: "How it introduced itself on its card, in its own voice (ADR 0164).",
+                }),
+                starter: z
+                  .string()
+                  .regex(/^[a-z][a-z_-]{0,31}$/)
+                  .optional()
+                  .openapi({ description: "The personal starter it began as (`clara`, ADR 0159 §3)." }),
+                apps: z
+                  .record(z.string().regex(/^[a-z0-9][a-z0-9-]{0,63}$/), z.enum(["read", "write"]))
+                  .refine((apps) => Object.keys(apps).length <= 12, { message: "At most 12 apps" })
+                  .optional()
+                  .openapi({
+                    description:
+                      "The apps it was made to use (catalog connector ids) at their levels (ADR 0164): its starting point's not connected yet, then the card's; the levels of the ones already connected are set by the app.",
+                  }),
               })
               .optional()
               .openapi({
                 description:
-                  "The ready-made role it starts from (`support`), which the right hand's first run suggests apps by (ADR 0155 §6). Without it, no role.",
+                  "The ready-made role it starts from (`support`), which the right hand's first run suggests apps by (ADR 0155 §6), and what its card said (ADR 0164). Without it, no role.",
               }),
           }),
         ),

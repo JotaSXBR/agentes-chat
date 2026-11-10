@@ -717,6 +717,12 @@ export interface AgentSetupChecklist {
   role: string | null;
   /** The steps a person confirmed or skipped. */
   done: SetupStep[];
+  /** How it introduced itself on its card, in its own voice (ADR 0164). */
+  hello?: string;
+  /** The personal starter it began as ("clara", ADR 0159 §3). */
+  starter?: string;
+  /** The apps it was made to use (catalog connector ids) at their levels (ADR 0164). */
+  apps?: Record<string, "read" | "write">;
 }
 
 /** A costly step unrequested work needs a person's go for (ADR 0131 §3). */
@@ -882,8 +888,11 @@ export interface AgentInput {
   autonomy?: CommandApproval;
   /** Editing only: its autonomy brakes (ADR 0131); the fields given change. */
   brakes?: Partial<AgentBrakes>;
-  /** Creating only: the ready-made role it starts from, which the right hand's first run suggests apps by. */
-  setup?: { role: RoleId | null };
+  /**
+   * Creating only: the ready-made role it starts from, which the right hand's first run suggests apps by, and what its
+   * card said (ADR 0164): how it introduced itself, the personal starter it began as, the apps it will use at their levels.
+   */
+  setup?: { role: RoleId | null; hello?: string; starter?: string; apps?: Record<string, "read" | "write"> };
 }
 
 /** A person's answer to an agent's proposal of costly work nobody asked for (ADR 0131 §3). */
@@ -4104,8 +4113,8 @@ export interface CalendarRange {
   routines: { routineId: string; name: string; agentId: string; at: string; target: RoutineTarget }[];
   /** Pending reminders the viewer may see (absent on an older server). */
   reminders?: CalendarReminder[];
-  /** Issues due in the range (all-day). */
-  deadlines: { issueId: string; number: number; title: string; date: string }[];
+  /** Issues due in the range (all-day), with who has each (absent on an older server). */
+  deadlines: { issueId: string; number: number; title: string; date: string; assignee?: Actor | null }[];
   proposals: CalendarProposal[];
 }
 
@@ -7499,6 +7508,8 @@ export interface PersonUsage {
   roleIds: string[];
   owner: boolean;
   money: boolean;
+  /** Some of it was use on a plan, priced at the API's list price ("≈"). */
+  estimated: boolean;
   renewsAt: string;
   since: string;
   until: string;

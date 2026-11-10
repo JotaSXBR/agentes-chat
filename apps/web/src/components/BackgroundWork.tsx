@@ -1,8 +1,8 @@
 import { type Issue, type Message, useChannels, type WorkView } from "@agenteschat/client";
-import { heldBack, queueText } from "@agenteschat/client/lib/issues";
-import { blockedText, workLine, workPlanProgress, workWaitsOnPerson } from "@agenteschat/client/lib/long-work";
+import { heldBack } from "@agenteschat/client/lib/issues";
+import { workLine, workPlanProgress, workWaitsOnPerson } from "@agenteschat/client/lib/long-work";
 import { can } from "@agenteschat/client/lib/permissions";
-import { Icon, WorkLine, WorkLineAction, WorkPlan } from "@agenteschat/ui";
+import { WorkLine, WorkLineAction, WorkPlan } from "@agenteschat/ui";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
@@ -186,57 +186,5 @@ function CardBlock({ issue, work }: { issue: Issue; work: WorkView }) {
         />
       )}
     </div>
-  );
-}
-
-/**
- * On a board card: its place in its agent's queue ("Na fila de Ada · 2º"), the blocked badge, how far its plan is with
- * the step it is on (the full plan is on the task's page) and its last update. While blocked, that step waits too.
- */
-export function IssueCardWork({ issue }: { issue: Issue }) {
-  const { t } = useTranslation();
-  const { org } = useOrg();
-  const dir = useDirectory(org.id);
-  const work = issue.backgroundWork;
-  const blocked = blockedText(t, issue.blocked);
-  const agent = issue.assignee?.type === "agent" ? dir.agentById.get(issue.assignee.id) : undefined;
-  const queued = queueText(t, issue, agent?.name);
-  if (!work && !blocked && !queued) return null;
-  const progress = work ? workPlanProgress(work) : null;
-  const live = work && (work.status === "live" || work.status === "queued");
-  const step = live ? (work.plan.find((p) => p.state === "doing") ?? work.plan.find((p) => p.state === "todo")) : null;
-  return (
-    <span className="issue-card__work">
-      {queued && (
-        <span className="ac-iconline issue-card__queue">
-          <Icon name="layers" size={14} />
-          <span>{queued}</span>
-        </span>
-      )}
-      {blocked && (
-        <span className="ac-iconline issue-card__blocked">
-          <Icon name={issue.blocked?.reason === "failed" ? "alert" : "waiting"} size={14} />
-          <span>{blocked}</span>
-        </span>
-      )}
-      {live && progress && (
-        <span className="issue-card__plan">
-          <span className="issue-card__plan-head">
-            {t("work.plan")} · {t("work.planProgress", progress)}
-          </span>
-          {step && (
-            <span className="ac-iconline issue-card__step" data-state={issue.blocked ? "blocked" : step.state}>
-              <span className="issue-card__step-mark" aria-hidden="true" />
-              {step.text}
-            </span>
-          )}
-        </span>
-      )}
-      {live && work.lastUpdate && (
-        <span className="issue-card__update">
-          <b>{t("work.lastUpdate")}:</b> {work.lastUpdate.text}
-        </span>
-      )}
-    </span>
   );
 }

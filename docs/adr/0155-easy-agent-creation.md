@@ -80,3 +80,9 @@ for the same AI and apps. §2 is withdrawn on the web and the phone, its card on
 - `agents.setup` keeps the role an agent started from (the first run's apps row suggests by the team's roles) and
   the right hand's skips. The confirm route still takes a new agent's steps, which the apps no longer send.
 - Gone with it: the step dialogs and screens, the greeting and its first tasks, and their words in every language.
+
+## Amendment (2026-11-10): one card (§1)
+
+ADR 0164: on the web, the two steps become one dialog with the starting points on the left and the agent's card,
+edited in place, on the right, opened from every way in. `agents.setup` keeps what the card chose (its sentence, its
+starter and its apps); with §2 withdrawn, no checklist in the agent's chat reads it (ADR 0164's amendment).

@@ -1295,15 +1295,10 @@ async function executeRunInner(
     }
     // Its line ends with the run (checked on read); the apps refresh now (ADR 0084 §11).
     await announceAgentStatus(deps.pubsub, run.orgId, run.agentId).catch(() => {});
-    // A task run ended or parked: its agent has room for its next task (`task-pump.ts`).
-    if (!run.background) {
-      const [linked] = await db
-        .select({ issueId: agentRuns.issueId })
-        .from(agentRuns)
-        .where(eq(agentRuns.id, run.id))
-        .catch(() => []);
-      if (linked?.issueId) await kickTaskPump(db, run.orgId).catch(() => {});
-    }
+    // A task run ended or parked: its agent has room for its next task (`task-pump.ts`). Known from memory, since
+    // every run ends here; one a tool tied to a task elsewhere waits for the minute's tick.
+    if (!run.background && (run.issueId || channelRow?.kind === "task"))
+      await kickTaskPump(db, run.orgId).catch(() => {});
     // Back from its plan or budget and over: the turns its note took in still wait, so the note speaks on for them.
     if (waitedOn && USAGE_WAIT_CODES.has(waitedOn) && status !== "waiting_input" && status !== "waiting_approval") {
       await usageNoteHandOn(deps, run).catch(() => {});

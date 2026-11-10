@@ -522,6 +522,40 @@ describe("one item is worked once, noise waits for a digest, repeats stop (§4�
     expect(await signalsOf("digest")).toHaveLength(0);
   });
 
+  test("an alert a routine passes on still meets the noise judge; a plain hand-off from it never does", async () => {
+    f = await setup();
+    const ada = await agentOf("Ada", "ada");
+    const brief = await alert(f.agent.id, "Quando o Sentry mandar um erro, passe para a Ada.");
+    const [run] = await f.db
+      .insert(agentRuns)
+      .values({
+        orgId: f.org.id,
+        agentId: f.agent.id,
+        channelId: f.general.id,
+        threadRootId: brief.id,
+        triggerMessageId: brief.id,
+        trigger: "mention",
+        hop: 1,
+        status: "running",
+        background: true,
+      })
+      .returning();
+    // What the routine's run hands on with tell_agent.
+    const relay = (body: string) =>
+      insertMessage(f.db, {
+        orgId: f.org.id,
+        channelId: f.general.id,
+        author: { type: "agent", agentId: f.agent.id, runId: run?.id ?? null, hop: 1, stretchId: null },
+        body,
+      });
+    const known = await relay("Sentry: ResizeObserver loop limit exceeded https://sentry.example.com/issues/301/");
+    const held = await brakeWakes({ db: f.db, judge: fakeJudge(0.9) }, known, [ada.id], { triage: false });
+    expect(held.held.get(ada.id)).toBe("digest");
+    const task = await relay("Pega a revisão da página de preços e me avisa quando terminar.");
+    const woke = await brakeWakes({ db: f.db, judge: fakeJudge(0.9) }, task, [ada.id], { triage: false });
+    expect(woke.wake).toEqual([ada.id]);
+  });
+
   test("work held only for room is never digested as noise: past the hour it looks slower, after a day it starts", async () => {
     f = await setup();
     const ada = await agentOf("Ada", "ada", { maxUnrequested: 1 });

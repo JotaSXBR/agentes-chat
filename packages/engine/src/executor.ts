@@ -166,7 +166,9 @@ import {
   decideTurnEnd,
   type LearnSignal,
   localPathsCited,
+  personAsk,
   reportRunFailure,
+  stretchNudges,
   type TurnEndDecision,
   toolsNamed,
   triedCalls,
@@ -2739,10 +2741,11 @@ async function executeRunInner(
   let plan: BrainPlan = brainPlan;
   /**
    * What the turn-end judge reads (ADR 0109), filled only when it runs: the run's general means (`turnMeans`, its
-   * computer's own tools on a computer brain) and every call it tried (`triedCalls`). An `untried` nudge names them.
+   * computer's own tools on a computer brain), every call it tried (`triedCalls`) and what the person asked
+   * (`personAsk`). An `untried` nudge names them.
    */
   const evidenceFor = (t: Transcript) => {
-    const evidence = { means: [] as string[], tried: [] as string[] };
+    const evidence = { means: [] as string[], tried: [] as string[], ask: "" };
     const gather = async () => {
       const names = new Set([...granted, ...tools].map((x) => x.name));
       const own =
@@ -2759,6 +2762,7 @@ async function executeRunInner(
       evidence.means = [...turnMeans(names, teammates), ...own];
       // No call executed in this run: no tool step to read.
       evidence.tried = t.executedCalls ? await triedCalls(db, run, t.harnessTried) : (t.harnessTried ?? []);
+      evidence.ask = await personAsk(db, run, t.request).catch(() => "");
       return evidence;
     };
     return { evidence, gather };
@@ -4873,11 +4877,13 @@ async function executeRunInner(
         localPaths,
         judged: owesAnswer && !capped ? judged : "",
         mission: Boolean(plan.missionId),
+        asks: (t.artifacts ?? []).some((a) => a.kind === "choices"),
         // A mission's card already asking a person brings it back too.
         wakesLater: async () =>
           (plan.missionId ? await missionAsksPerson(db, plan.missionId) : false) ||
           wakesLater(db, run, (t as { detachedWaits?: { waitId: string }[] }).detachedWaits),
         comesBack: () => comesBackHere(db, run),
+        stretchNudged: () => stretchNudges(db, run),
         verdict: judge
           ? async () =>
               continuationVerdict(judge, {

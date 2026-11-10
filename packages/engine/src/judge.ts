@@ -106,6 +106,27 @@ export const judgeCallOf = (error: unknown): Partial<JudgeCallTags> =>
 
 const clamp = (n: unknown) => (typeof n === "number" && Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 0);
 
+/** A `choice` answer's probability for `option`: its own, else 1 when it is the choice (an answer without them). */
+export const choiceP = (answer: JudgeAnswer | undefined, option: string) =>
+  answer?.probabilities?.[option] ?? (answer?.choice === option ? 1 : 0);
+
+/**
+ * What a person's message (`key` in the state) does to the agent that reads it, asked beside a judgment's own
+ * questions: an agent questioned on what it did answers and stops (`continuationVerdict`), and Automático never
+ * answers that, a correction or a complaint on the small tier or with low effort (`chooseAutoModel`).
+ */
+export const stanceQuestion = (key: string): JudgeQuestion => ({
+  type: "choice",
+  instructions: `What does \`${key}\`, a person's message, do to the AI agent that reads it?`,
+  criteria: {
+    questions:
+      "Asks the agent about itself or what it did (why, whether anyone asked for it, whether it uses, knows or saw something), or objects to it (stop, that's wrong, nobody asked), and asks for nothing new.",
+    corrects: "Corrects or complains about what the agent did or said, and asks for something else instead.",
+    asks: "Asks for work, information or a result, even worded as a question ('can you…?').",
+    other: "Anything else: thanks, news, chat.",
+  },
+});
+
 /** Whether a request needs a model that sees images (an image in it, or a `box` question). */
 export const judgeSeesImages = (request: Pick<JudgeRequest, "images" | "questions">) =>
   Object.keys(request.images ?? {}).length > 0 || Object.values(request.questions).some((q) => q.type === "box");

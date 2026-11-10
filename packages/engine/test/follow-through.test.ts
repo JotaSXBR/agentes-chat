@@ -3,11 +3,13 @@ import { and, eq, schema } from "@agenteschat/db";
 import { type ModelRequest, systemText, textOf } from "@agenteschat/providers";
 import type { FakeReply } from "@agenteschat/providers/testing";
 import {
+  addChannelMember,
   askAgentToImplement,
   CANCEL_FOLLOW_UP_TOOL,
   cancelFollowUp,
   createAgent,
   createAgentRuns,
+  createFakeJudge,
   createIssue,
   drainOutbox,
   FOLLOW_UP_JOB,
@@ -23,11 +25,20 @@ import {
   STRETCH_JOB,
   STRETCH_REFUSAL,
   saveAgentStyle,
+  stanceQuestion,
   type ToolSource,
   toolPolicy,
   wakeFollowUp,
 } from "../src";
-import { advance, decideTurnEnd, type TurnEnd, toolsNamed } from "../src/continuation";
+import {
+  advance,
+  continuationVerdict,
+  decideTurnEnd,
+  personAsk,
+  type TurnEnd,
+  toolsNamed,
+  untriedNudge,
+} from "../src/continuation";
 import { addMember, type Fixture, setup } from "./fixtures";
 
 /**
@@ -865,5 +876,264 @@ describe("a reply that names its own tools to a person", () => {
     await drainOutbox(f.db, f.handlers);
     expect(f.provider.calls.length).toBe(2);
     expect((await agentMessages(f)).map((m) => m.body)).toEqual([answer, answer]);
+  });
+});
+
+describe("the turn-end check holds the reply to what the person asked", () => {
+  const stepsOf = (fx: Fixture) => fx.db.select().from(schema.agentRunSteps);
+  const ruleOf = (s: { data: Record<string, unknown> }) => (s.data.continuation as { rule?: string } | undefined)?.rule;
+  const judgedCalls = (fx: Fixture) =>
+    followThroughCalls(fx) as unknown as { state: Record<string, unknown>; questions: Record<string, unknown> }[];
+  const turn = (over: Partial<TurnEnd> = {}): TurnEnd => ({
+    state: { count: 0 },
+    kind: "conversation",
+    executed: 1,
+    bound: null,
+    quiet: false,
+    decided: null,
+    unanswered: false,
+    unreached: "",
+    judged: "Não consegui abrir o relatório.",
+    mission: false,
+    wakesLater: async () => false,
+    verdict: async () => "untried",
+    ...over,
+  });
+
+  test("asked about itself or what it did, its answer is the whole job, even a plain no", async () => {
+    const cases = [
+      {
+        ask: "@dev por que você abriu o painel de faturamento?",
+        reply: "Abri para conferir o plano antes do relatório, mas ninguém pediu isso. Parei por aqui.",
+      },
+      { ask: "@dev você usa o Mac do Bruno?", reply: "Não, não uso esse Mac." },
+      { ask: "@dev did anyone ask you to export the contact list?", reply: "No, nobody did. I stopped there." },
+    ];
+    for (const c of cases) {
+      f = await setup({
+        // The verdict alone says ways are left to try; the person only asked about the agent.
+        judge: (kind, id) => (kind === "follow_through" ? (id === "stance" ? "questions" : "untried") : undefined),
+        reply: () => ({ chunks: [c.reply] }),
+      });
+      await ask(f, c.ask);
+      await drainOutbox(f.db, f.handlers);
+      expect(f.provider.calls.length).toBe(1);
+      expect((await agentMessages(f)).map((m) => m.body)).toEqual([c.reply]);
+      expect((await stepsOf(f)).some((s) => s.data.nudged)).toBe(false);
+      expect(await f.db.select().from(schema.agentQuestions)).toEqual([]);
+      expect(judgedCalls(f)[0]?.questions.stance).toEqual(stanceQuestion("request"));
+      await f.close();
+      f = undefined as unknown as Fixture;
+    }
+  });
+
+  test("on an agent's relay, the judge reads the person's own ask, and the nudge quotes it", async () => {
+    const held = "Não tenho acesso ao Instagram da loja.";
+    const found = "A pasta com as fotos do evento é https://drive.example.com/fotos-evento.";
+    f = await setup({
+      judge: (kind, id, state) =>
+        kind === "follow_through" && id === "verdict" ? (state.reply === held ? "untried" : "done") : undefined,
+      reply: (_request, call) => ({ chunks: [call === 1 ? held : found] }),
+    });
+    const ops = await createAgent(
+      f.db,
+      f.owner.id,
+      f.org.id,
+      { name: "Ops", handle: "ops", role: "Marketing", credentialId: f.credential.id },
+      { model: "claude-sonnet-5-5" },
+    );
+    await addChannelMember(f.db, f.owner.id, f.org.id, f.general.id, { agentId: ops.id });
+    const asked = await insertMessage(f.db, {
+      orgId: f.org.id,
+      channelId: f.general.id,
+      author: { type: "person", userId: f.owner.id },
+      body: "me manda o link da pasta com as fotos do evento",
+    });
+    const relay = await insertMessage(f.db, {
+      orgId: f.org.id,
+      channelId: f.general.id,
+      author: { type: "agent", agentId: ops.id, runId: null, hop: 1, stretchId: asked.id },
+      body: "@dev a Ana precisa das fotos do evento, consegue pegar no Instagram?",
+    });
+    await f.db.transaction((tx) => createAgentRuns(tx, relay, [f.agent.id], "mention"));
+    await drainOutbox(f.db, f.handlers);
+
+    const [first] = judgedCalls(f);
+    expect(first?.state.request).toBe(relay.body);
+    expect(first?.state.ask).toBe(asked.body);
+    expect(first?.questions.stance).toEqual(stanceQuestion("ask"));
+    const nudge = lastUserText(f.provider.calls[1]?.request as ModelRequest);
+    expect(nudge).toContain('Asked: "me manda o link da pasta com as fotos do evento".');
+    expect(nudge).toContain("never ask anyone for a sign-in or an access the request doesn't need");
+    expect(nudge).toContain("Your last message wasn't posted and nobody sees this note");
+    expect((await agentMessages(f)).map((m) => m.body)).toEqual([relay.body, found]);
+  });
+
+  test("a reply that carries a question card asked: no nudge to ask, and no second card", async () => {
+    const card = {
+      title: "Post",
+      questions: [
+        {
+          question: "Publico o post agora ou espero a revisão?",
+          options: [{ label: "Publicar agora" }, { label: "Esperar a revisão" }],
+        },
+      ],
+    };
+    f = await setup({
+      blockTools: true,
+      judge: (kind, id) => (kind === "follow_through" && id === "verdict" ? "ask" : undefined),
+      reply: (request) =>
+        JSON.stringify(request.messages.at(-1)?.content).includes("tool_result")
+          ? { chunks: ["Qual dos dois?"] }
+          : { chunks: [], toolUses: [{ name: "ask_choices", input: card }] },
+    });
+    await ask(f, "@dev publica o post da promoção");
+    await drainOutbox(f.db, f.handlers);
+    expect(f.provider.calls.length).toBe(2);
+    expect(await f.db.select().from(schema.agentQuestions)).toEqual([]);
+    expect((await stepsOf(f)).map(ruleOf)).toContain("asked");
+    expect((await agentMessages(f)).map((m) => m.body)).toEqual(["Qual dos dois?"]);
+  });
+
+  test("copies of one agent in a stretch share three pushes, never two each", async () => {
+    f = await setup({
+      judge: (kind, id) => (kind === "follow_through" && id === "verdict" ? "untried" : undefined),
+      reply: () => ({ chunks: ["Não consigo abrir o relatório de vendas."] }),
+    });
+    const ops = await createAgent(
+      f.db,
+      f.owner.id,
+      f.org.id,
+      { name: "Ops", handle: "ops", role: "Sales", credentialId: f.credential.id },
+      { model: "claude-sonnet-5-5" },
+    );
+    await addChannelMember(f.db, f.owner.id, f.org.id, f.general.id, { agentId: ops.id });
+    const asked = await ask(f, "@dev me manda o relatório de vendas da semana");
+    await drainOutbox(f.db, f.handlers);
+    for (const n of [1, 2, 3]) {
+      const relay = await insertMessage(f.db, {
+        orgId: f.org.id,
+        channelId: f.general.id,
+        author: { type: "agent", agentId: ops.id, runId: null, hop: 1, stretchId: asked.id },
+        body: `@dev tenta de novo o relatório (${n})`,
+      });
+      await f.db.transaction((tx) => createAgentRuns(tx, relay, [f.agent.id], "mention"));
+      await drainOutbox(f.db, f.handlers);
+    }
+    const steps = await stepsOf(f);
+    expect(steps.filter((s) => s.data.nudged === "untried")).toHaveLength(3);
+    expect(steps.filter((s) => ruleOf(s) === "stretch_cap")).toHaveLength(1);
+  });
+
+  test("the pushes left in the stretch are read only before a push", async () => {
+    expect(await decideTurnEnd(turn({ stretchNudged: async () => 2 }))).toMatchObject({ rule: "untried" });
+    expect(await decideTurnEnd(turn({ stretchNudged: async () => 3 }))).toMatchObject({
+      outcome: "done",
+      rule: "stretch_cap",
+    });
+    // Its own pushes count with the others'.
+    const once = { count: 1, executedAtNudge: 0 };
+    expect(await decideTurnEnd(turn({ state: once, stretchNudged: async () => 2 }))).toMatchObject({
+      rule: "stretch_cap",
+    });
+    // A promise or a need past it ends as it is, never pushed into asking.
+    for (const verdict of ["continue", "ask"] as const)
+      expect(await decideTurnEnd(turn({ verdict: async () => verdict, stretchNudged: async () => 3 }))).toMatchObject({
+        outcome: "done",
+        rule: "stretch_cap",
+      });
+    let read = 0;
+    const count = async () => {
+      read++;
+      return 0;
+    };
+    await decideTurnEnd(turn({ verdict: async () => "done", stretchNudged: count }));
+    await decideTurnEnd(turn({ verdict: async () => "secret", stretchNudged: count }));
+    expect(read).toBe(0);
+    // A secret asked in the chat keeps its rule even beside a card.
+    expect(await decideTurnEnd(turn({ asks: true, verdict: async () => "secret" }))).toMatchObject({ rule: "secret" });
+  });
+
+  test("questioned with nothing new to do, it is done; corrected and given something else, it follows through", async () => {
+    const verdictWith = (verdict: string, stance: string) =>
+      continuationVerdict(
+        createFakeJudge((_kind, id) => (id === "verdict" ? verdict : id === "stance" ? stance : undefined)),
+        {
+          orgId: "o",
+          agentId: "a",
+          runId: "r",
+          request: "por que você abriu o painel de cobrança?",
+          ask: "por que você abriu o painel de cobrança?",
+          reply: "Para conferir o plano. Ninguém pediu, parei.",
+          means: [],
+          tried: [],
+          runKind: "conversation",
+        },
+      );
+    for (const verdict of ["untried", "continue", "ask"]) expect(await verdictWith(verdict, "questions")).toBe("done");
+    expect(await verdictWith("secret", "questions")).toBe("secret");
+    expect(await verdictWith("continue", "corrects")).toBe("continue");
+    expect(await verdictWith("untried", "asks")).toBe("untried");
+  });
+
+  test("the judge is asked what the message does only where a person wrote to it, and ask_choices counts as asking", async () => {
+    const judge = createFakeJudge(() => "done");
+    const base = { orgId: "o", agentId: "a", runId: "r", reply: "ok", means: [], tried: [] };
+    const link = "me manda o link";
+    await continuationVerdict(judge, { ...base, request: link, ask: link, runKind: "conversation" });
+    await continuationVerdict(judge, { ...base, request: "relatório diário de erros", runKind: "routine" });
+    await continuationVerdict(judge, { ...base, request: "você tem o login?", ask: link, runKind: "agents_dm" });
+    const [own, routine, between] = judge.calls;
+    expect(own?.state).not.toHaveProperty("ask");
+    expect(own?.questions.stance).toEqual(stanceQuestion("request"));
+    expect(routine?.questions).not.toHaveProperty("stance");
+    // Between agents it answers the agent that asked: the person's words are context only.
+    expect(between?.state.ask).toBe(link);
+    expect(between?.questions).not.toHaveProperty("stance");
+    const criteria = (own?.questions.verdict as { criteria: Record<string, string> } | undefined)?.criteria ?? {};
+    expect(criteria.done).toContain("request_permission, ask_user or ask_choices");
+    expect(criteria.done).toContain("A plain answer to a question about itself");
+    expect(criteria.untried).toContain("(not when it was only asked whether it has one)");
+    expect(criteria.untried).toContain(
+      "A sign-in or an access the person's request (`ask`, else `request`) doesn't need is no way left to try.",
+    );
+  });
+
+  test("the untried nudge quotes the ask, never reaches for an access it doesn't need, and says the reply was held", () => {
+    const nudge = untriedNudge([], [], "me manda o link da pasta\n  com as fotos do evento");
+    expect(nudge).toContain('Asked: "me manda o link da pasta com as fotos do evento".');
+    expect(nudge).toContain("never ask anyone for a sign-in or an access the request doesn't need");
+    expect(nudge).toEndWith(
+      "Your last message wasn't posted and nobody sees this note: if your answer stands, write it again as it is.",
+    );
+    expect(untriedNudge([], [])).not.toContain("Asked:");
+  });
+
+  test("the person's ask is what opened the stretch; none when an agent opened it", async () => {
+    f = await setup();
+    const asked = await insertMessage(f.db, {
+      orgId: f.org.id,
+      channelId: f.general.id,
+      author: { type: "person", userId: f.owner.id },
+      body: "me manda a planilha de custos",
+    });
+    const relay = await insertMessage(f.db, {
+      orgId: f.org.id,
+      channelId: f.general.id,
+      author: { type: "agent", agentId: f.agent.id, runId: null, hop: 1, stretchId: asked.id },
+      body: "@ops tem a planilha?",
+    });
+    const own = await insertMessage(f.db, {
+      orgId: f.org.id,
+      channelId: f.general.id,
+      author: { type: "agent", agentId: f.agent.id, runId: null, hop: 1, stretchId: null },
+      body: "Bom dia, time.",
+    });
+    const of = (m: { id: string; stretchId: string | null }, carried?: string) =>
+      personAsk(f.db, { orgId: f.org.id, stretchId: m.stretchId, triggerMessageId: m.id }, carried);
+    expect(await of(relay)).toBe("me manda a planilha de custos");
+    expect(await of(asked)).toBe("me manda a planilha de custos");
+    expect(await of(own)).toBe("");
+    expect(await of(own, "o relatório de vendas")).toBe("o relatório de vendas");
   });
 });

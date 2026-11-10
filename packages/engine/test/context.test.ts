@@ -3,15 +3,19 @@ import { eq, schema } from "@agenteschat/db";
 import { systemText } from "@agenteschat/providers";
 import {
   type AgentRun,
+  BREVITY_LINE,
   buildRunContext,
+  COMPUTER_TOOLS_NOTE,
   CONTINUE_THE_CONVERSATION,
   createAgent,
   forComputerBrain,
   type HandOff,
+  HOW_YOU_WORK,
   handOffsBlock,
   insertMessage,
   type Message,
   nowLine,
+  ONE_QUESTION_LINE,
   openAgentDm,
   PLAIN_WORDS_LINE,
   postPersonMessage,
@@ -132,7 +136,7 @@ test("system prompt carries org context, agent instructions and channel; history
   // Eval 2026-10-23: an issue it opened on its own cut the data out of a product answer; a thanks
   // in a DM sent it to re-check the deploy.
   expect(withTools).toContain("when the person asked for an internal change");
-  expect(withTools).toContain("A change you made on your own doesn't shorten the answer");
+  expect(withTools).toContain("Findings you also recorded elsewhere (an issue, a comment, memory): say the key number");
   expect(withTools).toContain("A thanks or an ok asks nothing");
   expect(withTools).not.toContain("Use your tools when they help");
   expect(ctx.messages).toEqual([
@@ -156,7 +160,7 @@ test("every brain reads that it carries one conversation on: no name up front, n
     expect(text).toContain(CONTINUE_THE_CONVERSATION);
     // A computer brain (Claude Code, Codex) gets the same system text, with its own tools added.
     expect(forComputerBrain(text)).toContain(CONTINUE_THE_CONVERSATION);
-    expect(text).toContain("- Keep it as short as the news: a report with nothing for the person to decide");
+    expect(text).toContain(BREVITY_LINE);
   }
   expect(CONTINUE_THE_CONVERSATION).toContain("Don't open with the person's name");
   expect(CONTINUE_THE_CONVERSATION).toContain("don't repeat what you or others already said here");
@@ -178,6 +182,33 @@ test("every brain is told to say what it does in plain words, not the names of i
   expect(PLAIN_WORDS_LINE).toContain("clearly technical");
   // The language line no longer tells it to keep tool names as they are.
   expect(text).not.toContain("Tool names, ids and code stay as they are");
+});
+
+test("every brain reads one length rule and one question at a time; a computer brain's last message is a chat message", async () => {
+  const ask = await postPersonMessage({ db: f.db, pubsub: f.pubsub }, f.owner.id, f.org.id, f.general.id, {
+    body: "@dev como foi o deploy de ontem?",
+  });
+  const [run] = await f.db.select().from(schema.agentRuns).where(eq(schema.agentRuns.triggerMessageId, ask.id));
+  if (!run) throw new Error("no run");
+  for (const toolsAvailable of [false, true]) {
+    const text = systemText((await buildRunContext(f.db, run, f.agent, { maxMessages: 10, toolsAvailable })).system);
+    expect(text.split(BREVITY_LINE)).toHaveLength(2);
+    expect(text).toContain(ONE_QUESTION_LINE);
+    // The scattered length rules it replaces are gone.
+    expect(text).not.toContain("Keep it as short as the news");
+    expect(text).not.toContain("Write like a colleague texting the team, not a report");
+    expect(text).not.toContain("in one or two short everyday sentences");
+  }
+  expect(BREVITY_LINE).toContain("the answer first, in 1 to 3 short sentences");
+  expect(BREVITY_LINE).toContain("clarity beats brevity");
+  expect(ONE_QUESTION_LINE).toContain("none while one of yours is still open here");
+  // A coding CLI's final summary is a chat message to people who aren't at a terminal.
+  expect(forComputerBrain("# Org")).toContain(COMPUTER_TOOLS_NOTE);
+  expect(COMPUTER_TOOLS_NOTE).toContain("Your final message is posted in the chat, to people who aren't at a terminal");
+  expect(COMPUTER_TOOLS_NOTE).toContain("no summary of your steps, no headings, no file lists");
+  // Receipts under a reply have no Undo any more: no rule promises one.
+  expect(HOW_YOU_WORK).toContain("The person sees each change under your reply.");
+  expect(HOW_YOU_WORK).not.toContain("Undo");
 });
 
 test("a new top-level message reads the replies shown under earlier messages, not only the top level", async () => {

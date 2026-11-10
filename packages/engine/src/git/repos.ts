@@ -3,7 +3,7 @@ import { and, asc, type Database, type Executor, eq, schema } from "@agenteschat
 import { recordAgentActions } from "../agent-actions";
 import { getAgent } from "../agents";
 import { recordAudit } from "../audit";
-import { fedByRoutine, runAuthorityById } from "../authority";
+import { fedByRoutine, type RunAuthority, runAuthorityById } from "../authority";
 import { ForbiddenError, NotFoundError, ValidationError } from "../errors";
 import { can, requirePermission } from "../organizations";
 import type { ToolContext } from "../tools/types";
@@ -180,6 +180,9 @@ export async function agentMergeRepos(db: Executor, orgId: string, agentId: stri
   return chosen.filter((entry) => inReach(list, entry));
 }
 
+/** A run a routine's reading woke never merges without asking: text nobody checked feeds it (ADR 0053). */
+const mergeListApplies = (authority: RunAuthority) => !(authority.kind === "unattended" && fedByRoutine(authority));
+
 /**
  * Where this call may merge without asking: none outside a run (a mission keeps its own gates, and a receipt needs a
  * run), nor in a run a routine's reading woke, where text nobody checked feeds it and every write asks a person
@@ -189,8 +192,61 @@ export async function mergeReposOfCall(ctx: Pick<ToolContext, "db" | "orgId" | "
   if (!ctx.runId) return [];
   const repos = await agentMergeRepos(ctx.db, ctx.orgId, ctx.agentId);
   if (repos.length === 0) return repos;
-  const authority = await runAuthorityById(ctx.db, ctx.orgId, ctx.runId);
-  return authority.kind === "unattended" && fedByRoutine(authority) ? [] : repos;
+  return mergeListApplies(await runAuthorityById(ctx.db, ctx.orgId, ctx.runId)) ? repos : [];
+}
+
+/**
+ * The repository a merge card may offer "Sempre neste repositório" for, or null: one exact repository the agent uses
+ * and doesn't merge in alone yet, on a run the list would then apply to (`mergeReposOfCall`).
+ */
+export async function mergeRepoToOffer(
+  ctx: Pick<ToolContext, "db" | "orgId" | "agentId" | "runId">,
+  authority: RunAuthority | null,
+  repo: string,
+): Promise<string | null> {
+  const entry = normalizeRepoEntry(repo);
+  if (!ctx.runId || !authority || !mergeListApplies(authority) || !entry || entry.endsWith("/*")) return null;
+  const [reach, chosen] = await Promise.all([
+    agentRepositoryList(ctx.db, ctx.orgId, ctx.agentId),
+    chosenMergeRepos(ctx.db, ctx.orgId, ctx.agentId),
+  ]);
+  if (!inReach(reach, entry) || chosen.some((r) => r.toLowerCase() === entry.toLowerCase())) return null;
+  return entry;
+}
+
+/**
+ * "Sempre neste repositório" approved on a merge card, in the decision's transaction (the agent's row locked): the
+ * repository joins the merge list, audited like the list's own change. False when it can't: the agent no longer uses
+ * it, or the list is full.
+ */
+export async function addAgentMergeRepository(
+  tx: Executor,
+  at: { orgId: string; agentId: string },
+  repo: string,
+  actorId: string,
+): Promise<boolean> {
+  const entry = normalizeRepoEntry(repo);
+  if (!entry || entry.endsWith("/*")) return false;
+  const [chosen, reach] = await Promise.all([
+    chosenMergeRepos(tx, at.orgId, at.agentId),
+    agentRepositoryList(tx, at.orgId, at.agentId),
+  ]);
+  if (!inReach(reach, entry)) return false;
+  if (chosen.some((r) => r.toLowerCase() === entry.toLowerCase())) return true;
+  const list = [...chosen, entry];
+  if (list.length > MAX_AGENT_REPOSITORIES) return false;
+  await tx
+    .update(agents)
+    .set({ mergeRepos: list })
+    .where(and(eq(agents.orgId, at.orgId), eq(agents.id, at.agentId)));
+  await recordAudit(tx, {
+    orgId: at.orgId,
+    actor: { type: "person", id: actorId },
+    action: "agent.merge_repositories_changed",
+    target: { type: "agent", id: at.agentId },
+    details: { repositories: list, via: "approval" },
+  });
+  return true;
 }
 
 /** `GET …/agents/{id}/merge-repositories` (who sees the agent's details). */

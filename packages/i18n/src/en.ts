@@ -3823,6 +3823,12 @@ export const en = {
       /** A remembered SQL reads rule in Tools and access. */
       readsRule: "Reads by {{tool}}",
       pushTo: "push to {{branch}} in {{repo}}",
+      /** GitHub reviews that comment or ask for changes: one that approves a pull request always asks. */
+      reviews: "reviews that don't approve a PR",
+      /** On a merge's card: the repository joins the agent's list of where it merges without asking. */
+      repo: "Always in this repository",
+      noteRepo:
+        "{{name}} merges in {{repo}} without asking from now on. Other repositories and deploys still ask. To undo: Tools and access, on {{name}}'s page.",
       done: "Approved. {{name}} won't ask for this again.",
       undoHere: "To undo it, go to Tools and access, on {{name}}'s page.",
       open: "Open",

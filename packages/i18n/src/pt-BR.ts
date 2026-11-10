@@ -3817,6 +3817,14 @@ export const ptBR = {
       /** A remembered SQL reads rule in Tools and access. */
       readsRule: "Leituras de {{tool}}",
       pushTo: "enviar para {{branch}} em {{repo}}",
+      /** GitHub reviews that comment or ask for changes: one that approves a pull request always asks. */
+      reviews: "revisões que não aprovam um PR",
+      /** On a merge's card: the repository joins the agent's list of where it merges without asking. */
+      repo: "Sempre neste repositório",
+      noteRepo:
+        "{{name}} faz merge em {{repo}} sem perguntar, de agora em diante. Outros repositórios e deploys continuam pedindo. Para desfazer: Ferramentas e acesso, na página do {{name}}.",
+      noteRepo_female:
+        "{{name}} faz merge em {{repo}} sem perguntar, de agora em diante. Outros repositórios e deploys continuam pedindo. Para desfazer: Ferramentas e acesso, na página da {{name}}.",
       done: "Aprovado. {{name}} não pede mais para isso.",
       undoHere: "Para desfazer, vá em Ferramentas e acesso, na página do {{name}}.",
       undoHere_female: "Para desfazer, vá em Ferramentas e acesso, na página da {{name}}.",

@@ -1855,9 +1855,11 @@ export interface Approval {
   trail?: { text: string; at: string }[];
   /**
    * "Aprovar sempre" is offered: approving with `always` lets the agent run this server tool (each of these wrapped
-   * actions; none: the tool itself) without asking again, with any values. Null or absent: not offered.
+   * actions; none: the tool itself) without asking again, with any values; `routineId`: that routine only ("Sempre nesta
+   * rotina"); `repo`: a merge, the repository joins the agent's merge list ("Sempre neste repositório"). Null or absent:
+   * not offered.
    */
-  approveAlways?: { tool: string; actions: string[]; routineId?: string } | null;
+  approveAlways?: { tool: string; actions: string[]; routineId?: string; repo?: string } | null;
   /** Approved ahead (`schedule_action`): when the routine's run does it by itself; null: it runs once approved. */
   runAt?: string | null;
   /** The routine whose run at `runAt` it is for. */

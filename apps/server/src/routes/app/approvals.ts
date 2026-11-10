@@ -104,11 +104,16 @@ export const Approval = z
       .optional()
       .openapi({ description: "One approval only: what the agent said at each turn before asking." }),
     approveAlways: z
-      .object({ tool: z.string(), actions: z.array(z.string()), routineId: z.string().optional() })
+      .object({
+        tool: z.string(),
+        actions: z.array(z.string()),
+        routineId: z.string().optional(),
+        repo: z.string().optional(),
+      })
       .nullable()
       .openapi({
         description:
-          '"Aprovar sempre" is offered: approving with `always` lets the agent run this server tool (each of these wrapped actions) without asking again, with any values; with `routineId` ("Sempre nesta rotina"), that routine\'s runs only. Null: not offered.',
+          '"Aprovar sempre" is offered: approving with `always` lets the agent run this server tool (each of these wrapped actions) without asking again, with any values; with `routineId` ("Sempre nesta rotina"), that routine\'s runs only; with `repo` ("Sempre neste repositório", a merge), the agent merges in that repository without asking. Null: not offered.',
         example: { tool: "COMPOSIO_MULTI_EXECUTE_TOOL", actions: ["GITHUB_CREATE_AN_ISSUE_COMMENT"] },
       }),
     runAt: z.string().nullable().openapi({

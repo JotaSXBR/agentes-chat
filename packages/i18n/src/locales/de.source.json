@@ -9063,6 +9063,15 @@
   "approval.always.pushTo": {
     "value": "push to {{branch}} in {{repo}}"
   },
+  "approval.always.reviews": {
+    "value": "reviews that don't approve a PR"
+  },
+  "approval.always.repo": {
+    "value": "Always in this repository"
+  },
+  "approval.always.noteRepo": {
+    "value": "{{name}} merges in {{repo}} without asking from now on. Other repositories and deploys still ask. To undo: Tools and access, on {{name}}'s page."
+  },
   "approval.always.done": {
     "value": "Approved. {{name}} won't ask for this again."
   },

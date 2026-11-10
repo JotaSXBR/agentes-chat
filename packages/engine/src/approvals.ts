@@ -32,6 +32,7 @@ import { learnFromRefusal } from "./context/feedback";
 import type { MemoryJudging } from "./context/items";
 import { ConflictError, ForbiddenError, NotFoundError } from "./errors";
 import { publishChannelEvent, publishUserEvent } from "./events";
+import { addAgentMergeRepository } from "./git/repos";
 import { type MailPreview, parseMailDetail, withoutReplyPrefix } from "./mail/preview";
 import { notifyApproval, notifyNewcomers, resolveApprovalNotifications } from "./notification-producers";
 import { can, type Membership, requirePermission } from "./organizations";
@@ -434,10 +435,15 @@ export const approvalView = (a: Approval, canDecide = false): ApprovalView => ({
     : null,
 });
 
-/** What "Aprovar sempre" would keep for an approval: a connector's kind, or with no connection only a command's. */
+/**
+ * What "Aprovar sempre" would keep for an approval: a connector's kind, or with no connection only a command's; a
+ * merge's repository ("Sempre neste repositório") either way.
+ */
 function alwaysKindOf(a: Pick<Approval, "connectionId" | "approveAlways">): RememberedKind | null {
   const kind = rememberedKindOf(a.approveAlways);
-  return kind && (a.connectionId || (kind.tool === COMMAND_RULE_TOOL && kind.actions.length === 1)) ? kind : null;
+  return kind && (kind.repo || a.connectionId || (kind.tool === COMMAND_RULE_TOOL && kind.actions.length === 1))
+    ? kind
+    : null;
 }
 
 /** An approval ahead that may still run: waiting for a person, or approved and not run yet. */
@@ -798,11 +804,12 @@ export async function decideApproval(
     if (always) {
       // The agent changed hands since it asked: what its old owner approves for good is dropped with the handover
       // (`dropAgentRules`), so they make none now. Locked, so a handover running now waits for this rule and drops it.
+      // A repository joining the merge list rewrites the agent's row: two at once take turns.
       const [agent] = await tx
         .select({ ownerUserId: agents.ownerUserId })
         .from(agents)
         .where(eq(agents.id, row.agentId))
-        .for("share");
+        .for(always.repo ? "update" : "share");
       if (
         !can(membership, "approve_actions") &&
         agent?.ownerUserId !== row.ownerUserId &&
@@ -810,7 +817,11 @@ export async function decideApproval(
       ) {
         throw new ConflictError("This request can't be approved for good", "approval.always_unavailable");
       }
-      if (!always.routineId) {
+      if (always.repo) {
+        if (!(await addAgentMergeRepository(tx, { orgId, agentId: row.agentId }, always.repo, actorId))) {
+          throw new ConflictError("This request can't be approved for good", "approval.always_unavailable");
+        }
+      } else if (!always.routineId) {
         await addApprovalRules(tx, { orgId, agentId: row.agentId, connectionId: always.connectionId }, always, actorId);
       } else if (
         !(await addRoutineOwnActions(

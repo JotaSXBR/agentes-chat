@@ -2,10 +2,13 @@ import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { asc, eq, schema } from "@agenteschat/db";
 import { type ModelRequest, systemText } from "@agenteschat/providers";
 import {
+  codeWrites,
   createAgent,
   createFakeJudge,
   decideApproval,
   drainOutbox,
+  envSecretsNamed,
+  grantScopes,
   insertMessageWithRuns,
   type JudgeQuestion,
   mentionNeedsNothing,
@@ -14,8 +17,10 @@ import {
   RIGHT_HAND,
   releaseHeldInbox,
   rightHandPrompt,
+  runRoutineNow,
   sendNote,
   startNoteRun,
+  type ToolSource,
 } from "../src";
 import { addMember, type Fixture, setup } from "./fixtures";
 import { channelRoutine, routineRow } from "./routine-fixtures";
@@ -350,4 +355,207 @@ describe("an agent's message never waits behind a question only a person answers
     const [run] = await f.db.select().from(schema.agentRuns).where(eq(schema.agentRuns.id, card.runId));
     expect(run?.pendingMessageIds).toEqual([typed.id]);
   });
+});
+
+describe("a message someone outside the company receives waits for a person to see its text", () => {
+  const CONNECTION = "0190f8a0-1c2d-7e3f-8a4b-5c6d7e8f9a0b";
+  const WHY = "O cliente perguntou o prazo de entrega e a Ana pediu para responder ainda hoje.";
+  const REPLY = { conversation: 512, text: "Olá! Seu pedido sai amanhã de manhã." };
+  /** A support app's tool: a reply the contact sees, or a private note. */
+  const helpdesk = (sent: Record<string, unknown>[]): ToolSource => ({
+    name: "helpdesk",
+    tools: async () => [
+      {
+        name: "helpdesk_create_message",
+        description: "Creates a message in a conversation: a reply the contact sees, or a private note.",
+        scope: "helpdesk:write",
+        connectionId: CONNECTION,
+        inputSchema: {
+          type: "object",
+          properties: {
+            conversation: { type: "integer" },
+            text: { type: "string" },
+            private: { type: "boolean" },
+          },
+          required: ["conversation", "text"],
+          additionalProperties: false,
+        },
+        async execute(input) {
+          sent.push(input);
+          return { content: "created" };
+        },
+      },
+    ],
+  });
+  /** The computer's run_code, standing in for the real one (no computer here). */
+  const computer = (ran: Record<string, unknown>[]): ToolSource => ({
+    name: "computer",
+    tools: async () => [
+      {
+        name: "run_code",
+        description: "Run code on the computer.",
+        scope: "sandbox:run",
+        whyAsks: true,
+        inputSchema: {
+          type: "object",
+          properties: {
+            language: { enum: ["bash", "python"] },
+            code: { type: "string" },
+            keys: { type: "array", items: { type: "string" } },
+            why: { type: "string", maxLength: 1000 },
+          },
+          required: ["language", "code"],
+          additionalProperties: false,
+        },
+        async execute(input) {
+          ran.push(input);
+          return { content: "exit 0" };
+        },
+      },
+    ],
+  });
+  /** The agent's model: the call, then again with `why` when told a person decides, then a line. */
+  const calls = (name: string, input: Record<string, unknown>) => (req: ModelRequest) => {
+    const last = lastText(req);
+    if (last.includes("Not sent: this goes to a customer") || last.includes("Not run: this command uses the saved key"))
+      return { chunks: [], toolUses: [{ name, input: { ...input, why: WHY } }] };
+    if (last.includes("tool_result")) return { chunks: ["Feito."] };
+    return { chunks: [], toolUses: [{ name, input }] };
+  };
+  const judging =
+    (outside: number, asked = 0) =>
+    (kind: string, id: string) =>
+      kind === "customer_message" ? (id === "outside" ? outside : asked) : undefined;
+  const approvalsOf = () => f.db.select().from(schema.approvals);
+  const approve = async () => {
+    const [card] = await approvalsOf();
+    await decideApproval({ db: f.db, pubsub: f.pubsub }, f.owner.id, f.org.id, card?.id ?? "", { decision: "approve" });
+    await drainOutbox(f.db, f.handlers);
+  };
+
+  test("a public reply to a customer through a connected app waits on a card with its text; the yes sends it", async () => {
+    const sent: Record<string, unknown>[] = [];
+    f = await setup({
+      toolSources: [helpdesk(sent)],
+      judge: judging(0.9),
+      reply: calls("helpdesk_create_message", REPLY),
+    });
+    await grantScopes(f.db, f.org.id, f.agent.id, [{ connectionId: CONNECTION, scope: "helpdesk:write" }]);
+    await say(f.general.id, "@dev responde o cliente da conversa 512 sobre o prazo de entrega");
+    await drainOutbox(f.db, f.handlers);
+    expect(sent).toEqual([]);
+    const [card] = await approvalsOf();
+    expect(card).toMatchObject({ tool: "helpdesk_create_message", status: "pending", why: WHY, params: REPLY });
+    await approve();
+    expect(sent).toEqual([REPLY]);
+  });
+
+  test("a private note, or a text the person gave word for word, goes at once", async () => {
+    for (const [outside, asked] of [
+      [0.1, 0],
+      [0.9, 0.95],
+    ] as const) {
+      const sent: Record<string, unknown>[] = [];
+      f = await setup({
+        toolSources: [helpdesk(sent)],
+        judge: judging(outside, asked),
+        reply: calls("helpdesk_create_message", REPLY),
+      });
+      await grantScopes(f.db, f.org.id, f.agent.id, [{ connectionId: CONNECTION, scope: "helpdesk:write" }]);
+      await say(f.general.id, `@dev manda na conversa 512: "${REPLY.text}"`);
+      await drainOutbox(f.db, f.handlers);
+      expect(sent).toEqual([REPLY]);
+      expect(await approvalsOf()).toEqual([]);
+      await f.close();
+    }
+    f = undefined as unknown as Fixture;
+  });
+
+  test("a command that writes to a service with a stored key counts as a send: a reply to a customer waits on a card", async () => {
+    const ran: Record<string, unknown>[] = [];
+    const command = {
+      language: "bash",
+      code: 'curl -X POST -H "api_access_token: $HELPDESK_TOKEN" https://helpdesk.example.com/api/v1/conversations/512/messages -d \'{"content":"Olá! Seu pedido sai amanhã."}\'',
+      keys: ["HELPDESK_TOKEN"],
+    };
+    f = await setup({ toolSources: [computer(ran)], judge: judging(0.9), reply: calls("run_code", command) });
+    await grantScopes(f.db, f.org.id, f.agent.id, [{ connectionId: null, scope: "sandbox:run" }]);
+    await say(f.general.id, "@dev responde o cliente da conversa 512");
+    await drainOutbox(f.db, f.handlers);
+    expect(ran).toEqual([]);
+    expect((await approvalsOf())[0]).toMatchObject({ tool: "run_code", status: "pending", why: WHY });
+    await approve();
+    expect(ran).toHaveLength(1);
+  });
+
+  test("work a routine started that names a saved env secret in a command waits for a person's go", async () => {
+    const ran: Record<string, unknown>[] = [];
+    const command = {
+      language: "bash",
+      code: 'curl -H "Authorization: Bearer $REPORTS_TOKEN" https://api.example.com/x',
+    };
+    f = await setup({
+      handOff: true,
+      toolSources: [computer(ran)],
+      reply: (req) =>
+        (req.tools ?? []).some((t) => t.name === "hand_off") ? calls("run_code", command)(req) : { chunks: ["ok"] },
+    });
+    await grantScopes(f.db, f.org.id, f.agent.id, [{ connectionId: null, scope: "sandbox:run" }]);
+    await holdEnvSecret("REPORTS_TOKEN");
+    const routine = await channelRoutine(f, { access: "act", prompt: "Gere o relatório de vendas do dia." });
+    await runRoutineNow({ db: f.db, pubsub: f.pubsub, context: f.context }, f.owner.id, f.org.id, routine.id);
+    await drainOutbox(f.db, f.handlers);
+    expect(ran).toEqual([]);
+    expect((await approvalsOf())[0]).toMatchObject({ tool: "run_code", status: "pending", why: WHY });
+  });
+
+  test("what counts: a write method, and the env secrets the agent holds that the code names", async () => {
+    f = await setup();
+    await holdEnvSecret("REPORTS_TOKEN");
+    expect(codeWrites("curl -X POST https://api.example.com")).toBe(true);
+    expect(codeWrites("requests.post(url, json=body)")).toBe(true);
+    expect(codeWrites("curl -d @body.json https://api.example.com")).toBe(true);
+    expect(codeWrites("curl https://api.example.com/x")).toBe(false);
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: shell syntax, not a template
+    const check = 'echo "${REPORTS_TOKEN:+yes}"';
+    expect(await envSecretsNamed(f.db, f.org.id, f.agent.id, check)).toEqual(["REPORTS_TOKEN"]);
+    expect(await envSecretsNamed(f.db, f.org.id, f.agent.id, "echo $REPORTS_TOKEN_OLD")).toEqual([]);
+  });
+
+  /** An env secret delivered to the agent's computer (ADR 0027): only its name matters here. */
+  async function holdEnvSecret(name: string) {
+    const trigger = await insertMessageWithRuns(
+      f.db,
+      { orgId: f.org.id, channelId: f.general.id, author: { type: "person", userId: f.owner.id }, body: "a chave" },
+      { startRuns: false, deliver: false },
+    );
+    const [run] = await f.db
+      .insert(schema.agentRuns)
+      .values({
+        orgId: f.org.id,
+        agentId: f.agent.id,
+        channelId: f.general.id,
+        threadRootId: trigger.message.id,
+        triggerMessageId: trigger.message.id,
+        trigger: "mention",
+        hop: 1,
+        status: "done",
+      })
+      .returning();
+    await f.db.insert(schema.secretRequests).values({
+      orgId: f.org.id,
+      runId: run?.id ?? "",
+      agentId: f.agent.id,
+      channelId: f.general.id,
+      toolUseId: "t1",
+      requestedForUserId: f.owner.id,
+      name,
+      purpose: "Ler as vendas do dia.",
+      targetKind: "env",
+      publicKey: "pk",
+      status: "delivered",
+      deliveredAt: new Date(),
+      expiresAt: new Date(Date.now() + 60_000),
+    });
+  }
 });

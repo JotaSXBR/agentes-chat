@@ -34,11 +34,21 @@ import { can, getMembership } from "./organizations";
 import { outOfOfficeIds } from "./out-of-office";
 import { enqueue } from "./outbox";
 import { isRightHand, RIGHT_HAND } from "./right-hand";
+import { personStoppedSql } from "./runs";
 import { openOrg } from "./standing";
 import { USAGE_WAIT_CODES } from "./usage-pause";
 
-const { agents, agentRuns, issues, issueActivity, messages, organizations, organizationSettings, organizationMembers } =
-  schema;
+const {
+  agents,
+  agentRuns,
+  agentRunSteps,
+  issues,
+  issueActivity,
+  messages,
+  organizations,
+  organizationSettings,
+  organizationMembers,
+} = schema;
 
 type IssueRow = typeof issues.$inferSelect;
 
@@ -97,11 +107,26 @@ const pendingFollowUpSql = (m: SQL, now: Date) => sql`${m}.deleted_at is null
   and ${m}.meta->'notice'->>'kind' = 'follow_up' and ${m}.meta->'notice'->'refs'->>'state' = 'pending'`;
 
 /**
+ * Its agent's last run on the task left it to a person: a person stopped it (ADR 0128: "only when someone asks you
+ * to"), or it ended asking them (`decideTurnEnd`'s `asked` or `ask_long`, or a reply carrying a choices card), since
+ * asking means waiting (ADR 0131 §1). It holds until a person's word: a newer run there, or their assignment or go.
+ */
+const leftToPersonSql = sql`exists (select 1 from ${agentRuns} lr where lr.id = (select e.id from ${agentRuns} e
+    where e.issue_id = ${issues.id} and e.agent_id::text = ${issues.assigneeId} order by e.created_at desc limit 1)
+  and ((lr.status = 'canceled' and ${personStoppedSql(sql`lr.error`)})
+    or (select ls.data->'continuation'->>'rule' from ${agentRunSteps} ls where ls.run_id = lr.id
+      and ls.kind = 'context' and ls.data ? 'continuation' order by ls.seq desc limit 1) in ('asked', 'ask_long')
+    or exists (select 1 from ${messages} lm where lm.id = lr.reply_message_id
+      and lm.meta->'artifacts' @> '[{"kind":"choices"}]'::jsonb))
+  and not exists (select 1 from ${issueActivity} ga where ga.issue_id = ${issues.id} and ga.author_type = 'person'
+    and ga.event in ('assigned', 'start_approved') and ga.created_at > lr.created_at))`;
+
+/**
  * Tasks in SQL a queue might take now, by `lineOf`'s rules: a person still in the workspace gave them
  * (`taskStarters`), nothing works on them, not blocked nor started by themselves `TASK_AUTO_STARTS_PER_DAY` times
- * today, on a line (a to-do, work in progress idle `TASK_IDLE_MS`, a review its agent hasn't done), and their agent's
- * queue is on with room left. The pump checks the rest (`heldAgents`, who may talk to whom): this keeps the minute's
- * tick from queueing pumps that start nothing.
+ * today, not left to a person (`leftToPersonSql`), on a line (a to-do, work in progress idle `TASK_IDLE_MS`, a review
+ * its agent hasn't done), and their agent's queue is on with room left. The pump checks the rest (`heldAgents`, who
+ * may talk to whom): this keeps the minute's tick from queueing pumps that start nothing.
  */
 const waitingTaskSql = (now: Date) => {
   const at = sql`${now.toISOString()}::timestamptz`;
@@ -128,6 +153,7 @@ const waitingTaskSql = (now: Date) => {
   and (select count(*) from ${agentRuns} d join ${messages} m on m.org_id = d.org_id and m.id = d.trigger_message_id
       where d.issue_id = ${issues.id} and d.created_at > ${at} - interval '1 day'
         and m.meta->'notice'->>'kind' = 'task_start') < ${TASK_AUTO_STARTS_PER_DAY}
+  and not ${leftToPersonSql}
   and (${issues.status} = 'todo'
     or (${issues.status} = 'in_progress' and coalesce((select max(coalesce(e.finished_at, e.updated_at))
         from ${agentRuns} e where e.issue_id = ${issues.id} and e.agent_id::text = ${issues.assigneeId}),
@@ -163,6 +189,8 @@ interface QueueTask {
   autoToday: number;
   /** In review: its agent worked on it since it entered review or since it got it. */
   reviewed: boolean;
+  /** Its agent's last run on it left it to a person (`leftToPersonSql`). */
+  leftToPerson: boolean;
 }
 
 /**
@@ -197,8 +225,8 @@ export async function taskStarters(db: Executor, orgId: string, issueIds: string
 /** The open tasks of these agents, with what their queues read (`QueueTask`). */
 async function queueTasks(db: Executor, orgId: string, agentIds: string[], now: number): Promise<QueueTask[]> {
   if (agentIds.length === 0) return [];
-  const rows = await db
-    .select()
+  const found = await db
+    .select({ row: issues, leftToPerson: sql<boolean>`${leftToPersonSql}` })
     .from(issues)
     .where(
       and(
@@ -208,7 +236,9 @@ async function queueTasks(db: Executor, orgId: string, agentIds: string[], now: 
         inArray(issues.status, [...OPEN]),
       ),
     );
-  if (rows.length === 0) return [];
+  if (found.length === 0) return [];
+  const rows = found.map((f) => f.row);
+  const held = new Set(found.flatMap((f) => (f.leftToPerson ? [f.row.id] : [])));
   const ids = rows.map((r) => r.id);
   const reviews = rows.filter((r) => r.status === "in_review").map((r) => r.id);
   const conversations = rows.flatMap((r) => (r.conversationChannelId ? [r.conversationChannelId] : []));
@@ -287,13 +317,14 @@ async function queueTasks(db: Executor, orgId: string, agentIds: string[], now: 
       idleSince: lastEnd || row.updatedAt.getTime(),
       autoToday: mine.filter((r) => r.auto && r.createdAt.getTime() > now - DAY_MS).length,
       reviewed: ends.some((end) => end > entry),
+      leftToPerson: held.has(row.id),
     };
   });
 }
 
 /** Which line of its queue a task is in now, or null when the queue doesn't take it. */
 function lineOf(t: QueueTask, now: number): TaskLine | null {
-  if (t.live || t.row.blocked || !t.starter || t.autoToday >= TASK_AUTO_STARTS_PER_DAY) return null;
+  if (t.live || t.row.blocked || t.leftToPerson || !t.starter || t.autoToday >= TASK_AUTO_STARTS_PER_DAY) return null;
   if (t.row.status === "todo") return "start";
   if (t.row.status === "in_progress") return now - t.idleSince >= TASK_IDLE_MS ? "resume" : null;
   return t.reviewed ? null : "review";

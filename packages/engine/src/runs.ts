@@ -131,6 +131,10 @@ export const stopError = (actor: StopActor) =>
     ? actor.reason
     : `${CANCELED_BY}${actor.id}${actor.agentId ? `|agent:${actor.agentId}` : actor.restarted ? "|restarted" : ""}`;
 
+/** `personStopOf` in SQL, on a run's `error`: a person stopped it, and it didn't start again from their words. */
+export const personStoppedSql = (error: SQL) =>
+  sql`(${error} like ${`${CANCELED_BY}%`} and ${error} not like '%|restarted')`;
+
 /** A person's stop read back from its run's error (`stopError`); null for any other error. */
 export function personStopOf(error: string | null | undefined) {
   if (!error?.startsWith(CANCELED_BY)) return null;

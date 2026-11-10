@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { and, eq, inArray, schema } from "@agenteschat/db";
 import {
+  addRunStep,
   announceTaskConversation,
   approveTaskStart,
   askAgentToImplement,
@@ -260,6 +261,78 @@ describe("the task pump: an agent takes its next task as room frees (24h build f
     expect((await viewOf(task)).blocked).toBeNull();
   });
 
+  test("a task its agent left to a person, stopped by them or asking them, waits for their word", async () => {
+    f = await setup();
+    await f.db
+      .update(schema.agents)
+      .set({ autonomyBrakes: { tasksAtOnce: 3 } })
+      .where(eq(schema.agents.id, f.agent.id));
+    const stopped = await give("Rename the billing tables");
+    const asked = await give("Move the docs to the new site");
+    const choices = await give("Pick the new logo");
+    expect(await pump()).toBe(3);
+    const runOf = async (task: IssueView) => (await runsOf()).find((r) => r.issueId === task.id);
+    const long = new Date(Date.now() - TASK_IDLE_MS - 60_000);
+    // The person who gave them pressed Stop on the first.
+    await f.db
+      .update(agentRuns)
+      .set({ status: "canceled", error: `canceled_by:${f.owner.id}`, finishedAt: long, updatedAt: long })
+      .where(eq(agentRuns.id, (await runOf(stopped))?.id ?? ""));
+    // The second ended asking them which site, in words; the third with a choices card.
+    const askedRun = await runOf(asked);
+    const choicesRun = await runOf(choices);
+    if (!askedRun || !choicesRun) throw new Error("no run");
+    await addRunStep(f.db, askedRun, "context", {
+      continuation: { outcome: "done", rule: "asked", verdict: "continue" },
+    });
+    const card = await insertMessage(f.db, {
+      orgId: f.org.id,
+      channelId: choicesRun.channelId,
+      threadId: choicesRun.threadRootId,
+      author: { type: "agent", agentId: f.agent.id, runId: choicesRun.id, hop: 1 },
+      body: "Qual dos dois?",
+      meta: { artifacts: [{ id: crypto.randomUUID(), version: 1, title: "Logo", kind: "choices" }] },
+    });
+    await f.db.update(agentRuns).set({ replyMessageId: card.id }).where(eq(agentRuns.id, choicesRun.id));
+    await finish([askedRun.id, choicesRun.id], TASK_IDLE_MS + 60_000);
+    for (const task of [stopped, asked, choices]) expect(await statusOf(task.id)).toBe("in_progress");
+    expect(await pump()).toBe(0);
+    expect(await enqueueTaskPumps(f.db)).toBe(0);
+    expect((await viewOf(asked)).queue).toBeNull();
+
+    // They answer the question: that run ends too, and the work left after it comes back as usual.
+    const conversation = await openTaskConversation(f.db, person(f.owner.id), f.org.id, asked.id);
+    const reply = await insertMessage(f.db, {
+      orgId: f.org.id,
+      channelId: conversation.channelId,
+      threadId: conversation.rootId,
+      author: { type: "person", userId: f.owner.id },
+      body: "O site novo, docs.example.com",
+    });
+    await f.db.insert(agentRuns).values({
+      orgId: f.org.id,
+      agentId: f.agent.id,
+      channelId: conversation.channelId,
+      threadRootId: conversation.rootId,
+      triggerMessageId: reply.id,
+      trigger: "router",
+      hop: 0,
+      status: "done",
+      issueId: asked.id,
+      finishedAt: long,
+      updatedAt: long,
+    });
+    expect(await enqueueTaskPumps(f.db)).toBe(1);
+    expect(await pump()).toBe(1);
+    expect((await runsOf()).filter((r) => r.status === "queued").map((r) => r.issueId)).toEqual([asked.id]);
+
+    // The stopped one, given the go again: its agent takes it up.
+    await approveTaskStart(deps(), f.owner.id, f.org.id, stopped.id, f.agent.id);
+    expect(await pump()).toBe(1);
+    const queued = (await runsOf()).filter((r) => r.status === "queued").map((r) => r.issueId);
+    expect(new Set(queued)).toEqual(new Set([asked.id, stopped.id]));
+  });
+
   test("a follow-up its agent set in the task's conversation holds the comeback until then", async () => {
     f = await setup();
     const task = await give("Watch the deploy");
@@ -458,10 +531,10 @@ describe("the task pump: an agent takes its next task as room frees (24h build f
     expect((await runsOf()).length).toBe(5);
   });
 
-  test("a dozen tasks to do and two runs parked on people's answers: the free agent works through the rest", async () => {
+  test("fourteen tasks to do and two runs parked on people's answers: the free agent works through the rest", async () => {
     f = await setup();
     const tasks: IssueView[] = [];
-    for (let n = 1; n <= 12; n++) tasks.push(await give(`Move service ${n} to the new cluster`));
+    for (let n = 1; n <= 14; n++) tasks.push(await give(`Move service ${n} to the new cluster`));
     // Two of them wait on a person's answer in their own conversations.
     const parked = tasks.slice(0, 2);
     for (const task of parked) {

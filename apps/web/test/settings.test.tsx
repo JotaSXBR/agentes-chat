@@ -85,6 +85,18 @@ describe("Configurações do workspace", () => {
     expect(state.calls.findLast((c) => c.method === "orgs.updateSettings")?.args[1]).toEqual({ actionCheck: false });
   });
 
+  test("how long a question waits for an answer: half an hour by default, a tap saves another", async () => {
+    const { state } = await go();
+    const wait = screen().getByRole("radiogroup", { name: "Quanto esperar por uma resposta" });
+    expect(within(wait).getByRole("radio", { name: "30 min" }).getAttribute("aria-checked")).toBe("true");
+    expect(hintOf("Quanto esperar por uma resposta").text).toContain("Aprovações sempre esperam uma pessoa.");
+    await click(within(wait).getByRole("radio", { name: "1 h" }));
+    await settle(4);
+    expect(state.calls.findLast((c) => c.method === "orgs.updateSettings")?.args[1]).toEqual({
+      questionWaitMinutes: 60,
+    });
+  });
+
   test("usage statistics: the installation's owner gets the switch and sees exactly what is sent", async () => {
     const { state } = await go(
       seedState({ telemetry: { enabled: true, envOff: false, report: { report: 1, people: { total: 3 } } } }),

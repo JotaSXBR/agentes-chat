@@ -1840,6 +1840,7 @@
     "visibilityPublic": "Openbaar",
     "visibilityPrivate": "Privé",
     "actions": "Acties voor het bericht van {{name}}",
+    "actionsWhenDone": "Beschikbaar zodra {{name}} klaar is",
     "helpful": "Nuttig",
     "notHelpful": "Niet nuttig",
     "correct": "Antwoord corrigeren",

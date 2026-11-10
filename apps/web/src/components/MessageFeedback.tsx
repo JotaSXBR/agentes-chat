@@ -1,10 +1,11 @@
 import type { ReactionCount } from "@agenteschat/client";
 import { useCorrectMessage } from "@agenteschat/client";
 import { agentGrammar } from "@agenteschat/client/lib/grammar";
-import { Button, Dialog, DialogBody, DialogFooter, Field, Locked, Textarea } from "@agenteschat/ui";
+import { Button, Dialog, DialogBody, DialogFooter, Field, type IconName, Locked, Textarea } from "@agenteschat/ui";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "@/lib/toast";
+import { useChannelActions } from "./channel-actions";
 import { useOrg } from "./org-context";
 import { DOWN, ReactButton, reactionOf, reactionState, UP, useMessageReactions } from "./Reactions";
 
@@ -84,6 +85,34 @@ export function MessageFeedback({
       </div>
       <CorrectionDialog open={correcting} onOpenChange={setCorrecting} messageId={messageId} agentName={agentName} />
     </>
+  );
+}
+
+/**
+ * The bar of an agent's reply still being written: `MessageFeedback`'s buttons, in its order, all off. Each one acts on
+ * the saved message, which its run posts when done, as its tip says.
+ */
+export function PendingFeedback({ agentName }: { agentName: string }) {
+  const { t } = useTranslation();
+  const reply = useChannelActions()?.reply;
+  const off = (icon: IconName, label: string) => (
+    <Button variant="ghost" size="sm" iconOnly icon={icon} aria-label={label} disabled />
+  );
+  return (
+    <div
+      className="ac-msg__actions"
+      role="toolbar"
+      aria-label={t("channel.actions", { name: agentName })}
+      aria-disabled="true"
+      title={t("channel.actionsWhenDone", agentGrammar(agentName))}
+    >
+      {off("smile", t("reactions.react"))}
+      {reply && off("reply", t("channel.reply"))}
+      {off("thumbUp", t("channel.helpful"))}
+      {off("thumbDown", t("channel.notHelpful"))}
+      {off("edit", t("channel.correct"))}
+      {off("more", t("channel.more"))}
+    </div>
   );
 }
 

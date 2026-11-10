@@ -1,4 +1,4 @@
-import { elapsedClock, type LiveConsult, type LiveRun, usesBrowser } from "@agenteschat/client";
+import { elapsedClock, type LiveConsult, type LiveRun } from "@agenteschat/client";
 import {
   type ActivityEntry,
   activitySentence,
@@ -8,7 +8,6 @@ import {
   barFaces,
   barWords,
   entriesOffScreen,
-  isWriting,
   listNames,
   runElapsed,
   waitsForWords,
@@ -84,6 +83,7 @@ import { MessageText } from "./MessageText";
 import { type RowSight, rowsShown } from "./row-sight";
 import { TurnTools } from "./ToolCalls";
 import {
+  browsingRuns,
   fadeTail,
   pruneMarks,
   type RevealMark,
@@ -421,16 +421,6 @@ function RevealText({ text, live, accent }: { text: string; live: boolean; accen
   return (
     <MessageText body={text.slice(0, solid)} tail={tailNode} streaming={live} selectable={false} accent={accent} />
   );
-}
-
-/** The runs at work in their browser (not writing yet), one per agent: each gets its browser card. */
-export function browsingRuns(runs: LiveRun[]): LiveRun[] {
-  const seen = new Set<string>();
-  return runs.filter((r) => {
-    if (isWriting(r) || !usesBrowser(r) || seen.has(r.agentId)) return false;
-    seen.add(r.agentId);
-    return true;
-  });
 }
 
 /**

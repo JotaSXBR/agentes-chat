@@ -3,12 +3,18 @@ import { setupDom } from "@agenteschat/ui/testing/dom";
 
 setupDom();
 
-/** noVNC as the screen drives it, connected to nothing: `emit` plays its events. */
+/**
+ * noVNC as the screen drives it, connected to nothing: `emit` plays its events. Like noVNC, its disconnect closes its
+ * socket.
+ */
 class FakeRfb {
   static all: FakeRfb[] = [];
   viewOnly = false;
   private listeners = new Map<string, (() => void)[]>();
-  constructor() {
+  constructor(
+    _el?: HTMLElement,
+    private readonly ws?: { close(): void },
+  ) {
     FakeRfb.all.push(this);
   }
   addEventListener(type: string, fn: () => void) {
@@ -20,7 +26,9 @@ class FakeRfb {
   sendKey() {}
   clipboardPasteFrom() {}
   focus() {}
-  disconnect() {}
+  disconnect() {
+    this.ws?.close();
+  }
 }
 mock.module("@novnc/novnc", () => ({ default: FakeRfb }));
 
@@ -30,7 +38,7 @@ import { act, cleanup, fireEvent, within } from "@testing-library/react";
 import { useState } from "react";
 import { BrowserCard, titleKind } from "@/components/browser/BrowserCard";
 import { HandBackFoot } from "@/components/computer/control";
-import { ADA_ID, createFakeApi, ENG_ID, fakeBrowserOf, ORG_ID, seedState } from "./fake-api";
+import { ADA_ID, ATLAS_ID, createFakeApi, ENG_ID, fakeBrowserOf, ORG_ID, seedState } from "./fake-api";
 import { fakeSockets } from "./fake-socket";
 import { onScreen, renderApp, renderPage, screen, settle } from "./render";
 
@@ -768,6 +776,45 @@ describe("the card in the message", () => {
     await settle(6);
     expect(screen().getByRole("dialog", { name: "Computador da Ada" })).toBeTruthy();
   });
+
+  test("its words start under it: the same card goes on showing the page, never Opening again", async () => {
+    const undo = onScreen(".brw-ac");
+    try {
+      const r = await renderApp(`/org/${ORG_ID}/c/${ENG_ID}`, { api: createFakeApi(seedState()) });
+      await settle(5);
+      const socket = r.sockets.last();
+      await act(async () => socket.open());
+      const run = { channelId: ENG_ID, threadId: null, runId: "r-words", agentId: ADA_ID };
+      const ev = (event: Record<string, unknown>) =>
+        act(async () => socket.push({ type: "event", channelId: ENG_ID, event: { ...run, ...event } }));
+      await ev({ type: "agent.thinking" });
+      await ev({ type: "agent.tool", tool: "browser_open" });
+      await settle(3);
+      await act(async () =>
+        socket.push({
+          type: "browser.frame",
+          agentId: ADA_ID,
+          seq: 1,
+          data: FRAME_DATA,
+          metadata: { deviceWidth: 1280, deviceHeight: 800 },
+        }),
+      );
+      await settle(2);
+      const card = document.querySelector(".brw-ac") as HTMLElement;
+      const page = card.querySelector(".brw-ac__page img");
+      expect(page).not.toBeNull();
+      // Until now its row waited for words (only its face and the card): the first ones take the same row.
+      await ev({ type: "agent.delta", seq: 1, text: "Achei o pedido." });
+      await settle(4);
+      expect(document.querySelector(".ac-msg--streaming")?.textContent).toContain("Achei o pedido.");
+      expect(document.querySelector(".brw-ac")).toBe(card);
+      expect(card.querySelector(".brw-ac__page img")).toBe(page);
+      // No cover ("Abrindo o navegador da Ada…") and no skeleton over the page.
+      expect(card.querySelector(".brw-dim, .brw-skel")).toBeNull();
+    } finally {
+      undo();
+    }
+  });
 });
 
 describe("the frame's stop", () => {
@@ -873,11 +920,12 @@ describe("a card whose page doesn't come never stays on Opening", () => {
     expect(card.querySelector(".brw-ac__page img")).toBeTruthy();
   });
 
-  test("Abrir aqui while the agent's own card watches its browser: the request's card gets the page too", async () => {
+  test("Abrir aqui after the agent's own card watched its browser: the request's card gets the page too", async () => {
     offScreen = onScreen(".brw-ac");
     const { state, handoff } = seedRequest();
+    // The request comes as the agent asks, while its run's card watches.
+    const request = state.messages.pop();
     const api = createFakeApi(state);
-    fakeBrowserOf.get(api)?.handoffs.set(handoff.id, handoff);
     const r = await renderApp(`/org/${ORG_ID}/c/${ENG_ID}`, { api });
     await settle(6);
     const socket = r.sockets.last();
@@ -899,7 +947,15 @@ describe("a card whose page doesn't come never stays on Opening", () => {
     await settle(3);
     await serve({ mode: "watch", controllerUserId: null, handoff: null });
     expect(document.querySelector(".brw-ac .brw-ac__page img")).toBeTruthy();
-    // It asked for help; Abrir aqui opens the request's own card, in control.
+    // It asks for help: its request's card is its browser now (one card).
+    fakeBrowserOf.get(api)?.handoffs.set(handoff.id, handoff);
+    const ev = (event: Record<string, unknown>) =>
+      act(async () => socket.push({ type: "event", channelId: ENG_ID, event }));
+    await ev({ type: "message.created", messageId: handoff.id, message: request });
+    await ev({ type: "browser.handoff.updated", channelId: ENG_ID, threadId: null, handoff });
+    await settle(4);
+    expect(document.querySelectorAll(".brw-ac")).toHaveLength(0);
+    // Abrir aqui opens the request's own card, in control.
     await act(async () => fireEvent.click(within(waitingRequest()).getByRole("button", { name: "Abrir aqui" })));
     await settle(4);
     const active = { ...handoff, status: "active", controllerUserId: "u-walter", expiresAt: null };
@@ -1073,8 +1129,19 @@ describe("its browser on the agent's screen: the card shows the whole screen (AD
     );
     await settle(6);
     const card = document.querySelector(".brw-ac") as HTMLElement;
-    return { state, socket, screens, card };
+    return { state, fake, socket, screens, card };
   }
+
+  /** Ada's run `runId` here opens its browser (`agent.thinking`, then `browser_open`). */
+  const browses = async (socket: { push(frame: unknown): void }, runId: string) => {
+    const run = { channelId: ENG_ID, threadId: null, runId, agentId: ADA_ID };
+    await act(async () => socket.push({ type: "event", channelId: ENG_ID, event: { type: "agent.thinking", ...run } }));
+    await act(async () =>
+      socket.push({ type: "event", channelId: ENG_ID, event: { type: "agent.tool", tool: "browser_open", ...run } }),
+    );
+    await settle(6);
+  };
+  const openScreens = (screens: ScreenSocket[]) => screens.filter((s) => !s.closed);
 
   test("the screen in the card, watching only, on a card's own socket; no frames watched meanwhile", async () => {
     const { socket, screens, card } = await working();
@@ -1093,6 +1160,139 @@ describe("its browser on the agent's screen: the card shows the whole screen (AD
     expect(within(over).getByRole("button", { name: "Parar" })).toBeTruthy();
     expect(FakeRfb.all.at(-1)?.viewOnly).toBe(true);
     expect(watches(socket)).toBe(0);
+  });
+
+  test("its words start under it: the same screen goes on, on the same socket (no new connection)", async () => {
+    const { socket, screens, card } = await working();
+    await act(async () => FakeRfb.all.at(-1)?.emit("connect"));
+    await settle(3);
+    const views = FakeRfb.all.length;
+    await act(async () =>
+      socket.push({
+        type: "event",
+        channelId: ENG_ID,
+        event: {
+          type: "agent.delta",
+          channelId: ENG_ID,
+          threadId: null,
+          runId: "r-screen",
+          agentId: ADA_ID,
+          seq: 1,
+          text: "Pronto.",
+        },
+      }),
+    );
+    await settle(4);
+    expect(document.querySelector(".ac-msg--streaming")?.textContent).toContain("Pronto.");
+    expect(document.querySelector(".brw-ac")).toBe(card);
+    expect(screens).toHaveLength(1);
+    expect(FakeRfb.all).toHaveLength(views);
+    expect(card.querySelector(".brw-mf__over")).not.toBeNull();
+  });
+
+  test("it reads a message sent while it works, before any words: the same screen goes on, on the same socket", async () => {
+    const { socket, screens, card } = await working();
+    await act(async () => FakeRfb.all.at(-1)?.emit("connect"));
+    await settle(3);
+    const views = FakeRfb.all.length;
+    const ev = (event: Record<string, unknown>) =>
+      act(async () => socket.push({ type: "event", channelId: ENG_ID, event }));
+    await ev({
+      type: "message.created",
+      messageId: "m-steer",
+      message: {
+        id: "m-steer",
+        channelId: ENG_ID,
+        threadId: null,
+        author: { type: "person", id: "u-walter" },
+        body: "Olha também a fatura de outubro",
+        mentionedAgentIds: [],
+        agentRunId: null,
+        createdAt: new Date(Date.now() + 10_000).toISOString(),
+      },
+    });
+    // Read before its first words: its row no longer waits for them ("Leu seu recado").
+    await ev({
+      type: "agent.run.read",
+      channelId: ENG_ID,
+      threadId: null,
+      runId: "r-screen",
+      agentId: ADA_ID,
+      messageIds: ["m-steer"],
+    });
+    await settle(4);
+    const row = document.querySelector('[data-run-id="r-screen"]') as HTMLElement;
+    expect(row.querySelector(".live-work__steer")?.textContent).toContain("Leu seu recado");
+    expect(row.contains(card)).toBe(true);
+    expect(document.querySelector(".brw-ac")).toBe(card);
+    expect(screens).toHaveLength(1);
+    expect(FakeRfb.all).toHaveLength(views);
+  });
+
+  test("two of its runs here at work in its browser: one card, on the newest run's row, one view of the screen", async () => {
+    const { socket, screens } = await working();
+    await act(async () => FakeRfb.all.at(-1)?.emit("connect"));
+    await settle(3);
+    // A newer run of Ada's here opens its browser while the first one is still at work.
+    await browses(socket, "r-two");
+    expect(document.querySelectorAll(".brw-ac.is-open")).toHaveLength(1);
+    expect(document.querySelectorAll(".dsk--card")).toHaveLength(1);
+    expect(openScreens(screens)).toHaveLength(1);
+    expect(document.querySelector('[data-run-id="r-two"] .brw-ac')).not.toBeNull();
+    // The first one has no words yet and nothing else to show: no row of its own (the bar above the box speaks for it).
+    expect(document.querySelector('[data-run-id="r-screen"]')).toBeNull();
+  });
+
+  test("its request for help is open: Ver a tela opens the one card, under the request", async () => {
+    // Who watches its screen but doesn't drive it sees the request's browser in place, not in the computer dialog.
+    const { fake, socket, screens } = await working({ canControl: false });
+    // An earlier run of Ada's asked for help and waits on it.
+    const handoff: BrowserHandoff = {
+      id: "h-ask",
+      agentId: ADA_ID,
+      runId: "r-asked",
+      machineId: "machine-1",
+      kind: "ask",
+      instructions: "Entrar no painel com a conta de teste",
+      status: "pending",
+      requestedForUserId: "u-walter",
+      controllerUserId: null,
+      note: null,
+      expiresAt: new Date(Date.now() + 10 * 60_000).toISOString(),
+      createdAt: new Date().toISOString(),
+      resolvedAt: null,
+    };
+    fake?.handoffs.set(handoff.id, handoff);
+    const ev = (event: Record<string, unknown>) =>
+      act(async () => socket.push({ type: "event", channelId: ENG_ID, event }));
+    await ev({
+      type: "message.created",
+      messageId: handoff.id,
+      message: {
+        id: handoff.id,
+        channelId: ENG_ID,
+        threadId: null,
+        author: { type: "agent", id: ADA_ID },
+        body: `Help needed in the browser: ${handoff.instructions}`,
+        mentionedAgentIds: [],
+        agentRunId: "r-asked",
+        createdAt: new Date(Date.now() + 10_000).toISOString(),
+        meta: {
+          browserHandoff: handoff,
+          bodyCode: "browser_handoff",
+          bodyParams: { instructions: handoff.instructions },
+        },
+      },
+    });
+    await ev({ type: "browser.handoff.updated", channelId: ENG_ID, threadId: null, handoff });
+    await settle(6);
+    const request = document.querySelector(`[data-ask-id="${handoff.id}"]`) as HTMLElement;
+    await act(async () => fireEvent.click(within(request).getByRole("button", { name: "Ver a tela" })));
+    await settle(6);
+    const cards = document.querySelectorAll(".brw-ac");
+    expect(cards).toHaveLength(1);
+    expect(document.querySelector(`[data-message-id="${handoff.id}"]`)?.contains(cards[0] as HTMLElement)).toBe(true);
+    expect(openScreens(screens)).toHaveLength(1);
   });
 
   test("a screen that can't show (not available, not running): the browser's frames, never its socket", async () => {
@@ -1159,5 +1359,69 @@ describe("its browser on the agent's screen: the card shows the whole screen (AD
     expect(screens).toEqual([]);
     expect(document.querySelector(".dsk--card")).toBeNull();
     expect(state.calls.some((c) => c.method === "desktop.status")).toBe(false);
+  });
+});
+
+describe("worst case: two agents' cards in one conversation", () => {
+  /** A long host, and a short one with a long path: what the frame's top says of each. */
+  const LONG_HOST =
+    "https://faturamento-internacional.painel.northwind-industries-holdings.example.com/relatorios/2026/novembro";
+  const LONG_PATH =
+    "https://app.example.com/organizacoes/northwind-industries-holdings/projetos/migracao-do-data-warehouse/tarefas/2381";
+  /** Atlas as a workspace may name it (the server takes up to 80 characters). */
+  const LONG_NAME = "Assistente de Conciliação Financeira Internacional";
+
+  test("each agent's card on its own row, its site and what it does on one line, with many steps", async () => {
+    const undo = onScreen(".brw-ac");
+    try {
+      const state = seedState();
+      const atlas = state.agents.find((a) => a.id === ATLAS_ID);
+      if (atlas) atlas.name = LONG_NAME;
+      const r = await renderApp(`/org/${ORG_ID}/c/${ENG_ID}`, { api: createFakeApi(state) });
+      await settle(5);
+      const socket = r.sockets.last();
+      await act(async () => socket.open());
+      const ev = (event: Record<string, unknown>) =>
+        act(async () => socket.push({ type: "event", channelId: ENG_ID, event }));
+      const runs = [
+        { channelId: ENG_ID, threadId: null, runId: "r-ada", agentId: ADA_ID, site: LONG_HOST, steps: 12 },
+        { channelId: ENG_ID, threadId: null, runId: "r-atlas", agentId: ATLAS_ID, site: LONG_PATH, steps: 1 },
+      ];
+      for (const { site, steps, ...run } of runs) {
+        await ev({ type: "agent.thinking", ...run });
+        for (let i = 0; i < steps; i++) {
+          const tool = i % 3 === 0 ? "browser_open" : "browser_click";
+          await ev({ type: "agent.tool", ...run, tool, toolUseId: `${run.runId}-${i}`, detail: site });
+        }
+      }
+      await settle(4);
+      for (const { agentId, site } of runs) {
+        await act(async () =>
+          socket.push({
+            type: "browser.frame",
+            agentId,
+            seq: 1,
+            data: FRAME_DATA,
+            metadata: { deviceWidth: 1280, deviceHeight: 800, url: site },
+          }),
+        );
+      }
+      await settle(4);
+      const cards = [...document.querySelectorAll(".brw-ac.is-open")] as HTMLElement[];
+      expect(cards).toHaveLength(2);
+      expect(document.querySelector('[data-run-id="r-ada"]')?.contains(cards[0] as HTMLElement)).toBe(true);
+      expect(document.querySelector('[data-run-id="r-atlas"]')?.contains(cards[1] as HTMLElement)).toBe(true);
+      const title = (card: HTMLElement) => card.querySelector(".brw-mf__site b")?.textContent;
+      expect(title(cards[0] as HTMLElement)).toBe(
+        "faturamento-internacional.painel.northwind-industries-holdings.example.com/relatorios/2026/novembro",
+      );
+      expect(title(cards[1] as HTMLElement)).toBe(
+        "app.example.com/organizacoes/northwind-industries-holdings/projetos/migracao-do-data-warehouse/tarefas/2381",
+      );
+      expect(cards[1]?.querySelector(".brw-mf__now")?.textContent).toContain(LONG_NAME);
+      expect(cards[0]?.querySelectorAll(".brw-mf__hist li")).toHaveLength(12);
+    } finally {
+      undo();
+    }
   });
 });

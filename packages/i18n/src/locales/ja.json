@@ -1777,6 +1777,7 @@
     "visibilityPublic": "公開",
     "visibilityPrivate": "非公開",
     "actions": "{{name}}のメッセージの操作",
+    "actionsWhenDone": "{{name}}が終わると使えます",
     "helpful": "役に立った",
     "notHelpful": "役に立たなかった",
     "correct": "返信を修正",

@@ -1968,6 +1968,7 @@
     "visibilityPublic": "Publiczny",
     "visibilityPrivate": "Prywatny",
     "actions": "Akcje wiadomości od: {{name}}",
+    "actionsWhenDone": "Dostępne, gdy {{name}} skończy",
     "helpful": "Pomocne",
     "notHelpful": "Niepomocne",
     "correct": "Popraw odpowiedź",

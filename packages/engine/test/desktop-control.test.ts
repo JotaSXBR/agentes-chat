@@ -926,6 +926,38 @@ describe("the desktop's REST and keep-alive", () => {
     });
   });
 
+  test("a computer too slow to say whether its screen runs: running while a viewer is open here, logged", async () => {
+    const { hub, open } = await start();
+    const slow = {
+      ...hub,
+      call: (machineId: string, request: MachineRequest) =>
+        request.op === "desktop.session.status"
+          ? Promise.reject(new Error("machine call timed out"))
+          : hub.call(machineId, request),
+    } as unknown as MachineHub;
+    const warned: string[] = [];
+    const rest = {
+      db: f.db,
+      hub: slow,
+      streams: broker,
+      log: { warn: (message: string) => void warned.push(message) },
+    };
+    // Nobody watches: not known to run, so a browser card shows its frames.
+    expect(await desktopStatus(rest, f.owner.id, f.org.id, f.agent.id)).toMatchObject({
+      available: true,
+      running: false,
+    });
+    // A viewer is open (opening one starts it): a card showing the screen isn't sent back to its frames.
+    await open(f.owner.id, WATCH);
+    expect(await desktopStatus(rest, f.owner.id, f.org.id, f.agent.id)).toMatchObject({
+      available: true,
+      running: true,
+      viewers: 1,
+      browserOnDesktop: true,
+    });
+    expect(warned).toEqual(["desktop status failed", "desktop status failed"]);
+  });
+
   test("a browser card's view of the screen is audited as watching, marked as the card's", async () => {
     const { machine } = await start();
     const viewer = fakeSocket();

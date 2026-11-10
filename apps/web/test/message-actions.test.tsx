@@ -157,6 +157,64 @@ describe("message action bars", () => {
     ).toBe("true");
   });
 
+  test("an agent at work: its row has a reply's bar, every action off until the run saves its message", async () => {
+    const r = await renderApp(`/org/${ORG_ID}/c/${ENG_ID}`, { api: createFakeApi(seedState()) });
+    await settle(8);
+    const socket = r.sockets.last();
+    await act(async () => socket.open());
+    const run = { channelId: ENG_ID, threadId: null, runId: "r-bar", agentId: ADA_ID };
+    const ev = (event: Record<string, unknown>) =>
+      act(async () => socket.push({ type: "event", channelId: ENG_ID, event: { ...run, ...event } }));
+    await ev({ type: "agent.thinking" });
+    await ev({ type: "agent.tool", tool: "browser_open" });
+    await settle(3);
+    // Only its face and its browser card so far.
+    const row = document.querySelector('[data-run-id="r-bar"]') as HTMLElement;
+    const bar = within(row).getByRole("toolbar", { name: "Ações da mensagem de Ada" });
+    expect(bar.className).toBe("ac-msg__actions");
+    // Off as a whole (drawn plainly off, not the working bar's gray a shade lighter), and its tip says until when.
+    expect(bar.getAttribute("aria-disabled")).toBe("true");
+    expect(bar.title).toBe("Disponível quando a Ada terminar");
+    const buttons = () => within(bar).getAllByRole("button") as HTMLButtonElement[];
+    expect(buttons().map((b) => b.getAttribute("aria-label"))).toEqual([
+      "Reagir",
+      "Responder",
+      "Útil",
+      "Não ajudou",
+      "Corrigir resposta",
+      "Mais ações da mensagem",
+    ]);
+    expect(buttons().every((b) => b.disabled)).toBe(true);
+    // Its words start: the same bar, still off.
+    await ev({ type: "agent.delta", seq: 1, text: "Achei o pedido." });
+    await settle(4);
+    expect(within(row).getByRole("toolbar", { name: "Ações da mensagem de Ada" })).toBe(bar);
+    expect(buttons().every((b) => b.disabled)).toBe(true);
+    // Its message lands in the same row: the bar's actions work.
+    await ev({
+      type: "message.created",
+      messageId: "m-bar",
+      message: {
+        id: "m-bar",
+        channelId: ENG_ID,
+        threadId: null,
+        author: { type: "agent", id: ADA_ID },
+        body: "Achei o pedido.",
+        mentionedAgentIds: [],
+        agentRunId: "r-bar",
+        createdAt: new Date().toISOString(),
+      },
+    });
+    await ev({ type: "run.finished", status: "done" });
+    await settle(4);
+    const saved = document.querySelector('[data-message-id="m-bar"]') as HTMLElement;
+    const live = within(saved).getByRole("toolbar", { name: "Ações da mensagem de Ada" });
+    expect(live.title).toBe("");
+    expect(live.getAttribute("aria-disabled")).toBeNull();
+    expect((within(live).getByRole("button", { name: "Útil" }) as HTMLButtonElement).disabled).toBe(false);
+    expect((within(live).getByRole("button", { name: "Reagir" }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
   test("the bar never covers a receipt: a check ends the first line and the bar stands left of it, words go under the text", async () => {
     const state = withoutAi();
     const answered = {

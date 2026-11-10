@@ -4535,6 +4535,9 @@
   "channel.actions": {
     "value": "Actions for {{name}}'s message"
   },
+  "channel.actionsWhenDone": {
+    "value": "Available once {{name}} finishes"
+  },
   "channel.helpful": {
     "value": "Helpful"
   },

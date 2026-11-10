@@ -253,7 +253,7 @@ import { ArtifactCard } from "@/components/artifacts/ArtifactCard";
 import { ImageSet } from "@/components/artifacts/ArtifactViewer";
 import { objectUrls } from "@/components/artifacts/FileView";
 import { MessageWorkLine } from "@/components/BackgroundWork";
-import { HeldBrowserCard, RunBrowserCard, useHeldTakeover } from "@/components/browser/BrowserCard";
+import { RunBrowserCard, useHeldTakeover, useRunCard } from "@/components/browser/BrowserCard";
 import { BrowserHandoffCard } from "@/components/browser/BrowserHandoffCard";
 import { BrowserTrailCard } from "@/components/browser/BrowserTrailCard";
 import { requestBrowserCard } from "@/components/browser/open";
@@ -303,7 +303,7 @@ import { AwayPill, WaitingCard } from "@/components/MachineOutages";
 import { useMediaTabs } from "@/components/MediaPicker";
 import { MemberPickerRows, memberOf, type PickKey, useMemberRows } from "@/components/MemberPicker";
 import { MemoryMarks } from "@/components/MemoryMark";
-import { MessageFeedback } from "@/components/MessageFeedback";
+import { MessageFeedback, PendingFeedback } from "@/components/MessageFeedback";
 import { MessageMoreMenu, PersonMessageActions, ReplyButton, useMessageMenu } from "@/components/MessageMore";
 import { MessageReceipts, SeenMark } from "@/components/MessageReceipts";
 import { MembersColumn, MembersSheet } from "@/components/members/MembersColumn";
@@ -3053,7 +3053,7 @@ const Timeline = memo(function Timeline({
   // A run can post more than one message (text before a card, the card, the final reply): only its
   // last one is drawn under the block's key, the others under their own (keys stay unique).
   const blockRows = useMemo(() => blockRowByRun(items, new Set(slots.map((s) => s.runId))), [items, slots]);
-  // Each run's last message here carries its browser card while a take over holds it (`HeldBrowserCard`).
+  // Each run's last message here carries its browser card while a take over holds it (`RunBrowserCard`).
   // The sticker or GIF an agent adds after its reply (ADR 0091) is never its run's last message: the reply is.
   const lastByRun = useMemo(() => {
     const out = new Map<string, string>();
@@ -3227,7 +3227,7 @@ function HeldBrowserRow({ place }: { place: HeldPlace }) {
       author={name}
       time={t("common.now")}
     >
-      <HeldBrowserCard agentId={place.agentId} runId={place.runId} name={name} />
+      <RunBrowserCard run={null} agentId={place.agentId} runId={place.runId} name={name} />
     </Message>
   );
 }
@@ -3297,7 +3297,9 @@ function RunBlock({
   // show (`rowShows`). A run gone quiet meanwhile draws for "sem notícias · Atualizar": wake when that moment comes.
   const waits = Boolean(live && !message && waitsForWords(live));
   useDue(live?.lastEventAt ?? liveStart ?? null, QUIET_AFTER_MS, waits);
-  const hidden = Boolean(live && !message && !rowShows(live, Date.now()));
+  // Its browser card is something to show only while this row carries it (another of its agent's runs may).
+  const card = useRunCard({ run: waits ? (live ?? null) : null, agentId: liveAgent ?? "", runId, enabled: false });
+  const hidden = Boolean(live && !message && !rowShows(live, Date.now(), card.shows));
   const shown = message ?? placeholder;
   // Its live row on the page: the view measures which blocks are in view again (the bar speaks for those out of it).
   const rowDrawn = useContext(RowDrawnContext);
@@ -4241,6 +4243,9 @@ export const TimelineMessage = memo(function TimelineMessage({
     missionCard ||
     issueWork;
   const feedback = !readOnly && m.author.type === "agent" && !card && !m.local && !live && !mediaAfter;
+  // At work its row is no message yet (the run saves it when done) and every action of the bar acts on that message:
+  // the bar shows in its place, each action off until then.
+  const pendingBar = Boolean(live) && !readOnly && !liveFailed && !liveStopped;
   const menu = useMessageMenu(m, channelName ?? "", {
     feedback,
     readOnly,
@@ -4440,10 +4445,14 @@ export const TimelineMessage = memo(function TimelineMessage({
         stacked={Boolean(card)}
       >
         {live && waiting ? (
+          // Keyed as in the branches below, which take over when its words start and when its message lands: the
+          // browser card (its live page, its screen's connection, the person's control) stays the same element instead
+          // of opening again.
           <Parts resetKey={m}>
-            <LiveRunStatus run={live} quietOnly />
-            <RunBrowserCard run={live} name={name} />
+            <LiveRunStatus key="status" run={live} quietOnly />
+            <RunBrowserCard key="browser" run={live} agentId={live.agentId} runId={live.runId} name={name} />
             <span className="ac-visually-hidden">{t("channel.writing")}</span>
+            {pendingBar && <PendingFeedback key="bar" agentName={name} />}
           </Parts>
         ) : live ? (
           <Parts resetKey={m}>
@@ -4511,7 +4520,7 @@ export const TimelineMessage = memo(function TimelineMessage({
                 owner={live}
               />
             ) : (
-              !liveFailed && <LiveRunStatus run={live} />
+              !liveFailed && <LiveRunStatus key="status" run={live} />
             )}
             {/* Its tools, as on its saved message: one line (what it does now) opening into each call. */}
             <LiveTools
@@ -4522,10 +4531,11 @@ export const TimelineMessage = memo(function TimelineMessage({
               stopped={liveStopped || liveFailed}
             />
             {/* Last, after its tools; also on a failed or stopped run, for the person still in control (they hand back from it). */}
-            <RunBrowserCard run={live} name={name} />
+            <RunBrowserCard key="browser" run={live} agentId={live.agentId} runId={live.runId} name={name} />
             {!liveFailed && !liveWaiting && !liveStopped && (
               <span className="ac-visually-hidden">{t("channel.writing")}</span>
             )}
+            {pendingBar && <PendingFeedback key="bar" agentName={name} />}
           </Parts>
         ) : (
           <Parts resetKey={m}>
@@ -4636,7 +4646,11 @@ export const TimelineMessage = memo(function TimelineMessage({
               />
             )}
             {lastOfRun && m.author.type === "agent" && m.author.id && replyRun && !m.local && (
-              <HeldBrowserCard
+              // Keyed as the live row's: a take over that holds its browser keeps the same card when this message
+              // takes the row (the agent pausing for the person who took over).
+              <RunBrowserCard
+                key="browser"
+                run={null}
                 agentId={m.author.id}
                 runId={replyRun}
                 name={name}

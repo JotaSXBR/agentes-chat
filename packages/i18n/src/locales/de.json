@@ -1840,6 +1840,7 @@
     "visibilityPublic": "Öffentlich",
     "visibilityPrivate": "Privat",
     "actions": "Aktionen für die Nachricht von {{name}}",
+    "actionsWhenDone": "Verfügbar, sobald {{name}} fertig ist",
     "helpful": "Hilfreich",
     "notHelpful": "Nicht hilfreich",
     "correct": "Antwort korrigieren",

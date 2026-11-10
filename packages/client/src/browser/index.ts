@@ -7,7 +7,7 @@ import type { AgentBrowserSettings, BrowserHandoff, DesktopStatus, PageTarget, S
 import { timeLeft } from "../lib/format";
 import { can } from "../lib/permissions";
 import { isBlankPage } from "../lib/sites";
-import type { LiveWork } from "../realtime/streams";
+import type { LiveRun, LiveWork } from "../realtime/streams";
 import { noteHandoffPlace } from "./held";
 
 export * from "./frame-bytes";
@@ -160,6 +160,24 @@ export function browserSteps(work: LiveWork[] | undefined): BrowserStep[] {
         ]
       : [],
   );
+}
+
+/**
+ * Of an agent's runs at work in one conversation, the one whose row carries its browser card: the newest that used its
+ * browser. Its browser is one (one page, one screen to watch), so it is one card there. Null while none did.
+ */
+export function browserCardRun(
+  runs: Record<string, LiveRun>,
+  of: Pick<LiveRun, "agentId" | "channelId" | "threadId">,
+): string | null {
+  let card: LiveRun | undefined;
+  for (const r of Object.values(runs)) {
+    if (r.agentId !== of.agentId || r.channelId !== of.channelId || r.threadId !== of.threadId) continue;
+    if (r.status === "failed" || r.status === "canceled") continue;
+    if (!r.work?.some((w) => w.kind === "call" && isBrowserTool(w.tool))) continue;
+    if (!card || (r.startedAt ?? 0) >= (card.startedAt ?? 0)) card = r;
+  }
+  return card?.runId ?? null;
 }
 
 /** A step on either screen, with the screen it was on (the computer's step strip). */

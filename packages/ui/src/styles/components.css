@@ -6157,6 +6157,11 @@ html:not([data-pointer]) .ac-msg:focus-within .ac-msg__actions,
   width: 16px;
   height: 16px;
 }
+/* A bar whose actions all wait (an agent's reply still being written: each acts on the saved message): plainly off.
+   A ghost's off ink alone is only a shade lighter than the working bar's gray, so the bar would look like it works. */
+.ac-msg__actions[aria-disabled="true"] .ac-btn {
+  opacity: 0.5;
+}
 /* The row being hovered stays above its neighbours, so its bar is never under the next row. */
 .ac-msg:hover,
 .ac-msg:focus-within {

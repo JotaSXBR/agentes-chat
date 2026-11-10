@@ -1838,6 +1838,8 @@ export const en = {
     visibilityPublic: "Public",
     visibilityPrivate: "Private",
     actions: "Actions for {{name}}'s message",
+    /** The tip of an agent's reply still being written: its bar's buttons are off until the run saves the message. */
+    actionsWhenDone: "Available once {{name}} finishes",
     helpful: "Helpful",
     notHelpful: "Not helpful",
     correct: "Correct reply",

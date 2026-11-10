@@ -7,6 +7,7 @@ import type { Agent, BrowserHandoff, DesktopStatus, DesktopViewState, SocketFact
 import { ApiError, keys } from "@agenteschat/client";
 import { icons } from "@agenteschat/ui";
 import { act, cleanup, fireEvent, within } from "@testing-library/react";
+import { useState } from "react";
 import { ComputerDialog } from "@/components/computer/ComputerDialog";
 import { DesktopView } from "@/components/desktop/DesktopView";
 import { ADA_ID, createFakeApi, fakeBrowserOf, fakeMachinesOf, meWithRole, ORG_ID, seedState } from "./fake-api";
@@ -2172,25 +2173,37 @@ test("a connection quality change adjusts the active screen without reopening it
 });
 
 describe("a browser card's view of the screen (ADR 0058 §7)", () => {
+  /** A card's view of Ada's screen; `again()` takes it off the page and puts it back (the card back on screen). */
   async function card() {
     const b = await backend(RUNNING);
     const states: DesktopViewState[] = [];
     const onView = (state: DesktopViewState) => void states.push(state);
-    await renderPage(
-      <DesktopView
-        preview
-        agentId={ADA_ID}
-        name="Ada"
-        computer="Servidor de casa"
-        edition="selfhost"
-        machine={b.machine}
-        canTakeOver={false}
-        onView={onView}
-      />,
-      { api: b.api, org: true, createSocket: b.sockets.factory },
-    );
+    let show: (on: boolean) => void = () => {};
+    function Card() {
+      const [on, setOn] = useState(true);
+      show = setOn;
+      return on ? (
+        <DesktopView
+          preview
+          agentId={ADA_ID}
+          name="Ada"
+          computer="Servidor de casa"
+          edition="selfhost"
+          machine={b.machine}
+          canTakeOver={false}
+          onView={onView}
+        />
+      ) : null;
+    }
+    await renderPage(<Card />, { api: b.api, org: true, createSocket: b.sockets.factory });
     await settle(6);
-    return { ...b, states };
+    const again = async () => {
+      await act(async () => show(false));
+      await settle(2);
+      await act(async () => show(true));
+      await settle(6);
+    };
+    return { ...b, states, again };
   }
 
   test("the whole screen, watching only: nothing to take, read or type under it, and its state goes to the card", async () => {
@@ -2228,5 +2241,31 @@ describe("a browser card's view of the screen (ADR 0058 §7)", () => {
     expect(t.states.at(-1)).toBe("busy");
     await act(() => new Promise((r) => setTimeout(r, 1_200)));
     expect(t.sockets.desktops).toHaveLength(count);
+  });
+
+  test("a dropped connection opens again over its last picture, and so does its next view: never Abrindo o computador", async () => {
+    const t = await card();
+    await connected();
+    // The network drops: the picture stays, with no cover, while it opens again by itself. The card hears it opens.
+    await act(async () => (t.sockets.desktops.at(-1) as DesktopSocket).serverClose(1006));
+    await settle(4);
+    expect(screen().queryByText("Abrindo o computador da Ada…")).toBeNull();
+    expect(still()).not.toBeNull();
+    expect(t.states.at(-1)).toBe("connecting");
+    await act(() => new Promise((r) => setTimeout(r, 1_100)));
+    expect(t.sockets.desktops).toHaveLength(2);
+    expect(screen().queryByText("Abrindo o computador da Ada…")).toBeNull();
+    // The new connection draws: the held picture lifts.
+    await connected();
+    expect(still()).toBeNull();
+    expect(t.states.at(-1)).toBe("live");
+    // Off the page and back (a card scrolled away, a new run's card): its last picture at once.
+    await t.again();
+    expect(t.sockets.desktops).toHaveLength(3);
+    expect(screen().queryByText("Abrindo o computador da Ada…")).toBeNull();
+    expect(still()).not.toBeNull();
+    await connected();
+    expect(still()).toBeNull();
+    expect(t.states.at(-1)).toBe("live");
   });
 });

@@ -8,6 +8,7 @@ import {
   continueRun,
   createMissionEngine,
   drainOutbox,
+  joinChannel,
   personStopOf,
   postPersonMessage,
   RIGHT_HAND,
@@ -19,7 +20,7 @@ import {
   taskManager,
 } from "../src";
 import { answerNoTurn } from "../src/live-steer";
-import { type Fixture, setup } from "./fixtures";
+import { addMember, type Fixture, setup } from "./fixtures";
 
 let f: Fixture;
 afterEach(async () => {
@@ -263,5 +264,48 @@ describe("the system's stop: its cause, nobody's name", () => {
     const closed = await where("@dev fecha a missão");
     await engine.cancelRuns({ ...closed.input, actorId: f.owner.id, reason: "closed" });
     expect((await runById(closed.run.id))?.error).toBe(`canceled_by:${f.owner.id}`);
+  });
+});
+
+describe("a person's own message stopped before its run started", () => {
+  test("while the agent's other work there went on, it still stands; another person's, or through the right hand, is dropped", async () => {
+    f = await setup({ rightHand: true });
+    const lodi = await lodiOf();
+    // Dev is at work here on an earlier ask, waiting on a colleague's answer.
+    const earlier = await ask("@dev confere com o fornecedor a receita de ontem");
+    await f.db
+      .update(schema.agentRuns)
+      .set({ status: "waiting_input" })
+      .where(eq(schema.agentRuns.id, (await runOf(earlier.id)).id));
+    const mine = await ask("@dev chama a API, não o fornecedor");
+    await cancelRun(deps(), f.owner.id, f.org.id, (await runOf(mine.id)).id);
+    const bia = await addMember(f.db, f.org.id, "member", "Bia");
+    await joinChannel(f.db, bia.id, f.org.id, f.general.id);
+    const hers = await postPersonMessage(deps(), bia.id, f.org.id, f.general.id, { body: "@dev confere o relatório" });
+    await cancelRun(deps(), f.owner.id, f.org.id, (await runOf(hers.id)).id);
+    const asked = await ask("@dev esquece o relatório");
+    await cancelRun(deps(), f.owner.id, f.org.id, (await runOf(asked.id)).id, { byAgentId: lodi.id });
+
+    const byRun = new Map((await stopNotices()).map((m) => [refsOf(m).runId, m]));
+    const own = byRun.get((await runOf(mine.id)).id);
+    expect(refsOf(own)).toMatchObject({ was: "queued", own: "1" });
+    expect(own?.body).toContain("It was their own message, which you hadn't read yet: it still stands");
+    expect(own?.body).not.toContain("Don't pick it up again");
+    for (const dropped of [byRun.get((await runOf(hers.id)).id), byRun.get((await runOf(asked.id)).id)]) {
+      expect(refsOf(dropped)).toMatchObject({ was: "queued" });
+      expect(refsOf(dropped).own).toBeUndefined();
+      expect(dropped?.body).toContain("Don't pick it up again on your own");
+    }
+  });
+
+  test("with nothing else under way there, the stop took the message back", async () => {
+    f = await setup();
+    const mine = await ask("@dev apaga a branch antiga");
+    await cancelRun(deps(), f.owner.id, f.org.id, (await runOf(mine.id)).id);
+
+    const [notice] = await stopNotices();
+    expect(refsOf(notice)).toMatchObject({ was: "queued" });
+    expect(refsOf(notice).own).toBeUndefined();
+    expect(notice?.body).toContain("Don't pick it up again on your own");
   });
 });

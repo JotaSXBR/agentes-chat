@@ -18,6 +18,7 @@ import {
   invokeToolForRun,
   joinChannel,
   openAgentDm,
+  openTaskConversation,
   postPersonMessage,
   removeChannelMember,
   runAuthority,
@@ -480,6 +481,27 @@ test("at its time, an agent no longer in the conversation, or for a person who l
   expect((await f.db.select().from(schema.agentRuns)).length).toBe(1);
 });
 
+test("in a task's conversation, read by people who are never its members, a follow-up still comes at its time", async () => {
+  f = await setup({ followUps: true });
+  const ana = { type: "person" as const, userId: f.owner.id };
+  const issue = await createIssue({ db: f.db, pubsub: f.pubsub }, ana, f.org.id, {
+    title: "Migrar os acessos do notebook da Rita",
+    assignee: { type: "agent", id: f.agent.id },
+  });
+  const at = await openTaskConversation(f.db, ana, f.org.id, issue.id);
+  await postPersonMessage({ db: f.db, pubsub: f.pubsub }, f.owner.id, f.org.id, at.channelId, {
+    body: "@dev acompanha a migração e me avisa",
+    threadId: at.rootId,
+  });
+  const [run] = await f.db.select().from(schema.agentRuns);
+  if (!run) throw new Error("no run");
+  const id = await setFollowUp(f, run.id, 5);
+  expect(id).not.toBe("");
+
+  expect(await wakeFollowUp({ db: f.db, pubsub: f.pubsub }, f.org.id, id)).not.toBeNull();
+  expect(await lineState(f, id)).toBe("done");
+});
+
 test("in a channel's timeline the follow-ups are each person's: cancel_follow_up and the limit count only theirs", async () => {
   f = await setup({ followUps: true });
   const bia = await addMember(f.db, f.org.id, "member", "bia");
@@ -847,7 +869,7 @@ describe("a reply that names its own tools to a person", () => {
     expect(order.indexOf("request_secret")).toBeGreaterThan(opened);
   });
 
-  test("held, it is never posted later as the closing line of a turn that writes nothing", async () => {
+  test("held, it is never the closing line of a later turn that acted and wrote nothing: that turn's own end is", async () => {
     f = await setup({
       toolSources: [secrets],
       reply: (_request, call): FakeReply =>

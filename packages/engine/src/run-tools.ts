@@ -29,6 +29,7 @@ import {
   questionView,
   syncQuestionMessage,
 } from "./questions";
+import { PASS_TOOL } from "./reply-policy";
 import { routineBriefOf } from "./routine-brief";
 import type { BridgeIdentity } from "./run-tool-tokens";
 import { type AgentRun, replyThreadOf } from "./runs";
@@ -508,7 +509,9 @@ export async function invokeWithChip(
   // The agent's line follows what it does now (ADR 0084 §10), beside the call, never in its way.
   if (def) void followWork(deps, ctx, def).catch(() => {});
   liveTurnToolStarted(where.runId);
-  const said = takeStepWords(where.runId);
+  const words = takeStepWords(where.runId);
+  // What it wrote before staying quiet was never meant for people.
+  const said = use.name === PASS_TOOL ? undefined : words;
   await publishChannelEvent(deps.pubsub, {
     type: "agent.tool",
     ...where,

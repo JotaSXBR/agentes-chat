@@ -4,7 +4,7 @@ import type { Message } from "./messages";
 import type { AgentRun } from "./runs";
 import type { ToolDefinition, ToolSource } from "./tools/types";
 
-const { agentRuns, messages, agents, routingDecisions } = schema;
+const { agentRuns, messages, agents, routingDecisions, issues } = schema;
 
 /**
  * Who may stay quiet, and the silence word that is never posted.
@@ -89,7 +89,8 @@ const INFORMING_NOTICES: ReadonlySet<string> = new Set([
  * (`INFORMING_NOTICES`). Never a person's mention, a DM, another agent's
  * `ask_agent` consultation (a DM between agents), a routine's
  * call or report, a quote reply to this agent, a router follow-up to the agent
- * the person was talking to, nor a run a person answered or wrote into
+ * the person was talking to, nor one brought in on a person's message in its own task's conversation (`ownTask`, ADR
+ * 0145), nor a run a person answered or wrote into
  * (`answerOwed`). A run catching up after a usage pause (`catchUp`) may pass whoever called it: what it was asked
  * may have been answered or dropped while it waited. So may one whose own request was withdrawn as moot (`moot`): what
  * met its need may have met the person's too.
@@ -97,7 +98,7 @@ const INFORMING_NOTICES: ReadonlySet<string> = new Set([
 export function replyPolicyFor(
   run: Pick<AgentRun, "agentId" | "trigger" | "background" | "hop">,
   trigger: (Pick<Message, "authorType" | "meta"> & { authorAgentId?: string | null }) | null | undefined,
-  options: { followUp?: boolean; answerOwed?: boolean; catchUp?: boolean; moot?: boolean } = {},
+  options: { followUp?: boolean; ownTask?: boolean; answerOwed?: boolean; catchUp?: boolean; moot?: boolean } = {},
 ): ReplyPolicy {
   if (run.background) return { mayPass: false, background: true };
   if (options.answerOwed) return { mayPass: false, background: false };
@@ -114,7 +115,8 @@ export function replyPolicyFor(
   const task = trigger?.meta?.machineTask as { routine?: { report?: unknown } } | undefined;
   if (task?.routine && task.routine.report !== "always") return { mayPass: true, background: false };
   if (byAnotherAgent(run, trigger) || byEveryone(run, trigger)) return { mayPass: true, background: false };
-  if (run.trigger !== "router" || options.followUp) return { mayPass: false, background: false };
+  if (run.trigger !== "router" || options.followUp || (options.ownTask && trigger?.authorType === "person"))
+    return { mayPass: false, background: false };
   const meta = trigger?.meta ?? {};
   // A routine's call is a person's message written for its creator; an agent's message about a routine's
   // report carries the tag too (§7), and another agent the router brings in may still pass on it.
@@ -131,6 +133,14 @@ export function replyPolicyFor(
  */
 const followUpSql = sql<boolean>`exists (select 1 from ${routingDecisions} d
   where d.message_id = ${agentRuns.triggerMessageId} and d.reason like 'follow-up%')`;
+
+/**
+ * The run works in the conversation of a task assigned to its agent (ADR 0145): a person's message there is for it.
+ * The run's columns are named with their table: selected from `agent_runs` alone, a bare `channel_id` here is the task's.
+ */
+const ownTaskSql = sql<boolean>`exists (select 1 from ${issues} ti
+  where ti.conversation_channel_id = ${agentRuns}.channel_id and ti.assignee_type = 'agent'
+    and ti.assignee_id = ${agentRuns}.agent_id::text)`;
 
 /**
  * `replyPolicyFor` from the database (the run, its trigger, the router's decision): one read. `listsPass`:
@@ -157,6 +167,7 @@ export async function loadReplyPolicy(
       authorAgentId: messages.authorAgentId,
       meta: messages.meta,
       followUp: sql<boolean>`${agentRuns.trigger} = 'router' and ${followUpSql}`,
+      ownTask: sql<boolean>`${agentRuns.trigger} = 'router' and ${ownTaskSql}`,
     })
     .from(agentRuns)
     .leftJoin(messages, and(eq(messages.orgId, agentRuns.orgId), eq(messages.id, agentRuns.triggerMessageId)))
@@ -167,6 +178,7 @@ export async function loadReplyPolicy(
     : null;
   const options = {
     followUp: row.followUp === true,
+    ownTask: row.ownTask === true,
     answerOwed: row.answerOwed === true,
     catchUp: row.catchUp === true,
   };
@@ -174,11 +186,20 @@ export async function loadReplyPolicy(
   return { ...policy, listsPass: replyPolicyFor(row, trigger, options).mayPass || row.passListed === true };
 }
 
-/** Whether the router sent this run's trigger to it as a follow-up of its own conversation. */
-export async function routedAsFollowUp(db: Executor, run: Pick<AgentRun, "id" | "trigger">): Promise<boolean> {
-  if (run.trigger !== "router") return false;
-  const [row] = await db.select({ followUp: followUpSql }).from(agentRuns).where(eq(agentRuns.id, run.id));
-  return row?.followUp === true;
+/**
+ * How the router's pick of this run was addressed (`replyPolicyFor`): as a follow-up of the agent's own talk, or in the
+ * conversation of a task assigned to it.
+ */
+export async function routedAddressed(
+  db: Executor,
+  run: Pick<AgentRun, "id" | "trigger">,
+): Promise<{ followUp: boolean; ownTask: boolean }> {
+  if (run.trigger !== "router") return { followUp: false, ownTask: false };
+  const [row] = await db
+    .select({ followUp: followUpSql, ownTask: ownTaskSql })
+    .from(agentRuns)
+    .where(eq(agentRuns.id, run.id));
+  return { followUp: row?.followUp === true, ownTask: row?.ownTask === true };
 }
 
 // ── The sentinel ─────────────────────────────────────────────────────────────

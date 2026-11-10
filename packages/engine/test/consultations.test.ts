@@ -1581,6 +1581,34 @@ describe("tell_agent: what comes of work handed off comes back by itself (ADR 00
     expect(await notesBack()).toHaveLength(2);
   });
 
+  test("two notes to one colleague that one reply answers come back as one notice, with both asks, waking once", async () => {
+    f = await setup({ askAgent: true });
+    const infra = await addInfra();
+    const dev = await devRun("@dev confere o deploy com o infra");
+    await ended(dev.id);
+    await tell(dev, "@infra", "Confere a taxa de erro do deploy.");
+    await tell(dev, "@infra", "Confere também o tempo de resposta da API.");
+    // One run of Infra read both, and its one reply closed both.
+    await f.db.update(schema.agentConsultations).set({
+      status: "answered",
+      answer: "Taxa de erro normal, e a API responde em 120 ms.",
+      answeredAt: new Date(),
+    });
+    await f.db.update(schema.agentRuns).set({ status: "done" }).where(ne(schema.agentRuns.agentId, f.agent.id));
+    const [asker] = await f.db.select().from(schema.agentRuns).where(eq(schema.agentRuns.id, dev.id));
+    if (!asker) throw new Error("no run");
+
+    const delivered = await reportHandOffs({ db: f.db, pubsub: f.pubsub }, asker);
+    expect(delivered).toHaveLength(1);
+    expect(delivered.flatMap((d) => d.runs)).toHaveLength(1);
+    const back = await notesBack();
+    expect(back.map((m) => [refsOf(m).agentId, refsOf(m).wake ?? null])).toEqual([[infra.id, "1"]]);
+    expect(refsOf(back[0] as (typeof back)[number]).question).toContain("taxa de erro");
+    expect(refsOf(back[0] as (typeof back)[number]).question).toContain("tempo de resposta");
+    expect(back[0]?.body.match(/Taxa de erro normal/g)).toHaveLength(1);
+    expect((await consultations()).every((c) => c.reportedAt !== null)).toBe(true);
+  });
+
   test("a colleague waiting on a person holds up no other result: entering the wait lets them come back", async () => {
     const github = fakeGithub();
     f = await setup({

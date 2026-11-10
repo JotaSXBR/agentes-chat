@@ -35,6 +35,11 @@ export interface StoppedRefs {
   reason?: string;
   /** The agents it had asked, stopped with it ("@ada, @rio"). */
   helpers?: string;
+  /**
+   * It hadn't started, its message was the stopper's own, and the agent had other work under way there: that message
+   * still stands as their instruction.
+   */
+  own?: "1";
 }
 
 const refsOf = (r: StoppedRefs): Record<string, string> => ({ ...r }) as unknown as Record<string, string>;
@@ -52,7 +57,9 @@ export function stoppedText(r: StoppedRefs): string {
     ...(r.helpers ? [`What you asked of ${r.helpers} stopped with it: nothing more comes from them.`] : []),
     "What you already did or posted stays as it is.",
     r.reason ? `Their reason, in their words: «${r.reason}».` : "They gave no reason.",
-    "Don't pick it up again on your own: only when someone asks you to.",
+    r.own
+      ? "It was their own message, which you hadn't read yet: it still stands as what they want, so follow it."
+      : "Don't pick it up again on your own: only when someone asks you to.",
   ].join(" ");
 }
 
@@ -94,15 +101,37 @@ export async function tellAgentStopped(
   const { db } = deps;
   const [person] = await db.select({ name: users.name }).from(users).where(eq(users.id, byUserId));
   const [agent] = byAgentId ? await db.select({ name: agents.name }).from(agents).where(eq(agents.id, byAgentId)) : [];
+  const was = computerWaitOf(run) ? "waiting" : wasOf(previous);
+  // Stopped by hand before it started, their own message, while the agent had other work under way there: that stop
+  // was most likely meant for that work, so their message still stands. With nothing else under way the stop took
+  // their message back, and so does a stop they asked the right hand for in words.
+  const [own] =
+    was === "queued" && !byAgentId
+      ? await db
+          .select({ id: messages.id })
+          .from(messages)
+          .where(
+            and(
+              eq(messages.orgId, run.orgId),
+              eq(messages.id, run.triggerMessageId),
+              eq(messages.authorUserId, byUserId),
+              sql`exists (select 1 from ${agentRuns} o where o.org_id = ${run.orgId}::uuid
+                and o.agent_id = ${run.agentId}::uuid and o.channel_id = ${run.channelId}::uuid
+                and o.id <> ${run.id}::uuid and not o.background
+                and o.status in ('running', 'waiting_approval', 'waiting_input'))`,
+            ),
+          )
+      : [];
   const refs: StoppedRefs = {
     runId: run.id,
     byUserId,
     byName: person?.name ?? "",
     ...(byAgentId ? { byAgentId, byAgentName: agent?.name ?? "" } : {}),
     label: await labelOfRun(db, run),
-    was: computerWaitOf(run) ? "waiting" : wasOf(previous),
+    was,
     ...(cleanReason(reason) ? { reason: cleanReason(reason) } : {}),
     ...(helpers.length ? { helpers: helpers.join(", ") } : {}),
+    ...(own ? { own: "1" as const } : {}),
   };
   const notice: Notice = { kind: "run_stopped", text: stoppedText(refs), refs: refsOf(refs) };
   const delivered = await db.transaction((tx) =>

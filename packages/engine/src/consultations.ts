@@ -1168,9 +1168,10 @@ async function settleOwed(
  * being worked on (queued or running, not started yet, its run ended but the row not closed yet, or waiting on what
  * its colleague handed on). One waiting on a person or its computer, or whose wake waits for room, holds up no one: the
  * wake names it (`refs.pending`). One claim after each close commits, so the last closer sees every row closed, and row locks with
- * `reported_at` keep a second claim from taking them again: exactly one wake. Oldest first, every notice but the last
- * is only written; the last wakes the agent, and a run of its already at work there that takes it reads the earlier
- * ones with it. Only for a run in a person's conversation (an agents' DM hands back instead).
+ * `reported_at` keep a second claim from taking them again: exactly one wake. Oldest first, one notice per answer (the
+ * notes one reply closed share it), every notice but the last only written; the last wakes the agent, and a run of its
+ * already at work there that takes it reads the earlier ones with it. Only for a run in a person's conversation (an
+ * agents' DM hands back instead).
  */
 export async function reportHandOffs(deps: Pick<Deps, "db" | "pubsub">, asker: AgentRun) {
   const delivered = await deps.db.transaction(async (tx) => {
@@ -1207,9 +1208,20 @@ export async function reportHandOffs(deps: Pick<Deps, "db" | "pubsub">, asker: A
       );
     const pending = waiting.map((w) => `@${w.handle}`).join(", ");
     claimed.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime() || (a.id < b.id ? -1 : 1));
+    // Notes to one colleague that its one reply closed come back once, with each of them: never the same answer twice.
+    const answers: AgentConsultationRow[][] = [];
+    for (const row of claimed) {
+      const same = answers.find(
+        ([c]) => c?.targetAgentId === row.targetAgentId && c.status === row.status && c.answer === row.answer,
+      );
+      if (same) same.push(row);
+      else answers.push([row]);
+    }
     const out: Awaited<ReturnType<typeof deliverNoticeToRun>>[] = [];
-    for (const [i, row] of claimed.entries()) {
-      const wake = i === claimed.length - 1;
+    for (const [i, rows] of answers.entries()) {
+      const wake = i === answers.length - 1;
+      const newest = rows.at(-1) as AgentConsultationRow;
+      const row = rows.length > 1 ? { ...newest, question: rows.map((r) => r.question).join("\n\n") } : newest;
       const handle = await handleOf(tx, row.orgId, row.targetAgentId);
       const notice = consultationNotice(row, handle, {
         wake,

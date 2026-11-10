@@ -632,8 +632,10 @@ export function createJobHandlers(deps: JobDeps): JobHandlers {
         if (message.mentionedAgentIds.length > 0) {
           // No cap on hand-offs between agents: the stretch's limits hold a run agents start (`startOrJoinRun`).
           const handed = await delegatedAgents(message, outside, { wakeAll: Boolean(actingRoutine) });
-          // An agent the routine's run already handed this to (tell_agent) has it: the mention doesn't wake it again.
-          const told = routineRun ? await consultedBy(message.orgId, routineRun) : [];
+          // An agent the run behind it (the routine's, for its own post) already handed something to has it: naming it
+          // in the reply to people doesn't wake it a second time.
+          const ownRun = message.agentRunId ?? routineRun;
+          const told = ownRun ? await consultedBy(message.orgId, ownRun) : [];
           let allowed = handed.allowed.filter((id) => !told.includes(id));
           // In an open mission's thread, another agent acts for the person behind it: only the
           // mission's owner and deciders make the mission's agent work (ADR 0029).

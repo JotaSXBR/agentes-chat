@@ -132,7 +132,7 @@ export function createAskUserToolSource(deps: ResourcefulDeps = {}): ToolSource 
   const tool: ToolDefinition = {
     name: ASK_USER_TOOL,
     description:
-      "Ask the person one short question and wait for the answer, only when you can't go on without it: the request is still ambiguous after you looked with your tools, a decision is really theirs, or a sensitive or irreversible action is next. Never a status note or an offer of optional extra work: those go in your reply, nobody waits on them. A way to do what was asked is never optional: do it, handing the person their step with its own request. Don't ask before what you can just do and undo: issues, memories, routines, a form you fill and save before submitting. Not for choosing between fixes: recommend one. `question` is the question alone, at most 300 characters: anything longer goes in your text before the call, posted above the card. The card shows the choices and your `why`: never write them in your text; after calling, write nothing else and end your turn. Offer 2 to 4 short choices when the answer is one of a few options; when one of them is a safe guess you can undo, give it as `default`: the card shows it and you go on with it if nobody answers in time.",
+      "Ask the person one short question and wait for the answer, only when you can't go on without it: the request is still ambiguous after you looked with your tools, a decision is really theirs, or a sensitive or irreversible action is next. Never a status note or an offer of optional extra work: those go in your reply, nobody waits on them. A way to do what was asked is never optional: do it, handing the person their step with its own request. Don't ask before what you can just do and undo: issues, memories, routines, a form you fill and save before submitting. Not for choosing between fixes: recommend one. `question` is the question alone, at most 300 characters: anything longer goes in your text before the call, posted above the card. The card shows the choices and your `why`: never write them in your text; after calling, write nothing else and end your turn. Offer 2 to 4 short choices when the answer is one of a few options, with a safe guess you can undo as `default`.",
     scope: "",
     inputSchema: {
       type: "object",
@@ -155,7 +155,7 @@ export function createAskUserToolSource(deps: ResourcefulDeps = {}): ToolSource 
           type: "string",
           maxLength: 200,
           description:
-            "One of your choices, written the same way: the one you go on with if nobody answers in time (the card says it). Leave it out when the decision is really theirs or the next step can't be undone. It only answers this question: anything that asks for approval still waits for a person.",
+            "One of `choices`, written the same way: what you go on with if nobody answers in time (the card says so). Leave it out when the decision is really theirs or can't be undone.",
         },
       },
       required: ["question"],

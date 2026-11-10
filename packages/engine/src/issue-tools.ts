@@ -459,7 +459,7 @@ export function createIssueToolSource(deps: ArtifactDeps): ToolSource {
     {
       name: "create_issue",
       description:
-        "Create a task on this workspace's board: task, tarefa or backlog mean this board, never GitHub or another tool unless the person names it (criar tarefa no backlog). It takes a title, a description and acceptance criteria (a checklist), and optionally a priority, labels, an assignee, a due date and the task it is a step of (parent). No permission needed: when work should be tracked, create it; the person sees it on your reply. Making a task starts nobody: one assigned to an agent waits for a person's go on the card your reply carries. An open task with the same title is refused: use that one.",
+        "Create a task on this workspace's board: task, tarefa or backlog mean this board, never GitHub or another tool unless the person names it (criar tarefa no backlog). It takes a title, a description and acceptance criteria (a checklist), and optionally a priority, labels, an assignee, a due date and the task it is a step of (parent). No permission needed: when work should be tracked, create it; the person sees it on your reply. Making a task or giving one to an agent (here or with update_issue) starts nobody: it waits for a person's go on the card your reply carries.",
       scope: "issues:write",
       inputSchema: {
         type: "object",
@@ -563,7 +563,7 @@ export function createIssueToolSource(deps: ArtifactDeps): ToolSource {
     {
       name: UPDATE_ISSUE_TOOL,
       description:
-        "Change an issue's status, priority, title, description, assignee, labels or due date, check acceptance criteria you met, mark it blocked, attach files or link a pull request to it. Linking a PR moves the issue to review on its own. No permission needed: the person sees the change. Giving it to an agent starts nobody: it waits for a person's go on the card your reply carries.",
+        "Change an issue's status, priority, title, description, assignee, labels or due date, check acceptance criteria you met, mark it blocked, attach files or link a pull request to it. Linking a PR moves the issue to review on its own. No permission needed: the person sees the change.",
       scope: "issues:write",
       inputSchema: {
         type: "object",

@@ -108,8 +108,8 @@ const size = (r: ModelRequest) =>
  * other words tightened for it), 45,632 with the rule that people can't see or use the agent's tools (ADR 0147
  * addendum), 46,423 before the trust batch, and 46,831 with it: the tasks an agent gives that wait for a person's go,
  * a question's default and a routine's creator asked first, with the system text 71 shorter (ADR 0147 addendum
- * 2026-11-10); the ceiling leaves a little room. Where each workspace gets its own computer, `workspaceComputerText`
- * adds its 441 to that.
+ * 2026-11-10), and 46,631 once `ask_user` said its default once; the ceiling leaves a little room. Where each workspace
+ * gets its own computer, `workspaceComputerText` adds its 447 to that.
  */
 const OI_CEILING_CHARS = 47_400;
 

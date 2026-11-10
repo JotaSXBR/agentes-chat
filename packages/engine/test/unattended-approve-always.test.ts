@@ -8,6 +8,7 @@ import {
   createConnectorToolSource,
   createToolGateway,
   decideApproval,
+  ForbiddenError,
   type InvokeResult,
   insertMessage,
   lowRisk,
@@ -18,7 +19,7 @@ import {
   type ToolContext,
 } from "../src";
 import { fakeGithubMcp } from "./fake-mcp";
-import { type Fixture, setup } from "./fixtures";
+import { addMember, type Fixture, setup } from "./fixtures";
 
 let f: Fixture;
 afterEach(async () => {
@@ -272,6 +273,19 @@ describe("Sempre neste repositório", () => {
     // Another repository asks, offering its own.
     const other = asked(await call(gateway, ctx, "github_merge_pull_request", { ...PR, repo: "api", why: WHY }));
     expect(other.approveAlways).toEqual({ tool: "github_merge_pull_request", actions: [], repo: "acme/api" });
+  });
+
+  test("only the agent's owner or an admin keeps it: a member can't even decide the merge", async () => {
+    const { gateway } = await world();
+    const card = asked(await call(gateway, await personRun(), "github_merge_pull_request", { ...PR, why: WHY }));
+    const decide = (userId: string) =>
+      decideApproval({ db: f.db, pubsub: f.pubsub }, userId, f.org.id, card.id, { decision: "approve", always: true });
+    const repos = async () => (await f.db.select({ repos: schema.agents.mergeRepos }).from(schema.agents))[0]?.repos;
+
+    await expect(decide((await addMember(f.db, f.org.id, "member", "bia")).id)).rejects.toBeInstanceOf(ForbiddenError);
+    expect(await repos()).toEqual([]);
+    await decide((await addMember(f.db, f.org.id, "admin", "caio")).id);
+    expect(await repos()).toEqual(["acme/app"]);
   });
 
   test("never on work a routine's report woke: the list doesn't apply there", async () => {

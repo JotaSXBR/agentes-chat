@@ -1442,6 +1442,21 @@ async function executeRunInner(
     const held = transcript?.held;
     return held && !run.background && transcript?.postedCount === held.posted ? held.text : "";
   };
+  /** Posts the reply it owes (`owedReply`) where it answers, in its own words, without ending the run. */
+  const postOwedReply = async () => {
+    const t = transcript as Transcript;
+    const text = owedReply();
+    if (!text) return;
+    const m = await db.transaction(async (tx) => {
+      const posted = await post(tx, workThread(), text, withFallback(t, takeMemoryUpdates(t)));
+      t.postedCount++;
+      await addRunStep(tx, run, "message", { messageId: posted.id, held: true });
+      await saveTranscript(tx, t);
+      return posted;
+    });
+    const [view] = await withWikiLinks(db, run.orgId, [messageView(m)]);
+    if (view) await publishMessageCreated(deps.pubsub, view);
+  };
   /** `ledger`: the routine run's coded reason when the run error's own code isn't the right one. */
   const fail = async (reason: string, ledger?: { code: string; detail?: string }) => {
     await deferred;
@@ -1508,6 +1523,7 @@ async function executeRunInner(
           true,
         ),
       );
+      if (transcript) transcript.postedCount++;
       const [view] = await withWikiLinks(db, run.orgId, [messageView(card)]);
       if (view) await publishMessageCreated(deps.pubsub, view);
     }
@@ -1916,6 +1932,9 @@ async function executeRunInner(
   ) => {
     // What it wrote ends the reply its words showed for: it takes their place. A line the server writes doesn't.
     const placed = note ? undefined : takePlace(threadId);
+    // Nor does it answer anything ("I'll answer when it's back"): a reply held before it stays owed (`owedReply`).
+    // Every caller counts it in `postedCount` right after.
+    if (note && transcript?.held) transcript.held.posted++;
     const tagged = report && !note ? { routine: report } : {};
     // What a run a routine's reading feeds writes holds no credential it may have read (ADR 0053 §3); one a person
     // wrote into since (`steeredBy`, in the transcript as it is now) answers that person. Any other run writes as
@@ -2046,22 +2065,6 @@ async function executeRunInner(
       .update(agentRuns)
       .set({ transcript: storedTranscript(t), updatedAt: new Date() })
       .where(eq(agentRuns.id, run.id));
-
-  /** Posts the reply it owes (`owedReply`) where it answers, in its own words, without ending the run. */
-  const postOwedReply = async () => {
-    const t = transcript as Transcript;
-    const text = owedReply();
-    if (!text) return;
-    const m = await db.transaction(async (tx) => {
-      const posted = await post(tx, workThread(), text, withFallback(t, takeMemoryUpdates(t)));
-      t.postedCount++;
-      await addRunStep(tx, run, "message", { messageId: posted.id, held: true });
-      await saveTranscript(tx, t);
-      return posted;
-    });
-    const [view] = await withWikiLinks(db, run.orgId, [messageView(m)]);
-    if (view) await publishMessageCreated(deps.pubsub, view);
-  };
 
   // What the bridge kept stays on the row until taken (`takeBridgeEffects`); this copy never carries it.
   if (transcript) delete (transcript as unknown as Record<string, unknown>).bridgeEffects;

@@ -1,7 +1,7 @@
 import { afterAll, afterEach, describe, expect, setDefaultTimeout, spyOn, test } from "bun:test";
 import { MACHINE_PROTOCOL_VERSION, type RealtimeEvent } from "@agenteschat/adapters";
-import { eq, schema, sql } from "@agenteschat/db";
-import { type ModelRequest, systemText, textOf } from "@agenteschat/providers";
+import { and, eq, schema, sql } from "@agenteschat/db";
+import { type ModelRequest, ProviderError, systemText, textOf } from "@agenteschat/providers";
 import {
   ANSWER_NUDGE,
   createAgent,
@@ -476,6 +476,37 @@ describe("a reply held for another try is owed: a try that ends saying nothing p
     expect(await agentMessages()).toEqual([HELD]);
     expect(await runRow()).toMatchObject({ status: "failed", error: "model_refused" });
     expect(await heldSteps()).toHaveLength(1);
+  });
+
+  test("a line the server writes meanwhile answers nothing: back from the provider's outage, a try that passes posts it", async () => {
+    f = await setup({
+      toolSources: [createPassToolSource()],
+      judge: untriedOnce(),
+      // The held reply, then the provider down for the job's four attempts, then back with a pass.
+      reply: (_req, n) =>
+        n === 1
+          ? { chunks: [HELD] }
+          : n <= 5
+            ? new ProviderError("overloaded", true, 529)
+            : { chunks: [], toolUses: [{ name: "pass", input: { reason: "nada novo" } }] },
+    });
+    await routed("o que está rodando no notebook da Rita?");
+    for (let i = 0; i < 6; i++) {
+      await f.db
+        .update(schema.outbox)
+        .set({ nextAttemptAt: new Date(0) })
+        .where(and(eq(schema.outbox.kind, "agent_run.execute"), eq(schema.outbox.status, "pending")));
+      await drainOutbox(f.db, f.handlers);
+    }
+
+    expect(f.provider.calls.length).toBe(6);
+    // The outage's own line (since turned into "it's back"), then the held reply.
+    const said = (await f.db.select().from(schema.messages).orderBy(schema.messages.createdAt))
+      .filter((m) => m.authorType === "agent")
+      .map((m) => m.body);
+    expect(said).toHaveLength(2);
+    expect(said.at(-1)).toBe(HELD);
+    expect(await runRow()).toMatchObject({ status: "done" });
   });
 
   test("the try posts its own answer: the held reply never comes after it", async () => {

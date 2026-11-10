@@ -62,6 +62,8 @@ describe("the catalog of tool names", () => {
       ["getJiraIssue", "See Jira issue", "Ver issue do Jira"],
       ["SLACK_SEND_MESSAGE", "Send message", "Enviar mensagem"],
       ["browser_click", "Click on the page", "Clicar na página"],
+      ["planetscale_execute_read_query", "Read data with SQL", "Ler dados com SQL"],
+      ["planetscale_execute_write_query", "Change data with SQL", "Alterar dados com SQL"],
     ];
     for (const [name, english, portuguese] of cases) {
       expect({ name, en: catalogLabel(en, name), pt: catalogLabel(pt, name) }).toEqual({
@@ -137,6 +139,16 @@ describe("tool names where people see them", () => {
     );
     expect(labelIsName("Generate image", "generate_image")).toBe(true);
     expect(labelIsName("Gerar capa", "generate_image")).toBe(false);
+    // A server whose tools all start with its name, under a connection named after it: a write never reads as a query.
+    const write = approval({
+      tool: "planetscale_planetscale_execute_write_query",
+      scope: "custom:c2:write",
+      title: "PlanetScale: Planetscale execute write query",
+      connector: "custom:c2",
+      params: { query: "DELETE FROM orders WHERE id = 7" },
+    });
+    expect(approvalTitle(pt, write)).toBe("Alterar dados com SQL");
+    expect(approvalTitle(en, write)).toBe("Change data with SQL");
   });
 
   test("Aprovar sempre and its rules, Composio's actions, a step's grey words", () => {

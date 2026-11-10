@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { schema } from "@agenteschat/db";
+import { eq, schema } from "@agenteschat/db";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
@@ -51,6 +51,13 @@ describe("classification by the rules", () => {
     expect(classifyByRules({ name: "execute_sql" }, ["execute_sql"])?.level).toBe("read");
   });
 
+  test("a preset's tools that always ask come first: asking and sensitive, whatever their name or annotations say", () => {
+    const asks = { level: "approval", source: "preset", reason: "deletes_data", sensitive: true } as const;
+    const write = "planetscale_execute_write_query";
+    expect(classifyByRules({ name: write }, [], [write])).toEqual(asks);
+    expect(classifyByRules({ name: write, readOnlyHint: true }, [write], [write])).toEqual(asks);
+  });
+
   test("then the verb, first or last in the name; sensitive verbs ask and can't be freed", () => {
     const level = (name: string) => {
       const c = classifyByRules({ name });
@@ -100,6 +107,23 @@ describe("classification by the rules", () => {
     expect(describeToolName("list_tickets").subject).toBe("ticket");
     expect(describeToolName("categories").subject).toBe("category");
     expect(describeToolName("ping")).toEqual({ verb: null, words: ["ping"], subject: "ping" });
+    // Plurals in -es join their singular's group, and a name that ends in s keeps it.
+    expect(
+      ["list_branches", "get_branch", "list_addresses", "list_indexes", "list_caches", "get_postgres_logs"].map(
+        (n) => describeToolName(n).subject,
+      ),
+    ).toEqual(["branch", "branch", "address", "index", "cache", "postgres"]);
+    // Only verbs before the last one: what they act on is that last word.
+    expect(describeToolName("planetscale_execute_write_query", "planetscale")).toEqual({
+      verb: "query",
+      words: ["execute", "write"],
+      subject: "query",
+    });
+    expect(["run_query", "list_query_tags", "create_post"].map((n) => describeToolName(n).subject)).toEqual([
+      "query",
+      "query",
+      "post",
+    ]);
     expect(sharedPrefix(["github_create_issue", "github_list_repos"])).toBe("github");
     expect(sharedPrefix(["list_issues", "list_repos"])).toBeNull();
     expect(describeToolName("github_create_issue", "github")).toEqual({
@@ -138,6 +162,48 @@ function adsMcp() {
   };
   return { connect, state };
 }
+
+/** PlanetScale's tools as planetscale.com/docs/connect/mcp lists them on 2026-11-09 (no annotations shown). */
+const PLANETSCALE_TOOLS = [
+  "planetscale_list_organizations",
+  "planetscale_list_databases",
+  "planetscale_list_branches",
+  "planetscale_get_organization",
+  "planetscale_get_database",
+  "planetscale_get_branch",
+  "planetscale_get_branch_schema",
+  "planetscale_execute_read_query",
+  "planetscale_execute_write_query",
+  "planetscale_get_insights",
+  "planetscale_list_regions_for_organization",
+  "planetscale_list_cluster_size_skus",
+  "planetscale_list_invoices",
+  "planetscale_get_invoice_line_items",
+  "planetscale_get_organization_billing_payment_method",
+  "planetscale_update_payment_method",
+  "planetscale_get_payment_method_setup",
+  "planetscale_search_documentation",
+  "planetscale_list_schema_recommendations",
+  "planetscale_list_query_error_patterns",
+  "planetscale_list_query_error_executions",
+  "planetscale_get_postgres_logs",
+  "planetscale_list_query_tags",
+  "planetscale_get_query_tag",
+  "planetscale_list_query_tag_summaries",
+  "planetscale_get_branch_metrics",
+];
+
+const planetscaleMcp: McpConnect = async () => {
+  const server = new McpServer({ name: "planetscale", version: "1" });
+  for (const name of PLANETSCALE_TOOLS) {
+    server.registerTool(name, { description: name, inputSchema: { query: z.string().optional() } }, async () => ({
+      content: [{ type: "text", text: `${name} done` }],
+    }));
+  }
+  const [client, end] = InMemoryTransport.createLinkedPair();
+  await server.connect(end);
+  return mcpSessionOver(client);
+};
 
 const depsOf = (fx: Fixture, extra: Partial<CustomDeps> = {}): CustomDeps => ({
   db: fx.db,
@@ -289,6 +355,27 @@ describe("listing a connection's tools", () => {
       suggestionReason: "unknown",
     });
   });
+
+  test("PlanetScale: every tool decided by our rules, none by the judge; its write query always asks, though its name ends in `query`", async () => {
+    f = await setup();
+    const judge = createFakeJudge();
+    const started = await connectCustomServer(depsOf(f, { connect: planetscaleMcp, judge }), f.owner.id, f.org.id, {
+      serverUrl: "https://mcp.pscale.dev/mcp/planetscale",
+      apiKey: "ps_token_12345",
+    });
+    if (started.status !== "connected") throw new Error(`expected connected, got ${started.status}`);
+    expect(started.server.label).toBe("PlanetScale");
+    const levels = Object.fromEntries(
+      started.server.tools.map((t) => [t.name, `${t.level}${t.sensitive ? "!" : ""} ${t.suggestionReason}`]),
+    );
+    expect(levels).toEqual({
+      ...Object.fromEntries(PLANETSCALE_TOOLS.map((name) => [name, "read verb_read"])),
+      planetscale_execute_read_query: "read preset_read",
+      planetscale_execute_write_query: "approval! deletes_data",
+      planetscale_update_payment_method: "write verb_write",
+    });
+    expect(judge.calls).toEqual([]);
+  });
 });
 
 describe("the person's choices", () => {
@@ -396,5 +483,26 @@ describe("the person's choices", () => {
     // Listing again turns it back to approval.
     const again = await refreshCustomServer(deps, fx.owner.id, fx.org.id, server.id);
     expect(again.tools.find((t) => t.name === "campaign_delete")?.access).toBe("approval");
+  });
+
+  test("a preset's tool that always asks does so at once, before any listing: PlanetScale's write query stored as a read", async () => {
+    f = await setup();
+    const fx = f;
+    const deps = depsOf(fx, { connect: planetscaleMcp, judge: createFakeJudge() });
+    const started = await connectCustomServer(deps, fx.owner.id, fx.org.id, {
+      serverUrl: "https://mcp.pscale.dev/mcp/planetscale",
+      apiKey: "ps_token_12345",
+    });
+    if (started.status !== "connected") throw new Error(`expected connected, got ${started.status}`);
+    await acceptCustomSuggestion(deps, fx.owner.id, fx.org.id, started.server.id);
+    // As a connection by address kept it before PlanetScale was a preset: free to read, not sensitive.
+    await fx.db
+      .update(schema.customTools)
+      .set({ access: "read", sensitive: false })
+      .where(eq(schema.customTools.name, "planetscale_execute_write_query"));
+    const tools = await createConnectorToolSource(deps).tools(await runContext(fx));
+    const write = tools.find((t) => t.name.endsWith("_execute_write_query"));
+    expect([write?.sensitive, write?.rememberAs]).toEqual([true, undefined]);
+    expect(tools.find((t) => t.name.endsWith("_execute_read_query"))?.sensitive).toBe(false);
   });
 });

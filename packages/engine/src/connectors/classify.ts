@@ -166,8 +166,17 @@ export function verbIndex(words: string[], known: (w: string) => boolean = isVer
 
 const ruleVerb = (w: string) => READ_VERBS.has(w) || WRITE_VERBS.has(w) || SENSITIVE_VERBS.has(w);
 
-/** Annotations, a preset's read-only list, then the verb. Null = ambiguous (the judge decides). */
-export function classifyByRules(tool: ToolToClassify, readTools: readonly string[] = []): ToolClass | null {
+/**
+ * A preset's tools that always ask, then the annotations, its read-only tools and the verb. Null = ambiguous (the
+ * judge decides).
+ */
+export function classifyByRules(
+  tool: ToolToClassify,
+  readTools: readonly string[] = [],
+  askTools: readonly string[] = [],
+): ToolClass | null {
+  if (askTools.includes(tool.name))
+    return { level: "approval", source: "preset", reason: "deletes_data", sensitive: true };
   if (tool.readOnlyHint === true)
     return { level: "read", source: "annotation", reason: "read_only_hint", sensitive: false };
   if (tool.destructiveHint === true)
@@ -387,6 +396,7 @@ export async function classifyTools(
     server: string;
     judge?: Judge;
     readTools?: readonly string[];
+    askTools?: readonly string[];
     /** Earlier judge answers for this connection, by tool name. */
     cached?: Map<string, ToolClass>;
   },
@@ -394,7 +404,7 @@ export async function classifyTools(
   const out = new Map<string, ToolClass>();
   const ask: ToolToClassify[] = [];
   for (const tool of tools) {
-    const byRules = classifyByRules(tool, options.readTools);
+    const byRules = classifyByRules(tool, options.readTools, options.askTools);
     const hit = options.cached?.get(tool.name);
     if (byRules) out.set(tool.name, byRules);
     else if (hit && hit.source === "judge") out.set(tool.name, hit);
@@ -428,14 +438,17 @@ export function sharedPrefix(names: string[]): string | null {
   return firsts.every((w) => w[0] === first && w.length > 1) ? first : null;
 }
 
+/** Mirrored in the client's `tool-review.ts`. `-aches` only drops its s: caches, not cach. */
 const singular = (w: string) =>
   w.endsWith("ies") && w.length > 4
     ? `${w.slice(0, -3)}y`
-    : /(ss|us|is|data|info|news|status|analytics)$/.test(w)
-      ? w
-      : w.endsWith("s") && w.length > 3
-        ? w.slice(0, -1)
-        : w;
+    : /([^a]ch|sh|x|ss)es$/.test(w)
+      ? w.slice(0, -2)
+      : /(ss|us|is|data|info|news|status|analytics|postgres)$/.test(w)
+        ? w
+        : w.endsWith("s") && w.length > 3
+          ? w.slice(0, -1)
+          : w;
 
 /** Readable parts and the subject (the resource the tool is about: `campaign`, `ticket`; `other` when none). */
 export function describeToolName(name: string, prefix: string | null = null): ToolNameParts & { subject: string } {
@@ -444,6 +457,7 @@ export function describeToolName(name: string, prefix: string | null = null): To
   const v = verbIndex(words);
   const verb = v >= 0 ? (words[v] ?? null) : null;
   const rest = v >= 0 ? words.filter((_, i) => i !== v) : words;
-  const head = rest[0];
+  // Only verbs before a last one: that last word is what they act on (`execute_read_query` is about a query).
+  const head = v > 0 && v === words.length - 1 && rest.every(isVerb) ? verb : rest[0];
   return { verb, words: rest, subject: head ? singular(head) : "other" };
 }

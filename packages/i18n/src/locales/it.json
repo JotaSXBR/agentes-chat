@@ -10853,6 +10853,11 @@
         "1": "Vedere i database e interrogarli",
         "2": "Creare database e modificare i dati"
       },
+      "planetscale": {
+        "1": "Vedere database, branch e prestazioni delle query",
+        "2": "Interrogare e modificare il database",
+        "ask": "Le modifiche al database chiedono sempre la tua approvazione"
+      },
       "netlify": {
         "1": "Vedere siti e deploy",
         "2": "Fare deploy e cambiare impostazioni"
@@ -11183,6 +11188,7 @@
       "gitlab": "Progetti, merge request, issue e pipeline di GitLab.com.",
       "neon": "Progetti, branch e query Postgres.",
       "prisma": "Database, backup e query di Prisma Postgres.",
+      "planetscale": "Database MySQL e Postgres, branch e query.",
       "netlify": "Siti, deploy e impostazioni.",
       "vercel": "Progetti, deploy e log.",
       "railway": "Progetti, servizi, deploy e log.",
@@ -11320,6 +11326,7 @@
       "page": "pagina|pagine|della pagina",
       "document": "documento|documenti|del documento",
       "doc": "documento|documenti|del documento",
+      "documentation": "documentazione|documentazione|della documentazione",
       "report": "report|report|del report",
       "campaign": "campagna|campagne|della campagna",
       "ad": "annuncio|annunci|dell'annuncio",
@@ -11345,6 +11352,7 @@
       "commit": "commit|commit|del commit",
       "release": "release|release|della release",
       "database": "database|database|del database",
+      "query": "query|query|della query",
       "table": "tabella|tabelle|della tabella",
       "record": "record|record|del record",
       "row": "riga|righe|della riga",
@@ -11394,6 +11402,7 @@
       "discussion": "discussione|discussioni|della discussione",
       "dependabot": "Dependabot|Dependabot|di Dependabot",
       "org": "organizzazione|organizzazioni|dell'organizzazione",
+      "organization": "organizzazione|organizzazioni|dell'organizzazione",
       "ruleset": "set di regole|set di regole|del set di regole"
     }
   },

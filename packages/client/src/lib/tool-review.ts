@@ -122,14 +122,17 @@ const words = (name: string) =>
     .toLowerCase()
     .split(/[^a-z0-9]+/)
     .filter(Boolean);
+/** Mirrors the backend's (`classify.ts`). `-aches` only drops its s: caches, not cach. */
 const singular = (w: string) =>
   w.endsWith("ies") && w.length > 4
     ? `${w.slice(0, -3)}y`
-    : /(ss|us|is|data|info|news|status|analytics)$/.test(w)
-      ? w
-      : w.endsWith("s") && w.length > 3
-        ? w.slice(0, -1)
-        : w;
+    : /([^a]ch|sh|x|ss)es$/.test(w)
+      ? w.slice(0, -2)
+      : /(ss|us|is|data|info|news|status|analytics|postgres)$/.test(w)
+        ? w
+        : w.endsWith("s") && w.length > 3
+          ? w.slice(0, -1)
+          : w;
 
 /**
  * The name's parts when the server didn't send them (older servers, catalog tools); mirrors the backend. `verbFirst`:
@@ -149,7 +152,9 @@ export function partsOf(name: string, prefix: string | null = null, verbFirst = 
           : w.findIndex((x) => VERBS.has(x));
   const verb = v >= 0 ? (w[v] ?? null) : null;
   const rest = v >= 0 ? w.filter((_, i) => i !== v) : w;
-  return { verb, words: rest, subject: rest[0] ? singular(rest[0]) : "other" };
+  // Only verbs before a last one: that last word is what they act on (`execute_read_query` is about a query).
+  const head = v > 0 && v === last && rest.every((x) => VERBS.has(x)) ? verb : rest[0];
+  return { verb, words: rest, subject: head ? singular(head) : "other" };
 }
 
 /** Verbs whose object reads in the plural ("Listar campanhas"). */

@@ -10454,6 +10454,11 @@
         "1": "Datenbanken ansehen und abfragen",
         "2": "Datenbanken erstellen und Daten ändern"
       },
+      "planetscale": {
+        "1": "Datenbanken, Branches und die Leistung der Abfragen ansehen",
+        "2": "Datenbank abfragen und ändern",
+        "ask": "Änderungen an der Datenbank fragen immer nach deiner Freigabe"
+      },
       "netlify": {
         "1": "Sites und Deploys ansehen",
         "2": "Deployen und Einstellungen ändern"
@@ -10777,6 +10782,7 @@
       "gitlab": "Projekte, Merge Requests, Issues und Pipelines auf GitLab.com.",
       "neon": "Postgres-Projekte, Branches und Abfragen.",
       "prisma": "Prisma-Postgres-Datenbanken, Backups und Abfragen.",
+      "planetscale": "MySQL- und Postgres-Datenbanken, Branches und Abfragen.",
       "netlify": "Websites, Deploys und Einstellungen.",
       "vercel": "Projekte, Deployments und Logs.",
       "railway": "Projekte, Dienste, Deploys und Logs.",
@@ -10914,6 +10920,7 @@
       "page": "Seite|Seiten|der Seite",
       "document": "Dokument|Dokumente|des Dokuments",
       "doc": "Dokument|Dokumente|des Dokuments",
+      "documentation": "Dokumentation|Dokumentation|der Dokumentation",
       "report": "Bericht|Berichte|des Berichts",
       "campaign": "Kampagne|Kampagnen|der Kampagne",
       "ad": "Anzeige|Anzeigen|der Anzeige",
@@ -10939,6 +10946,7 @@
       "commit": "Commit|Commits|des Commits",
       "release": "Release|Releases|des Release",
       "database": "Datenbank|Datenbanken|der Datenbank",
+      "query": "Abfrage|Abfragen|der Abfrage",
       "table": "Tabelle|Tabellen|der Tabelle",
       "record": "Datensatz|Datensätze|des Datensatzes",
       "row": "Zeile|Zeilen|der Zeile",
@@ -10988,6 +10996,7 @@
       "discussion": "Diskussion|Diskussionen|der Diskussion",
       "dependabot": "Dependabot|Dependabot|von Dependabot",
       "org": "Organisation|Organisationen|der Organisation",
+      "organization": "Organisation|Organisationen|der Organisation",
       "ruleset": "Regelsatz|Regelsätze|des Regelsatzes"
     }
   },

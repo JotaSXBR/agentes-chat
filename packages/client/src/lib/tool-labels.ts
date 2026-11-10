@@ -467,9 +467,11 @@ const LABELS: Record<string, readonly [en: string, ptBR: string]> = {
   list_styles: ["List styles", "Listar estilos"],
   get_credits: ["See the credits", "Ver os créditos"],
 
-  // Databases (Supabase, Neon, Postgres)
+  // Databases (Supabase, Neon, PlanetScale, Postgres)
   execute_sql: ["Run SQL", "Rodar SQL"],
   run_sql: ["Run SQL", "Rodar SQL"],
+  execute_read_query: ["Read data with SQL", "Ler dados com SQL"],
+  execute_write_query: ["Change data with SQL", "Alterar dados com SQL"],
   list_tables: ["List tables", "Listar tabelas"],
   apply_migration: ["Apply migration", "Aplicar migração"],
   list_migrations: ["List migrations", "Listar migrações"],
@@ -643,6 +645,7 @@ const APPS: Record<string, string> = {
   microsoftteams: "Microsoft Teams",
   supabase: "Supabase",
   neon: "Neon",
+  planetscale: "PlanetScale",
   composio: "Composio",
 };
 

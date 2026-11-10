@@ -334,7 +334,8 @@ export function createConnectorToolSource(
       return [];
     }
     const byName = new Map(listed.map((t) => [t.name, t]));
-    const preset = presetForServer(connection.serverUrl)?.id;
+    const known = presetForServer(connection.serverUrl);
+    const preset = known?.id;
     const composio = composioServiceOf(connection.serverUrl);
     const prefix = toolPrefixOfConnection(connection);
     return classified.flatMap((row): ToolDefinition[] => {
@@ -344,9 +345,10 @@ export function createConnectorToolSource(
       const executor = tool.name === COMPOSIO_EXECUTOR;
       const sqlArg = composio ? null : sqlArgOf(tool, preset);
       const action = composio ? composioAction(composio.way, tool.name) : null;
-      // Our rules for a Composio action as they are now (its entry's `ask`, its tags at the pinned version), not only
-      // as the row stored them at the last sync: an action they make ask asks on every connection at once.
-      const asks = composio !== null && tool.destructiveHint === true;
+      // Our rules as they are now (a Composio entry's `ask` and its tags at the pinned version, a preset's `askTools`),
+      // not only as the row stored them at the last sync: a tool they make ask asks on every connection at once.
+      const asks =
+        (composio !== null && tool.destructiveHint === true) || known?.askTools?.includes(tool.name) === true;
       const said = executor
         ? [EXECUTOR_NOTE, tool.description].filter(Boolean).join(" ")
         : (tool.description ?? tool.name);

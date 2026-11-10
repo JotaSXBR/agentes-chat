@@ -10014,6 +10014,11 @@
         "1": "데이터베이스 보기와 조회",
         "2": "데이터베이스 만들기와 데이터 변경"
       },
+      "planetscale": {
+        "1": "데이터베이스, 브랜치, 쿼리 성능 보기",
+        "2": "데이터베이스 조회와 변경",
+        "ask": "데이터베이스 변경은 항상 승인을 요청해요"
+      },
       "netlify": {
         "1": "사이트와 배포 보기",
         "2": "배포와 설정 변경"
@@ -10330,6 +10335,7 @@
       "gitlab": "GitLab.com 프로젝트, 머지 리퀘스트, 이슈, 파이프라인.",
       "neon": "Postgres 프로젝트, 브랜치, 쿼리.",
       "prisma": "Prisma Postgres 데이터베이스, 백업, 쿼리.",
+      "planetscale": "MySQL과 Postgres 데이터베이스, 브랜치, 쿼리.",
       "netlify": "사이트, 배포, 설정.",
       "vercel": "프로젝트, 배포, 로그.",
       "railway": "프로젝트, 서비스, 배포, 로그.",
@@ -10467,6 +10473,7 @@
       "page": "페이지",
       "document": "문서",
       "doc": "문서",
+      "documentation": "문서",
       "report": "보고서",
       "campaign": "캠페인",
       "ad": "광고",
@@ -10492,6 +10499,7 @@
       "commit": "커밋",
       "release": "릴리스",
       "database": "데이터베이스",
+      "query": "쿼리",
       "table": "테이블",
       "record": "레코드",
       "row": "행",
@@ -10541,6 +10549,7 @@
       "discussion": "디스커션",
       "dependabot": "Dependabot",
       "org": "조직",
+      "organization": "조직",
       "ruleset": "규칙 세트"
     }
   },

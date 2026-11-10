@@ -45,6 +45,7 @@ export const CONNECTOR_BRANDS: Record<string, { file: string; color: string | nu
   gitlab: { file: "gitlab", color: "#FC6D26" },
   neon: { file: "neon", color: "#00E599" },
   prisma: { file: "prisma", color: null },
+  planetscale: { file: "planetscale", color: null },
   netlify: { file: "netlify", color: "#00C7B7" },
   vercel: { file: "vercel", color: null },
   railway: { file: "railway", color: null },

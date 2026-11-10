@@ -4,7 +4,7 @@ import { setupDom } from "@agenteschat/ui/testing/dom";
 setupDom();
 
 import { act, cleanup, fireEvent, within } from "@testing-library/react";
-import { payWith } from "./ai-picker";
+import { chooseAi } from "./ai-picker";
 import {
   ADA_ID,
   ATLAS_ID,
@@ -116,15 +116,17 @@ describe("the first-run checklist", () => {
     await openDm(state);
     await click(within(row("Conecte uma IA.")).getByRole("button", { name: "Conectar" }));
     const add = screen().getByRole("dialog", { name: "Conectar uma IA" });
-    await click(payWith(add, "Com chave de API"));
+    await chooseAi(add, "Chave de API");
     await act(async () =>
       fireEvent.change(within(add).getByLabelText("Cole aqui"), { target: { value: "sk-ant-api03-abcdefghijklmnop" } }),
     );
     await click(within(add).getByRole("button", { name: "Salvar chave" }), 10);
-    // Lodi's DM answers with the key from now on: it is the workspace's AI.
-    expect(calls(state, "agents.setBrain").map((c) => c.args.slice(1))).toContainEqual([
+    expect(calls(state, "agents.addCredential")).toHaveLength(1);
+    // Lodi's DM answers with the key from now on: the right hand, already on the API, is pinned to it, and what the
+    // right hand thinks with is the workspace's AI.
+    expect(calls(state, "agents.update").map((c) => c.args.slice(1))).toContainEqual([
       LODI_ID,
-      { scope: "workspace", brain: "model" },
+      { credentialId: state.credentials.at(-1)?.id },
     ]);
   });
 

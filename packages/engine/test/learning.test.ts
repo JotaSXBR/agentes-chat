@@ -1436,7 +1436,9 @@ describe("a person questioning what the agent did on its own", () => {
     expect(HOW_YOU_WORK).toContain(
       "Never post a person's email or personal data in a channel unless the task needs it.",
     );
-    expect(HOW_YOU_WORK).toContain("Questioned or corrected on what you did: stop and save the correction.");
+    expect(HOW_YOU_WORK).toContain(
+      "Questioned or corrected on what you did: answer it, stop that work and save the correction.",
+    );
     const lesson = "Ler saldo, plano ou dados de uma conta só quando pedirem, e oferecer isso em uma linha.";
     f = await setup({
       judge: (kind, id, state) =>

@@ -173,7 +173,8 @@ export type ChannelEvent =
       text: string;
       /**
        * The model call this text belongs to (1, 2…): a new turn starts a new segment, never glued to the last one. One
-       * with no text opens the next call when the run held the reply it showed (never posted): the apps drop it.
+       * with no text opens the next call when the run held the reply it showed (posted only if that call ends saying
+       * nothing): the apps drop it.
        */
       turn: number;
       /** Where `text` starts in its turn's text (UTF-16 units): an app that missed a piece sees the hole. */

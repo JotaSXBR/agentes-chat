@@ -836,7 +836,7 @@ describe("a reply that names its own tools to a person", () => {
     expect(order.indexOf("request_secret")).toBeGreaterThan(opened);
   });
 
-  test("held, it is never posted later as the closing line of a turn that writes nothing", async () => {
+  test("held, it is never the closing line of a later turn that acted and wrote nothing: that turn's own end is", async () => {
     f = await setup({
       toolSources: [secrets],
       reply: (_request, call): FakeReply =>

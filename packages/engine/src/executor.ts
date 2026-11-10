@@ -529,6 +529,11 @@ export interface Transcript {
   autoModel?: AutoModelRecord;
   /** Assistant text before this index was already posted to the chat (or was history, or a reply held unposted). */
   postedUpTo: number;
+  /**
+   * The last reply held for another try (a give-up judged untried, a secret asked in the chat, its tools named, files
+   * only its computer has) and `postedCount` when it was: owed while nothing was posted since (`owedReply`).
+   */
+  held?: { text: string; posted: number };
   /** Chat messages this run posted so far. */
   postedCount: number;
   /** The words of the last message it posted (trimmed): saying exactly them again next adds nothing. */
@@ -1431,9 +1436,20 @@ async function executeRunInner(
    * nothing sent to the agent is swallowed by an ending.
    */
   const redispatchPending = (reason: ReleaseReason) => releaseInbox(db, deps.pubsub, run, { reason }).catch(() => null);
+  /** The reply it held for another try, while it posted nothing since (`Transcript.held`); "" when nothing is owed. */
+  const owedReply = () => {
+    const held = transcript?.held;
+    return held && !run.background && transcript?.postedCount === held.posted ? held.text : "";
+  };
   /** `ledger`: the routine run's coded reason when the run error's own code isn't the right one. */
   const fail = async (reason: string, ledger?: { code: string; detail?: string }) => {
     await deferred;
+    // A failure after a held reply comes after that reply, never instead of it. An agent held, paused, archived or with
+    // no AI to think with says nothing.
+    if (owedReply() && reason !== NO_AI && reason !== "agent_archived" && !standingErrorDetail(reason))
+      await postOwedReply().catch((error) =>
+        addRunStep(db, run, "error", { reason: "held_reply", message: String(error) }).catch(() => {}),
+      );
     const plan = brainPlan && isComputerBrain(brainPlan.kind) ? BRAIN_PLAN_NAMES[brainPlan.kind] : undefined;
     failCause = { ...(ledger ? { code: ledger.code } : {}), ...(plan ? { plan } : {}) };
     await addRunStep(db, run, "error", { reason });
@@ -2021,6 +2037,22 @@ async function executeRunInner(
       .update(agentRuns)
       .set({ transcript: storedTranscript(t), updatedAt: new Date() })
       .where(eq(agentRuns.id, run.id));
+
+  /** Posts the reply it owes (`owedReply`) where it answers, in its own words, without ending the run. */
+  const postOwedReply = async () => {
+    const t = transcript as Transcript;
+    const text = owedReply();
+    if (!text) return;
+    const m = await db.transaction(async (tx) => {
+      const posted = await post(tx, workThread(), text, withFallback(t, takeMemoryUpdates(t)));
+      t.postedCount++;
+      await addRunStep(tx, run, "message", { messageId: posted.id, held: true });
+      await saveTranscript(tx, t);
+      return posted;
+    });
+    const [view] = await withWikiLinks(db, run.orgId, [messageView(m)]);
+    if (view) await publishMessageCreated(deps.pubsub, view);
+  };
 
   // What the bridge kept stays on the row until taken (`takeBridgeEffects`); this copy never carries it.
   if (transcript) delete (transcript as unknown as Record<string, unknown>).bridgeEffects;
@@ -2812,10 +2844,13 @@ async function executeRunInner(
     }
   }
 
-  /** Ends the run with a closing line the server writes (`code`), with what it changed (its receipts) and its cards. */
+  /**
+   * Ends the run with a closing line the server writes (`code`; null: the agent's own words), with what it changed (its
+   * receipts) and its cards.
+   */
   const closeWith = async (
     text: string,
-    code: string,
+    code: string | null,
     step: Record<string, unknown>,
     meta: Record<string, unknown> = {},
   ) => {
@@ -2828,7 +2863,10 @@ async function executeRunInner(
         tx,
         workThread(),
         text,
-        withFallback(t, withCode({ ...takeMemoryUpdates(t), ...meta, ...workEnd(unfinished) }, bodyCode(code))),
+        withFallback(
+          t,
+          withCode({ ...takeMemoryUpdates(t), ...meta, ...workEnd(unfinished) }, code ? bodyCode(code) : undefined),
+        ),
       );
       t.postedUpTo = t.messages.length;
       t.postedCount++;
@@ -2875,6 +2913,13 @@ async function executeRunInner(
     if ((still?.pending.length ?? 0) > 0) {
       delete t.passed;
       return false;
+    }
+    // Its held reply is owed: the try after it passing or saying nothing posts that reply after all.
+    const owed = owedReply();
+    if (owed) {
+      delete t.passed;
+      await closeWith(owed, null, { held: true });
+      return true;
     }
     // It changed something (receipts with Undo, ADR 0037): people see what it did, so it posts them
     // instead of passing.
@@ -4776,8 +4821,11 @@ async function executeRunInner(
           saved ||
           closingSummary(transcript, anythingPosted) ||
           (result.executedCount > 0 && !anythingPosted ? DONE_TEXT : "");
+      // Nothing to say after a reply it held for another try: that reply is its answer after all.
+      const owed = silent || written ? "" : owedReply();
       // It changed something since its last message and wrote nothing more: its receipts still go out.
-      const text = written || (!silent && anythingPosted && (await hasUnpostedReceipts(db, run)) ? DONE_TEXT : "");
+      const text =
+        written || owed || (!silent && anythingPosted && (await hasUnpostedReceipts(db, run)) ? DONE_TEXT : "");
       // A line the server wrote (not the model): its code, so the app shows it in the person's language.
       const code =
         said || text === ""
@@ -4868,7 +4916,7 @@ async function executeRunInner(
         bound: t.stuck?.endAt !== undefined ? "stuck" : t.wrapUpNoted ? "step_limit" : null,
         quiet: silent && !judged,
         decided: decided && !silent && !said && !capped && !closingSummary(t, true) ? decided : null,
-        unanswered: !silent && !viaRoutine && (sentinelOnly || (!text && !anythingPosted)),
+        unanswered: !silent && !viaRoutine && !owed && (sentinelOnly || (!text && !anythingPosted)),
         unreached,
         localPaths,
         judged: owesAnswer && !capped ? judged : "",
@@ -4966,8 +5014,10 @@ async function executeRunInner(
               text: "",
               at: 0,
             });
-            // Nor is it posted later: as the closing line of a turn that writes nothing, or what a stopped run wrote.
+            // Never the closing line of a later turn's work, nor what a stopped run wrote: it is owed instead, posted
+            // after all if the next try passes, says nothing or fails (`owedReply`).
             t.postedUpTo = t.messages.length;
+            t.held = { text: said, posted: t.postedCount };
           }
           await saveTranscript(db, t);
           continue;

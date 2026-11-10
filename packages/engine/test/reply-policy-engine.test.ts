@@ -417,3 +417,73 @@ test("sessionFor: a conversation never picks up a background or routine run's se
   expect(fresh.session?.id).not.toBe("s-conversation");
   expect(fresh.session?.resume).toBe(false);
 });
+
+describe("a reply held for another try is owed: a try that ends saying nothing posts it", () => {
+  const HELD = "Não consigo ver o notebook da Rita daqui: só ela pode conferir o que roda nele.";
+  /** Its first answer says it can't without trying a tool: judged untried, held, one more try; then done. */
+  const untriedOnce = () => {
+    let verdicts = 0;
+    return (kind: string) => (kind === "follow_through" ? (++verdicts === 1 ? "untried" : "done") : undefined);
+  };
+  const heldSteps = async () =>
+    (await f.db.select().from(schema.agentRunSteps)).filter((s) => s.kind === "message" && s.data.held === true);
+
+  test("brought in by the router, the try passes: the held reply is posted, never an answer that vanishes", async () => {
+    f = await setup({
+      toolSources: [createPassToolSource()],
+      judge: untriedOnce(),
+      reply: (_req, n) =>
+        n === 1 ? { chunks: [HELD] } : { chunks: [], toolUses: [{ name: "pass", input: { reason: "nada novo" } }] },
+    });
+    const events = f.listen(f.general.id);
+    await routed("o que está rodando no notebook da Rita?");
+
+    expect(await agentMessages()).toEqual([HELD]);
+    expect(f.provider.calls.length).toBe(2);
+    const run = await runRow();
+    expect(run?.status).toBe("done");
+    expect(run?.replyMessageId).toBeString();
+    expect(await heldSteps()).toHaveLength(1);
+    await Bun.sleep(5);
+    expect(events.some((e) => e.type === "agent.passed")).toBe(false);
+    expect(events.find((e) => e.type === "message.handled")).not.toHaveProperty("passed");
+  });
+
+  test("named, the try writes only the silence word: the held reply is the answer, no nudge to answer first", async () => {
+    f = await setup({ judge: untriedOnce(), reply: (_req, n) => ({ chunks: [n === 1 ? HELD : "NO_REPLY"] }) });
+    await postPersonMessage({ db: f.db, pubsub: f.pubsub }, f.owner.id, f.org.id, f.general.id, {
+      body: "@dev o que está rodando no notebook da Rita?",
+    });
+    await drainOutbox(f.db, f.handlers);
+
+    expect(await agentMessages()).toEqual([HELD]);
+    expect(f.provider.calls.length).toBe(2);
+    expect(await runRow()).toMatchObject({ status: "done", error: null });
+  });
+
+  test("the try fails: the held reply comes first, then the failure", async () => {
+    f = await setup({
+      judge: untriedOnce(),
+      reply: (_req, n) => (n === 1 ? { chunks: [HELD] } : { chunks: [], stopReason: "refusal" }),
+    });
+    await postPersonMessage({ db: f.db, pubsub: f.pubsub }, f.owner.id, f.org.id, f.general.id, {
+      body: "@dev o que está rodando no notebook da Rita?",
+    });
+    await drainOutbox(f.db, f.handlers);
+
+    expect(await agentMessages()).toEqual([HELD]);
+    expect(await runRow()).toMatchObject({ status: "failed", error: "model_refused" });
+    expect(await heldSteps()).toHaveLength(1);
+  });
+
+  test("the try posts its own answer: the held reply never comes after it", async () => {
+    f = await setup({
+      toolSources: [createPassToolSource()],
+      judge: untriedOnce(),
+      reply: (_req, n) => ({ chunks: [n === 1 ? HELD : "Conferi: a tarefa veio do pedido da Rita de ontem."] }),
+    });
+    await routed("o que está rodando no notebook da Rita?");
+    expect(await agentMessages()).toEqual(["Conferi: a tarefa veio do pedido da Rita de ontem."]);
+    expect(await heldSteps()).toEqual([]);
+  });
+});

@@ -828,8 +828,9 @@ function applyEvent(state: StreamsState, event: StreamEvent): StreamsState {
       }
       // A new model call. Narration (text before tool calls) already left the body with `agent.narration` or the
       // call; what is still here is a whole reply the server held and sent back for another try (a give-up, a
-      // question it shouldn't ask, its tools named), never posted: the next turn's text replaces it. The server opens
-      // that turn at once with no text, so a tool call coming first never keeps it as narration.
+      // question it shouldn't ask, its tools named): the next turn's text replaces it, and its message comes only if
+      // that turn ends saying nothing. The server opens that turn at once with no text, so a tool call coming first
+      // never keeps it as narration.
       if (current && event.turn !== undefined && current.turn !== undefined && event.turn > current.turn) {
         return upsert(state, event, {
           status: "running",

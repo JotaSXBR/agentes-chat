@@ -3620,7 +3620,9 @@
     "skip": "Overslaan",
     "skipFailed": "De vraag kon niet worden overgeslagen. Probeer het opnieuw.",
     "dismissed": "{{name}} heeft deze vraag overgeslagen.",
-    "dismissedByYou": "Je hebt deze vraag overgeslagen."
+    "dismissedByYou": "Je hebt deze vraag overgeslagen.",
+    "defaultNote": "Als niemand voor {{time}} antwoordt, ga ik verder met: {{answer}}",
+    "defaulted": "Niemand antwoordde op tijd. Ik ben verdergegaan met: {{answer}}"
   },
   "ask": {
     "kindOther": {
@@ -13063,6 +13065,8 @@
     "timezoneHelp": "Routines en samenvattingen gebruiken deze tijdzone.",
     "actionCheck": "Agents checken wat het team al deed",
     "actionCheckHelp": "Voor een e-mail, bericht of pull request checkt de agent of iemand in het team dat in de afgelopen 30 dagen al bij dezelfde persoon of plek deed, en herhaalt het niet.",
+    "questionWait": "Hoe lang wachten op een antwoord",
+    "questionWaitHelp": "Als een agent iets vraagt en zegt wat hij zou doen, gaat hij daarmee verder als niemand binnen deze tijd antwoordt, en meldt dat. Meteen als de gevraagde persoon afwezig is. Goedkeuringen wachten altijd op een mens.",
     "telemetry": {
       "title": "Gebruiksstatistieken",
       "label": "Anonieme gebruiksstatistieken naar agentes.chat sturen",

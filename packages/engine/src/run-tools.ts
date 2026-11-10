@@ -24,8 +24,8 @@ import {
   ASK_USER_TOOL,
   defaultAddressee,
   publishQuestion,
-  QUESTION_TTL_MS,
   questionCardMeta,
+  questionExpiry,
   questionView,
   syncQuestionMessage,
 } from "./questions";
@@ -723,6 +723,8 @@ export interface PauseRequests {
     why?: string;
     /** Why it is for that person and not who asked (`ask_user`'s `person_why`). */
     forWhy?: string;
+    /** One of `choices`: what the run goes on with when nobody answers in time (`questionExpiry`). */
+    default?: string;
   }[];
   secretRequestIds: string[];
 }
@@ -893,7 +895,8 @@ export async function postPauseCards(
         text: ask.text,
         choices: ask.choices,
         requestedForUserId,
-        expiresAt: new Date(Date.now() + QUESTION_TTL_MS),
+        defaultAnswer: ask.default ?? null,
+        expiresAt: await questionExpiry(tx, run.orgId, requestedForUserId, Boolean(ask.default)),
       })
       .onConflictDoNothing()
       .returning();
@@ -1048,6 +1051,7 @@ export async function suspendRunForTool(
                 requestedForUserId: gated.requestedForUserId,
                 why: gated.why,
                 ...(gated.forWhy ? { forWhy: gated.forWhy } : {}),
+                ...(gated.default ? { default: gated.default } : {}),
               },
             ]
           : [],

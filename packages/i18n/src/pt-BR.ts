@@ -3708,6 +3708,9 @@ export const ptBR = {
     skipFailed: "Não foi possível pular a pergunta. Tente de novo.",
     dismissed: "{{name}} pulou esta pergunta.",
     dismissedByYou: "Você pulou esta pergunta.",
+    /** In the agent's voice, on its card: `time` when it goes on, `answer` the choice it goes on with. */
+    defaultNote: "Se ninguém responder até {{time}}, sigo com: {{answer}}",
+    defaulted: "Ninguém respondeu a tempo. Segui com: {{answer}}",
   },
   /** A request in the conversation (approval, secret, question, help in the agent's screen, proposal): one card for all. */
   ask: {
@@ -12914,6 +12917,10 @@ export const ptBR = {
     actionCheck: "Agentes conferem o que o time já fez",
     actionCheckHelp:
       "Antes de mandar e-mail, mensagem ou abrir PR, o agente vê se alguém do time já fez isso com a mesma pessoa ou lugar nos últimos 30 dias, e não repete.",
+    /** A question an agent asked with what it would do: how long it waits before going on with that. */
+    questionWait: "Quanto esperar por uma resposta",
+    questionWaitHelp:
+      "Quando um agente pergunta algo e diz o que faria, ele segue com isso se ninguém responder nesse tempo, e avisa. Na hora, se quem foi perguntado está ausente. Aprovações sempre esperam uma pessoa.",
     telemetry: {
       title: "Estatísticas de uso",
       label: "Enviar estatísticas de uso anônimas ao agentes.chat",

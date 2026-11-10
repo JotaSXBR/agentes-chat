@@ -7,7 +7,7 @@ import {
   useModelLabel,
   useSaveSecretToVault,
 } from "@agenteschat/client";
-import { questionWaitsOn } from "@agenteschat/client/lib/agent-questions";
+import { questionDefaultLine, questionWaitsOn } from "@agenteschat/client/lib/agent-questions";
 import { formatTime, whenAt } from "@agenteschat/client/lib/format";
 import { agentGrammar } from "@agenteschat/client/lib/grammar";
 import { messagePath } from "@agenteschat/client/lib/message-links";
@@ -583,7 +583,7 @@ export function ProposalGroup({ proposalIds }: { proposalIds: string[] }) {
  * it never depends on which composer is on screen.
  */
 export function QuestionCard({ question }: { question: AgentQuestion }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { org, me } = useOrg();
   const api = useApi();
   const dir = useDirectory(org.id);
@@ -642,7 +642,16 @@ export function QuestionCard({ question }: { question: AgentQuestion }) {
       </p>
     ) : null;
     // Asked of someone other than who asked the agent: the agent's reason, under the question.
-    const reason = current.requestedForUserId && question.forWhy ? <p className="rq__note">{question.forWhy}</p> : null;
+    const forWhy = current.requestedForUserId && question.forWhy ? <p className="rq__note">{question.forWhy}</p> : null;
+    // What it goes on with if nobody answers in time ("Se ninguém responder até 22:40, sigo com: X").
+    const fallback = questionDefaultLine(t, i18n.language, current);
+    const reason =
+      forWhy || fallback ? (
+        <>
+          {forWhy}
+          {fallback && <p className="rq__note">{fallback}</p>}
+        </>
+      ) : null;
     const field = writing && (
       <div className="rq__field">
         <Textarea
@@ -753,6 +762,8 @@ export function QuestionCard({ question }: { question: AgentQuestion }) {
       <RequestDone done label={t("question.group", { agent: name })}>
         {current.withdrawn ? (
           t("question.withdrawn", agentGrammar(name))
+        ) : current.defaulted ? (
+          questionDefaultLine(t, i18n.language, current)
         ) : current.dismissed ? (
           who ? (
             t("question.dismissed", { name: who })

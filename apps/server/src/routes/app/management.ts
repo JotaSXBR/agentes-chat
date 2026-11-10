@@ -192,6 +192,10 @@ const Settings = z
       description:
         "Who can talk to a new agent whoever made it didn't choose for (an import, a team proposal, the API): `everyone` (the default) or `owner`, only the person responsible for it. Criar agente starts its own choice here.",
     }),
+    questionWaitMinutes: z.number().int().openapi({
+      description:
+        '"Quanto esperar por uma resposta": a question an agent asked with a default waits this long (minutes: 10, 30, the default, 60 or 240), then the agent goes on with its default and says so. At once while the person it is for is out of office. Never an approval.',
+    }),
     voiceAvailable: z.boolean().openapi({
       description: "Read only: this server has a speech engine now, from its environment or from its owner's Settings.",
     }),
@@ -580,6 +584,7 @@ export function managementRoutes(deps: AppDeps) {
             agentStickers: z.boolean().optional(),
             agentMedia: z.enum(AGENT_MEDIA_LEVELS).optional(),
             newAgentAudience: z.enum(NEW_AGENT_AUDIENCES).optional(),
+            questionWaitMinutes: z.number().int().optional().openapi({ description: "10, 30, 60 or 240." }),
           }),
         ),
       },

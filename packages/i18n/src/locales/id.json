@@ -3497,7 +3497,9 @@
     "skip": "Lewati",
     "skipFailed": "Tidak dapat melewati pertanyaan. Coba lagi.",
     "dismissed": "{{name}} melewati pertanyaan ini.",
-    "dismissedByYou": "Kamu melewati pertanyaan ini."
+    "dismissedByYou": "Kamu melewati pertanyaan ini.",
+    "defaultNote": "Kalau tidak ada yang menjawab sampai {{time}}, saya lanjut dengan: {{answer}}",
+    "defaulted": "Tidak ada yang menjawab tepat waktu. Saya lanjut dengan: {{answer}}"
   },
   "ask": {
     "kindOther": {
@@ -12573,6 +12575,8 @@
     "timezoneHelp": "Rutinitas dan ringkasan memakai zona waktu ini.",
     "actionCheck": "Agen memeriksa apa yang sudah dilakukan tim",
     "actionCheckHelp": "Sebelum mengirim email, pesan, atau pull request, agen memeriksa apakah ada anggota tim yang sudah melakukannya ke orang atau tempat yang sama dalam 30 hari terakhir, dan tidak mengulanginya.",
+    "questionWait": "Berapa lama menunggu jawaban",
+    "questionWaitHelp": "Saat agen menanyakan sesuatu dan bilang apa yang akan ia lakukan, ia lanjut dengan itu kalau tidak ada yang menjawab dalam waktu ini, lalu memberi tahu. Langsung kalau orang yang ditanya sedang tidak di tempat. Persetujuan selalu menunggu orang.",
     "telemetry": {
       "title": "Statistik pemakaian",
       "label": "Kirim statistik pemakaian anonim ke agentes.chat",

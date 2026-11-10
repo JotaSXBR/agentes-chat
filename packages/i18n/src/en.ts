@@ -3722,6 +3722,9 @@ export const en = {
     skipFailed: "Couldn't skip the question. Try again.",
     dismissed: "{{name}} skipped this question.",
     dismissedByYou: "You skipped this question.",
+    /** In the agent's voice, on its card: `time` when it goes on, `answer` the choice it goes on with. */
+    defaultNote: "If nobody answers by {{time}}, I'll go with: {{answer}}",
+    defaulted: "Nobody answered in time. I went with: {{answer}}",
   },
   /** A request in the conversation (approval, secret, question, help in the agent's screen, proposal): one card for all. */
   ask: {
@@ -12825,6 +12828,10 @@ export const en = {
     actionCheck: "Agents check what the team already did",
     actionCheckHelp:
       "Before an email, a message or a pull request, the agent checks whether anyone on the team already did it to the same person or place in the last 30 days, and doesn't repeat it.",
+    /** A question an agent asked with what it would do: how long it waits before going on with that. */
+    questionWait: "How long to wait for an answer",
+    questionWaitHelp:
+      "When an agent asks something and says what it would do, it goes on with that if nobody answers in this time, and says so. At once when the person asked is out of office. Approvals always wait for a person.",
     telemetry: {
       title: "Usage statistics",
       label: "Send anonymous usage statistics to agentes.chat",

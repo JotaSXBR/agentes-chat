@@ -4511,6 +4511,7 @@ async function executeRunInner(
               requestedForUserId: outcome.requestedForUserId,
               why: outcome.why,
               ...(outcome.forWhy ? { forWhy: outcome.forWhy } : {}),
+              ...(outcome.default ? { default: outcome.default } : {}),
             });
           } else if (!outcome.output.isError && waitOf(outcome.output.data)) {
             const wait = waitOf(outcome.output.data) as { id: string };

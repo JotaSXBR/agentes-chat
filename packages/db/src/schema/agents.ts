@@ -370,6 +370,11 @@ export const organizationSettings = pgTable("organization_settings", {
    * or `owner`, only the person responsible for it. Open by default; Criar agente starts its own choice here.
    */
   newAgentAudience: text().$type<"everyone" | "owner">().notNull().default("everyone"),
+  /**
+   * "Quanto esperar por uma resposta": how long a question an agent asked with a default (`ask_user`'s `default`) waits
+   * before the run goes on with that default, in minutes. At once while the person it is for is out of office.
+   */
+  questionWaitMinutes: integer().notNull().default(30),
   updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 });
 

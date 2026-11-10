@@ -3728,7 +3728,9 @@
     "skip": "Passer",
     "skipFailed": "Impossible de passer la question. Réessayez.",
     "dismissed": "{{name}} a passé cette question.",
-    "dismissedByYou": "Vous avez passé cette question."
+    "dismissedByYou": "Vous avez passé cette question.",
+    "defaultNote": "Si personne ne répond avant {{time}}, je continue avec : {{answer}}",
+    "defaulted": "Personne n'a répondu à temps. J'ai continué avec : {{answer}}"
   },
   "ask": {
     "kindOther": {
@@ -13452,6 +13454,8 @@
     "timezoneHelp": "Les routines et les résumés utilisent ce fuseau horaire.",
     "actionCheck": "Les agents vérifient ce que l'équipe a déjà fait",
     "actionCheckHelp": "Avant un e-mail, un message ou une pull request, l'agent vérifie si quelqu'un de l'équipe l'a déjà fait pour la même personne ou au même endroit dans les 30 derniers jours, et ne le refait pas.",
+    "questionWait": "Combien de temps attendre une réponse",
+    "questionWaitHelp": "Quand un agent pose une question et dit ce qu'il ferait, il continue avec ça si personne ne répond dans ce délai, et le signale. Tout de suite si la personne interrogée est absente. Les approbations attendent toujours une personne.",
     "telemetry": {
       "title": "Statistiques d'utilisation",
       "label": "Envoyer des statistiques d'utilisation anonymes à agentes.chat",

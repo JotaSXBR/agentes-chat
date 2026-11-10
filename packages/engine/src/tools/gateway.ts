@@ -459,6 +459,8 @@ export type InvokeResult =
       requestedForUserId: string | null;
       why: string;
       forWhy?: string;
+      /** One of `choices`: what the run goes on with when nobody answers in time. */
+      default?: string;
     }
   /** `request_secret`: the executor posts the card and suspends the run. */
   | { type: "secret"; requestId: string };

@@ -3608,7 +3608,9 @@
     "skip": "Atla",
     "skipFailed": "Soru atlanamadı. Tekrar deneyin.",
     "dismissed": "{{name}} bu soruyu atladı.",
-    "dismissedByYou": "Bu soruyu atladınız."
+    "dismissedByYou": "Bu soruyu atladınız.",
+    "defaultNote": "{{time}} saatine kadar kimse cevap vermezse şununla devam edeceğim: {{answer}}",
+    "defaulted": "Kimse zamanında cevap vermedi. Şununla devam ettim: {{answer}}"
   },
   "ask": {
     "kindOther": {
@@ -12945,6 +12947,8 @@
     "timezoneHelp": "Rutinler ve özetler bu saat dilimini kullanır.",
     "actionCheck": "Ajanlar ekibin zaten yaptıklarını kontrol eder",
     "actionCheckHelp": "Bir e-posta, mesaj ya da pull request'ten önce ajan, son 30 günde ekipten birinin aynı kişiye ya da yere bunu zaten yapıp yapmadığını kontrol eder ve tekrarlamaz.",
+    "questionWait": "Cevap için ne kadar beklensin",
+    "questionWaitHelp": "Bir ajan bir şey sorup ne yapacağını söylediğinde, bu süre içinde kimse cevap vermezse onunla devam eder ve bunu söyler. Sorulan kişi ofis dışındaysa hemen devam eder. Onaylar her zaman bir kişiyi bekler.",
     "telemetry": {
       "title": "Kullanım istatistikleri",
       "label": "agentes.chat'e anonim kullanım istatistikleri gönder",

@@ -3486,7 +3486,9 @@
     "skip": "跳过",
     "skipFailed": "无法跳过此问题，请重试。",
     "dismissed": "{{name}}跳过了此问题。",
-    "dismissedByYou": "你跳过了此问题。"
+    "dismissedByYou": "你跳过了此问题。",
+    "defaultNote": "如果到 {{time}} 还没人回答，我会按这个继续：{{answer}}",
+    "defaulted": "没有人及时回答，我按这个继续了：{{answer}}"
   },
   "ask": {
     "kindOther": {
@@ -12575,6 +12577,8 @@
     "timezoneHelp": "例行工作和摘要使用此时区。",
     "actionCheck": "智能体会检查团队已经做过的事",
     "actionCheckHelp": "在发送邮件、消息或 Pull Request 之前，智能体会检查过去 30 天内团队中是否已有人对同一个人或同一个地方做过同样的事，避免重复。",
+    "questionWait": "等待回答的时长",
+    "questionWaitHelp": "当智能体提问并说明自己会怎么做时，如果在这段时间内没人回答，它会按此继续并告知大家。被提问的人不在时，立即继续。审批总是等待人来决定。",
     "telemetry": {
       "title": "使用统计",
       "label": "向 agentes.chat 发送匿名使用统计",

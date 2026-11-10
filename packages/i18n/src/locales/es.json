@@ -3724,7 +3724,9 @@
     "skip": "Omitir",
     "skipFailed": "No se pudo omitir la pregunta. Inténtalo de nuevo.",
     "dismissed": "{{name}} omitió esta pregunta.",
-    "dismissedByYou": "Omitiste esta pregunta."
+    "dismissedByYou": "Omitiste esta pregunta.",
+    "defaultNote": "Si nadie responde antes de las {{time}}, sigo con: {{answer}}",
+    "defaulted": "Nadie respondió a tiempo. Seguí con: {{answer}}"
   },
   "ask": {
     "kindOther": {
@@ -13388,6 +13390,8 @@
     "timezoneHelp": "Las rutinas y los resúmenes usan esta zona horaria.",
     "actionCheck": "Los agentes revisan lo que el equipo ya hizo",
     "actionCheckHelp": "Antes de enviar un correo, un mensaje o un pull request, el agente revisa si alguien del equipo ya lo hizo con la misma persona o en el mismo lugar en los últimos 30 días, y no lo repite.",
+    "questionWait": "Cuánto esperar una respuesta",
+    "questionWaitHelp": "Cuando un agente pregunta algo y dice qué haría, sigue con eso si nadie responde en este tiempo, y lo avisa. De inmediato si la persona a quien preguntó está fuera de la oficina. Las aprobaciones siempre esperan a una persona.",
     "telemetry": {
       "title": "Estadísticas de uso",
       "label": "Enviar estadísticas de uso anónimas a agentes.chat",

@@ -3622,7 +3622,9 @@
     "skip": "Überspringen",
     "skipFailed": "Die Frage konnte nicht übersprungen werden. Versuch es noch einmal.",
     "dismissed": "{{name}} hat diese Frage übersprungen.",
-    "dismissedByYou": "Du hast diese Frage übersprungen."
+    "dismissedByYou": "Du hast diese Frage übersprungen.",
+    "defaultNote": "Wenn bis {{time}} niemand antwortet, mache ich weiter mit: {{answer}}",
+    "defaulted": "Niemand hat rechtzeitig geantwortet. Ich habe weitergemacht mit: {{answer}}"
   },
   "ask": {
     "kindOther": {
@@ -13009,6 +13011,8 @@
     "timezoneHelp": "Routinen und Zusammenfassungen nutzen diese Zeitzone.",
     "actionCheck": "Agenten prüfen, was das Team schon getan hat",
     "actionCheckHelp": "Vor einer E-Mail, einer Nachricht oder einem Pull Request prüft der Agent, ob jemand im Team das in den letzten 30 Tagen schon bei derselben Person oder am selben Ort getan hat, und wiederholt es nicht.",
+    "questionWait": "Wie lange auf eine Antwort warten",
+    "questionWaitHelp": "Wenn ein Agent etwas fragt und sagt, was er tun würde, macht er damit weiter, wenn in dieser Zeit niemand antwortet, und sagt es. Sofort, wenn die gefragte Person abwesend ist. Freigaben warten immer auf einen Menschen.",
     "telemetry": {
       "title": "Nutzungsstatistiken",
       "label": "Anonyme Nutzungsstatistiken an agentes.chat senden",

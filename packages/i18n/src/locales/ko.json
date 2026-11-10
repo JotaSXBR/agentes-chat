@@ -3486,7 +3486,9 @@
     "skip": "건너뛰기",
     "skipFailed": "질문을 건너뛸 수 없습니다. 다시 시도해 주세요.",
     "dismissed": "{{name}}님이 이 질문을 건너뛰었습니다.",
-    "dismissedByYou": "이 질문을 건너뛰었습니다."
+    "dismissedByYou": "이 질문을 건너뛰었습니다.",
+    "defaultNote": "{{time}}까지 아무도 답하지 않으면 이걸로 진행할게요: {{answer}}",
+    "defaulted": "제때 아무도 답하지 않아 이걸로 진행했어요: {{answer}}"
   },
   "ask": {
     "kindOther": {
@@ -12514,6 +12516,8 @@
     "timezoneHelp": "루틴과 요약은 이 시간대를 사용해요.",
     "actionCheck": "에이전트가 팀이 이미 한 일을 확인해요",
     "actionCheckHelp": "이메일, 메시지, 풀 리퀘스트를 보내기 전에 지난 30일 동안 팀의 누군가가 같은 사람이나 같은 곳에 이미 같은 일을 했는지 확인하고, 반복하지 않아요.",
+    "questionWait": "답변을 기다리는 시간",
+    "questionWaitHelp": "에이전트가 무언가를 묻고 자신이 할 일을 말하면, 이 시간 안에 아무도 답하지 않을 때 그대로 진행하고 알려요. 질문받은 사람이 부재 중이면 바로 진행해요. 승인은 항상 사람을 기다려요.",
     "telemetry": {
       "title": "사용 통계",
       "label": "agentes.chat에 익명 사용 통계 보내기",

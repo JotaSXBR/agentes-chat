@@ -8862,6 +8862,12 @@
   "question.dismissedByYou": {
     "value": "You skipped this question."
   },
+  "question.defaultNote": {
+    "value": "If nobody answers by {{time}}, I'll go with: {{answer}}"
+  },
+  "question.defaulted": {
+    "value": "Nobody answered in time. I went with: {{answer}}"
+  },
   "ask.kindOther.approval": {
     "value": "Asks for approval"
   },
@@ -31633,6 +31639,12 @@
   },
   "settings.actionCheckHelp": {
     "value": "Before an email, a message or a pull request, the agent checks whether anyone on the team already did it to the same person or place in the last 30 days, and doesn't repeat it."
+  },
+  "settings.questionWait": {
+    "value": "How long to wait for an answer"
+  },
+  "settings.questionWaitHelp": {
+    "value": "When an agent asks something and says what it would do, it goes on with that if nobody answers in this time, and says so. At once when the person asked is out of office. Approvals always wait for a person."
   },
   "settings.telemetry.title": {
     "value": "Usage statistics"

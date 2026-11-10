@@ -2225,6 +2225,11 @@ export interface OrgSettings {
    * responsible for it. Criar agente starts its own choice here. Absent on older servers: everyone.
    */
   newAgentAudience?: "everyone" | "owner";
+  /**
+   * "Quanto esperar por uma resposta": a question an agent asked with a default waits this long (minutes), then it goes
+   * on with its default. Absent on older servers: 30.
+   */
+  questionWaitMinutes?: number;
   /** Read only: this server has a speech engine. */
   voiceAvailable: boolean;
   /** Read only: this server can search GIFs (it has a GIF provider). */
@@ -3109,6 +3114,11 @@ export interface AgentQuestion {
   dismissed?: true;
   /** Why it is for `requestedForUserId` and not who asked the agent, in the agent's words (on its card only). */
   forWhy?: string;
+  /** One of `choices`: what the agent goes on with if nobody answers by `decideAt` (ISO). */
+  defaultAnswer?: string;
+  decideAt?: string;
+  /** Nobody answered in time: the agent went on with `defaultAnswer`. */
+  defaulted?: true;
 }
 
 /**

@@ -21,6 +21,14 @@ const AgentQuestion = z
     answer: z.string().nullable(),
     answeredByUserId: z.string().nullable(),
     dismissed: z.literal(true).optional(),
+    defaultAnswer: z.string().optional().openapi({
+      description: "One of `choices`: what the agent goes on with when nobody answers by `decideAt`.",
+    }),
+    decideAt: z.string().optional(),
+    defaulted: z
+      .literal(true)
+      .optional()
+      .openapi({ description: "Nobody answered in time: it went on with `defaultAnswer`." }),
   })
   .openapi("AgentQuestion");
 
@@ -29,7 +37,7 @@ const QuestionParams = OrgParams.extend({ questionId: z.uuid() });
 /**
  * Questions agents ask people (`ask_user`). The run waits until someone
  * answers here or replies in the thread; after 24 hours it goes on without
- * an answer.
+ * an answer, or with its default after the workspace's wait (`questionWaitMinutes`).
  */
 export function questionRoutes(deps: AppDeps) {
   const { db, adapters } = deps;

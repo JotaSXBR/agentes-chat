@@ -3727,7 +3727,9 @@
     "skip": "Salta",
     "skipFailed": "Impossibile saltare la domanda. Riprova.",
     "dismissed": "{{name}} ha saltato questa domanda.",
-    "dismissedByYou": "Hai saltato questa domanda."
+    "dismissedByYou": "Hai saltato questa domanda.",
+    "defaultNote": "Se nessuno risponde entro le {{time}}, vado avanti con: {{answer}}",
+    "defaulted": "Nessuno ha risposto in tempo. Ho proseguito con: {{answer}}"
   },
   "ask": {
     "kindOther": {
@@ -13461,6 +13463,8 @@
     "timezoneHelp": "Routine e riepiloghi usano questo fuso orario.",
     "actionCheck": "Gli agenti controllano cosa ha già fatto il team",
     "actionCheckHelp": "Prima di un'email, un messaggio o una pull request, l'agente controlla se qualcuno del team l'ha già fatto alla stessa persona o nello stesso posto negli ultimi 30 giorni, e non lo ripete.",
+    "questionWait": "Quanto aspettare una risposta",
+    "questionWaitHelp": "Quando un agente chiede qualcosa e dice cosa farebbe, va avanti con quello se nessuno risponde in questo tempo, e lo dice. Subito se la persona a cui ha chiesto è fuori ufficio. Le approvazioni aspettano sempre una persona.",
     "telemetry": {
       "title": "Statistiche di utilizzo",
       "label": "Invia statistiche di utilizzo anonime ad agentes.chat",

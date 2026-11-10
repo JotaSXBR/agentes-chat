@@ -10,7 +10,7 @@ import {
   useDecideApprovals,
   usePrefetchThread,
 } from "@agenteschat/client";
-import { questionWaitsOn } from "@agenteschat/client/lib/agent-questions";
+import { questionDefaultLine, questionWaitsOn } from "@agenteschat/client/lib/agent-questions";
 import {
   approvalCardItems,
   approvalRuns,
@@ -657,7 +657,7 @@ function ApprovalAsk({ approval: a }: { approval: Approval }) {
  * everyone else reads who it waits for, and nothing to press.
  */
 export function QuestionCard({ question }: { question: AgentQuestion }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const api = useApi();
   const orgId = useOrgId();
   const meId = useMeId();
@@ -714,15 +714,17 @@ export function QuestionCard({ question }: { question: AgentQuestion }) {
         words={
           q.withdrawn
             ? t("question.withdrawn", agentGrammar(dir.anyAgent(q.agentId)?.name ?? t("channel.unknownAgent")))
-            : q.dismissed
-              ? who
-                ? t("question.dismissed", { name: who })
-                : t("question.dismissedByYou")
-              : q.answer === null
-                ? t(ended ? "mobile.chat.question.taken" : "mobile.chat.question.closed")
-                : who
-                  ? t("mobile.chat.question.answered", { name: who, answer: said })
-                  : t("mobile.chat.question.answeredByYou", { answer: said })
+            : q.defaulted
+              ? (questionDefaultLine(t, i18n.language, q) ?? "")
+              : q.dismissed
+                ? who
+                  ? t("question.dismissed", { name: who })
+                  : t("question.dismissedByYou")
+                : q.answer === null
+                  ? t(ended ? "mobile.chat.question.taken" : "mobile.chat.question.closed")
+                  : who
+                    ? t("mobile.chat.question.answered", { name: who, answer: said })
+                    : t("mobile.chat.question.answeredByYou", { answer: said })
         }
       />
     );
@@ -737,13 +739,19 @@ export function QuestionCard({ question }: { question: AgentQuestion }) {
         onSubmit={(text) => answer({ text }).then(() => sheet.close())}
       />,
     );
-  // Asked of someone other than who asked the agent: the agent's reason, under the question.
+  // Asked of someone other than who asked the agent: the agent's reason, under the question; then what it goes on
+  // with if nobody answers in time.
+  const lines = [q.requestedForUserId ? question.forWhy : null, questionDefaultLine(t, i18n.language, q)].filter(
+    (line): line is string => Boolean(line),
+  );
   const reason =
-    q.requestedForUserId && question.forWhy ? (
-      <Text variant="footnote" tone="muted">
-        {question.forWhy}
-      </Text>
-    ) : undefined;
+    lines.length > 0
+      ? lines.map((line) => (
+          <Text key={line} variant="footnote" tone="muted">
+            {line}
+          </Text>
+        ))
+      : undefined;
   if (!questionWaitsOn(q, meId)) {
     const person = dir.memberById.get(q.requestedForUserId ?? "")?.name ?? t("channel.unknownPerson");
     return (

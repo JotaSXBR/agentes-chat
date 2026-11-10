@@ -3867,7 +3867,9 @@
     "skip": "Pomiń",
     "skipFailed": "Nie udało się pominąć pytania. Spróbuj ponownie.",
     "dismissed": "Pytanie pominięte przez: {{name}}.",
-    "dismissedByYou": "Pominięto to pytanie."
+    "dismissedByYou": "Pominięto to pytanie.",
+    "defaultNote": "Jeśli nikt nie odpowie do {{time}}, idę dalej z: {{answer}}",
+    "defaulted": "Nikt nie odpowiedział na czas. Przyjęto: {{answer}}"
   },
   "ask": {
     "kindOther": {
@@ -13913,6 +13915,8 @@
     "timezoneHelp": "Rutyny i podsumowania używają tej strefy czasowej.",
     "actionCheck": "Agenci sprawdzają, co zespół już zrobił",
     "actionCheckHelp": "Przed e-mailem, wiadomością lub pull requestem agent sprawdza, czy ktoś z zespołu nie zrobił już tego samego wobec tej samej osoby lub miejsca w ciągu ostatnich 30 dni, i tego nie powtarza.",
+    "questionWait": "Jak długo czekać na odpowiedź",
+    "questionWaitHelp": "Gdy agent o coś pyta i mówi, co by zrobił, idzie dalej z tym, jeśli nikt nie odpowie w tym czasie, i o tym informuje. Od razu, gdy pytana osoba jest poza biurem. Zatwierdzenia zawsze czekają na człowieka.",
     "telemetry": {
       "title": "Statystyki użycia",
       "label": "Wysyłaj anonimowe statystyki użycia do agentes.chat",

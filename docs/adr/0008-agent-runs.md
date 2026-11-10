@@ -88,3 +88,12 @@ one short line the card shows under the question (only an admin connects a conne
 asked answers such a question too, with a plain reply right after its card (no other person's message between them,
 nobody named in it), in the same statement as any reply that answers one (`insertMessageWithRuns`). Met any other way
 (someone else gave it, later words), it is for the early check of ADR 0136, which withdraws it quietly.
+
+## Addendum (2026-11-10): a question with a default doesn't wait all night
+
+A question held its run for up to 24 hours, so a flow that ran overnight stopped at the first choice nobody was there to make, even when the agent knew what it would pick.
+
+- **`ask_user` takes `default`**, one of its `choices` written the same way (else the call is refused with why). The agent leaves it out when the decision is really the person's or the next step can't be undone. It is kept on `agent_questions.default_answer` (migration 0249).
+- **When nobody answers**, the question closes at `expires_at`, which for a question with a default is the workspace's wait, "Quanto esperar por uma resposta" (`organization_settings.question_wait_minutes`: 10, 30, the default, 60 or 240 minutes), and at once while the person it is for is out of office (`questionExpiry`). Without a default it is still a day. The run resumes with "Nobody answered in time: go on with your default…" and says in a line that it went with it and that people can still say otherwise. A person answering first wins, as before.
+- **The card shows it**: "Se ninguém responder até 22:40, sigo com: X" while it waits, "Ninguém respondeu a tempo. Segui com: X" once it went on (`AgentQuestion.defaultAnswer`, `decideAt`, `defaulted`), on the web and the phone. The question's status stays `expired`: nobody answered.
+- **A default never approves anything.** It answers only its question: a merge, a deploy or any call that asks for approval still waits for a person on its own card, and approvals still expire unrun.

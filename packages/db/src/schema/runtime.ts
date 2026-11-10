@@ -861,6 +861,11 @@ export const agentQuestions = pgTable(
     requestedForUserId: text(),
     status: agentQuestionStatusEnum().notNull().default("open"),
     answer: text(),
+    /**
+     * What the run goes on with when nobody answers by `expires_at` (one of `choices`): the question then expires with it
+     * (`defaulted` on the card). Null: it waits the whole day and the run decides then.
+     */
+    defaultAnswer: text(),
     answeredByUserId: text(),
     answeredAt: timestamp({ withTimezone: true }),
     expiresAt: timestamp({ withTimezone: true }).notNull(),

@@ -24,6 +24,7 @@ import {
   useUsageReport,
 } from "@agenteschat/client";
 import { showsAbout } from "@agenteschat/client/lib/about";
+import { DEFAULT_QUESTION_WAIT, QUESTION_WAITS } from "@agenteschat/client/lib/agent-questions";
 import { keyRemovalText } from "@agenteschat/client/lib/ai-accounts";
 import { composioUsageText, showsComposioUsage } from "@agenteschat/client/lib/composio";
 import { computerEdition } from "@agenteschat/client/lib/computer";
@@ -41,6 +42,7 @@ import {
 } from "@agenteschat/client/lib/providers";
 import { isRightHand } from "@agenteschat/client/lib/right-hand";
 import { parseAmount } from "@agenteschat/client/lib/text";
+import { formatDuration } from "@agenteschat/client/lib/work";
 import {
   Alert,
   Button,
@@ -60,6 +62,7 @@ import {
   Meter,
   PageHeader,
   ProviderLogo,
+  Segmented,
   SettingNote,
   Switch,
   Textarea,
@@ -467,6 +470,26 @@ function GeneralSection() {
                 onCheckedChange={(on) => save({ actionCheck: on })}
                 disabled={!editable || !settings.data}
                 aria-describedby="set-action-check-hint"
+              />
+            </div>
+          </div>
+          <div className="settings-row ac-actrow">
+            <div className="settings-row__text ac-actrow__text">
+              <span className="ac-hintline">
+                <span className="settings-row__label">{t("settings.questionWait")}</span>
+                <InfoHint name={t("common.about", { label: t("settings.questionWait") })}>
+                  {t("settings.questionWaitHelp")}
+                </InfoHint>
+              </span>
+            </div>
+            <div className="settings-row__control">
+              <Segmented
+                size="sm"
+                label={t("settings.questionWait")}
+                value={String(settings.data?.questionWaitMinutes ?? DEFAULT_QUESTION_WAIT)}
+                onValueChange={(minutes) => save({ questionWaitMinutes: Number(minutes) })}
+                options={QUESTION_WAITS.map((m) => ({ value: String(m), label: formatDuration(t, m * 60_000) }))}
+                disabled={!editable || !settings.data}
               />
             </div>
           </div>

@@ -29,6 +29,7 @@ import { isAgentOnlyDm, openAgentDm } from "./dms";
 import { publishChannelEvent } from "./events";
 import { cutText } from "./format";
 import type { Judge } from "./judge";
+import { machineOnline } from "./machines";
 import { getMessage, insertMessage, type Message, type MessageView, withMessageDetails } from "./messages";
 import type { Notice } from "./notices";
 import { notifyAgentUnreached } from "./notification-producers";
@@ -44,7 +45,7 @@ import type { ToolContext, ToolDefinition, ToolOutput, ToolSource } from "./tool
 import { untrustedBlock } from "./untrusted";
 import { USAGE_WAIT_CODES } from "./usage-pause";
 
-const { agentConsultations, agentRuns, agents, channels, messages, outbox, users } = schema;
+const { agentConsultations, agentRuns, agents, channels, machines, messages, outbox, users } = schema;
 
 export const ASK_AGENT_TOOL = "ask_agent";
 export const TELL_AGENT_TOOL = "tell_agent";
@@ -56,8 +57,9 @@ export const TELL_AGENT_TOOL = "tell_agent";
 export const CONSULTATION_TTL_MS = 15 * 60_000;
 /**
  * How long a question or a hand-off may go without moving before it ends with why: its colleague never started, or
- * sits in its computer's line, on a computer that's away, on its plan or budget, or on its AI provider. A colleague
- * at work has no such limit, and neither has one waiting on a person: its card has its own deadline.
+ * sits on a computer that's away, behind its own long work or on its AI provider. A wait that ends by itself (an online
+ * computer's line, a plan's reset) holds it longer (`CONSULTATION_KNOWN_WAIT_MS`). A colleague at work has no such
+ * limit, and neither has one waiting on a person: its card has its own deadline.
  */
 export const CONSULTATION_HUNG_MS = 2 * 3600_000;
 /**
@@ -355,7 +357,7 @@ function createTellAgentTool(deps: { pubsub?: PubSub; ai?: AiCheck; judge?: Judg
           { db, pubsub: deps.pubsub, judge: deps.judge ?? null },
           sent.message,
           [target.id],
-          { reportIn: await peopleSee(db, reached.run, here) },
+          { reportIn: await peopleSee(db, reached.run, here), triage: false },
         );
         const outcome = held.get(target.id);
         waitsForRoom = outcome === "later";
@@ -1852,23 +1854,49 @@ export async function announceConsultationChange(
 /** A row this close to its deadline whose colleague is still at it gets `CONSULTATION_TTL_MS` more. */
 const EXTEND_BEFORE_MS = 2 * 60_000;
 
-/** What holds a colleague that isn't moving, as the asking agent reads it; null while it works or waits on a person. */
-function stuckOn(target: {
-  status: string | null;
-  code: string | null;
-  outage: boolean;
-  waitingMachineId: string | null;
-}) {
-  if (target.status === null) return "it never got to start";
+/**
+ * How long a wait known to end by itself may hold a hand-off (`stuckOn`): a line on a computer that is online, a plan
+ * whose reset was never said. A known reset holds it until then and `RESET_MARGIN_MS` more.
+ */
+export const CONSULTATION_KNOWN_WAIT_MS = 24 * 3600_000;
+/** After a known reset, the time a plan's line takes to start again (its runs go 60 s apart). */
+const RESET_MARGIN_MS = 30 * 60_000;
+
+/**
+ * What holds a colleague that isn't moving, as the asking agent reads it, and from when (ms) it counts as hung; null
+ * while it works or waits on a person. `started`: when the wait began.
+ */
+function stuckOn(
+  target: {
+    status: string | null;
+    code: string | null;
+    outage: boolean;
+    waitingMachineId: string | null;
+    resetsAt: string | null;
+    computerOnline: boolean;
+  },
+  started: number,
+): { why: string; at: number } | null {
+  const hung = (why: string, after = CONSULTATION_HUNG_MS) => ({ why, at: started + after });
+  if (target.status === null) return hung("it never got to start");
   // Asking its computer from the line it still waits (`computerWaitOf`).
   const asking = target.status === "running" && target.waitingMachineId !== null;
   if (target.status !== "waiting_input" && !asking) return null;
-  if (target.outage) return "its AI provider stayed down";
-  if (asking || target.code === "busy") return "it stayed in line for room on its computer";
+  if (target.outage) return hung("its AI provider stayed down");
+  if (asking || target.code === "busy")
+    return hung(
+      "it stayed in line for room on its computer",
+      target.computerOnline ? CONSULTATION_KNOWN_WAIT_MS : CONSULTATION_HUNG_MS,
+    );
   if (target.code === null) return null;
-  if (target.code === "work_queue") return "it stayed behind its own long work";
-  if (USAGE_WAIT_CODES.has(target.code)) return "it stayed at its plan's or budget's limit";
-  return "its computer stayed away";
+  if (target.code === "work_queue") return hung("it stayed behind its own long work");
+  if (USAGE_WAIT_CODES.has(target.code)) {
+    const why = "it stayed at its plan's or budget's limit";
+    const reset = target.resetsAt ? Date.parse(target.resetsAt) : Number.NaN;
+    if (!Number.isFinite(reset)) return hung(why, CONSULTATION_KNOWN_WAIT_MS);
+    return { why, at: Math.max(started + CONSULTATION_HUNG_MS, reset + RESET_MARGIN_MS) };
+  }
+  return hung("its computer stayed away");
 }
 
 /** Since when a run waits for its computer, plan or provider, in ms: the wait's own clock, else the run's last change. */
@@ -1881,9 +1909,10 @@ const waitSinceSql = sql<string>`coalesce((${agentRuns.transcript}->>'roomWaitSi
  * The worker's sweep, every minute (ADR 0095). A colleague at it (queued, running, waiting on a person, or done but
  * waiting on what it handed on) keeps a row open, and so does a wake still waiting to start a run: near its deadline
  * it gets more time (its line and clock stay where it was asked), and that run is never stopped. Past
- * `CONSULTATION_HUNG_MS` without moving (`stuckOn`) a row ends with why, and its run or wake with it. Past its
- * deadline, a row nobody started (the stretch held it) or whose run is gone closes: with what it gathered, else
- * expired, and its run stops. Returns how many closed.
+ * `CONSULTATION_HUNG_MS` without moving (`stuckOn`) a row ends with why, and its run or wake with it; a wait known to
+ * end by itself (an online computer's line, a plan's reset) holds it longer. Past its deadline, a row nobody started
+ * (the stretch held it) or whose run is gone closes: with what it gathered, else expired, and its run stops. Returns
+ * how many closed.
  */
 export async function expireConsultations(deps: { db: Database; pubsub?: PubSub }, now = new Date()) {
   const rows = await deps.db
@@ -1892,13 +1921,16 @@ export async function expireConsultations(deps: { db: Database; pubsub?: PubSub 
       target: agentRuns.status,
       handedOn: handedOnSql,
       code: sql<string | null>`${agentRuns.transcript}->'waitingForBrain'->>'code'`,
+      resetsAt: sql<string | null>`${agentRuns.transcript}->'waitingForBrain'->>'resetsAt'`,
       outage: outageParkedSql,
       waitingMachineId: agentRuns.waitingMachineId,
+      machine: { online: machines.online, lastSeenAt: machines.lastSeenAt, deletedAt: machines.deletedAt },
       since: waitSinceSql,
       wake: sql<boolean>`(${agentConsultations.targetRunId} is null and ${wakeWaitsSql(sql`${agentConsultations}`)})`,
     })
     .from(agentConsultations)
     .leftJoin(agentRuns, eq(agentRuns.id, agentConsultations.targetRunId))
+    .leftJoin(machines, eq(machines.id, agentRuns.waitingMachineId))
     .where(
       and(
         eq(agentConsultations.status, "open"),
@@ -1908,12 +1940,19 @@ export async function expireConsultations(deps: { db: Database; pubsub?: PubSub 
     .limit(200);
   let closed = 0;
   const announced = new Set<string>();
-  for (const { row, target, handedOn, code, outage, waitingMachineId, since, wake } of rows) {
+  for (const { row, target, handedOn, code, resetsAt, outage, waitingMachineId, machine, since, wake } of rows) {
     const started = target ? Number(since) : row.createdAt.getTime();
-    const stuck = target || wake ? stuckOn({ status: target, code, outage: Boolean(outage), waitingMachineId }) : null;
-    if (stuck && now.getTime() - started >= CONSULTATION_HUNG_MS) {
-      const hours = CONSULTATION_HUNG_MS / 3600_000;
-      const why = `${stuck} for over ${hours} hours, so it was stopped and nothing more will come of it. Ask again later, or tell the person what is missing`;
+    const computerOnline = machine ? machineOnline(machine, now) : false;
+    const stuck =
+      target || wake
+        ? stuckOn(
+            { status: target, code, outage: Boolean(outage), waitingMachineId, resetsAt, computerOnline },
+            started,
+          )
+        : null;
+    if (stuck && now.getTime() >= stuck.at) {
+      const hours = Math.floor((now.getTime() - started) / 3600_000);
+      const why = `${stuck.why} for over ${hours} hours, so it was stopped and nothing more will come of it. Ask again later, or tell the person what is missing`;
       const c = await closeConsultation(deps, row, "failed", why);
       if (!c) continue;
       closed++;

@@ -130,8 +130,8 @@ export async function startOrJoinRun(
   if (!options.background) {
     // Several runs may be active (in the agents' DM one per person behind them; elsewhere a person's run
     // next to an unattended one, or one held by a decision): the message joins the newest it may
-    // (`mayJoin`). A run waiting on an approval, a secret or a mission's decision takes nothing new
-    // (`holdsMessages`): the agent answers this in a run of its own meanwhile.
+    // (`mayJoin`). A run waiting on an approval, a secret or a mission's decision takes nothing new, nor one waiting on
+    // a person's answer anything another agent sends (`holdsMessages`): the agent answers this in a run of its own.
     // Its run in the channel waiting for its computer, its plan or its budget takes the message: one turn per agent
     // there, not one per mention, each waiting for the same thing. Not a Continuar's: that starts a fresh stretch.
     const waitingForComputer =
@@ -175,10 +175,12 @@ export async function startOrJoinRun(
       )
       .orderBy(sql`${agentRuns.createdAt} desc`)
       .limit(10);
+    // Another agent's message (a note, a mention); a notice is written as the agent it is for.
+    const fromAgent = message.authorAgentId !== null && message.authorAgentId !== agentId;
     for (const run of active) {
       if (
         run.triggerMessageId === message.id ||
-        (await holdsMessages(tx, run, message.authorUserId)) ||
+        (await holdsMessages(tx, run, message.authorUserId, fromAgent)) ||
         !(await mayJoin(tx, message, run.id))
       )
         continue;

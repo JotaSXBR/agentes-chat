@@ -500,6 +500,28 @@ describe("one item is worked once, noise waits for a digest, repeats stop (§4�
     expect(later?.payload).toMatchObject({ messageId: second.id, agentId: ada.id, look: 1 });
   });
 
+  test("a run of work nobody asked for parked on a person or its plan holds no room: the next one starts", async () => {
+    f = await setup();
+    const ada = await agentOf("Ada", "ada", { maxUnrequested: 1 });
+    const first = await alert(f.agent.id, "Deploy falhou no job build-web");
+    expect((await brakeWakes({ db: f.db, judge: fakeJudge(0) }, first, [ada.id])).wake).toEqual([ada.id]);
+    const parked = await working(ada.id, first.id);
+    for (const status of ["waiting_input", "waiting_approval"] as const) {
+      await f.db.update(agentRuns).set({ status }).where(eq(agentRuns.id, parked.id));
+      const next = await alert(f.agent.id, `Fila de e-mails parada (${status})`);
+      expect((await brakeWakes({ db: f.db, judge: fakeJudge(0) }, next, [ada.id])).wake).toEqual([ada.id]);
+    }
+  });
+
+  test("work an agent handed on on purpose is never set aside as noise", async () => {
+    f = await setup();
+    const ada = await agentOf("Ada", "ada");
+    const note = await alert(f.agent.id, "Sentry: ResizeObserver loop limit exceeded, veja se é o mesmo do checkout");
+    const out = await brakeWakes({ db: f.db, judge: fakeJudge(0.9) }, note, [ada.id], { triage: false });
+    expect(out.wake).toEqual([ada.id]);
+    expect(await signalsOf("digest")).toHaveLength(0);
+  });
+
   test("work held only for room is never digested as noise: past the hour it looks slower, after a day it starts", async () => {
     f = await setup();
     const ada = await agentOf("Ada", "ada", { maxUnrequested: 1 });

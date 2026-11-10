@@ -131,12 +131,31 @@ async function takeToHandOn(db: Database, run: Pick<AgentRun, "id" | "orgId">, o
 
 /**
  * The run just paused on something a message can't move (`holdsMessages`): what it hadn't read yet gets
- * a run of its own instead of waiting behind the decision. A no-op for any other pause.
+ * a run of its own instead of waiting behind the decision. Paused on a person's answer, only what other agents sent
+ * does (a person's message may be that answer). A no-op for any other pause.
  */
 export async function releaseHeldInbox(db: Database, pubsub: PubSub | undefined, runId: string) {
   const [row] = await db.select().from(agentRuns).where(eq(agentRuns.id, runId));
-  if (!row || row.pendingMessageIds.length === 0 || !(await holdsMessages(db, row))) return null;
-  return releaseInbox(db, pubsub, row, { reason: "held" });
+  if (!row || row.pendingMessageIds.length === 0) return null;
+  if (await holdsMessages(db, row)) return releaseInbox(db, pubsub, row, { reason: "held" });
+  if (!(await holdsMessages(db, row, null, true))) return null;
+  const fromAgents = await db
+    .select({ id: messages.id })
+    .from(messages)
+    .where(
+      and(
+        eq(messages.orgId, row.orgId),
+        inArray(messages.id, row.pendingMessageIds),
+        // A person's message has no agent author, and `<>` on null is never true: it stays for the answer.
+        ne(messages.authorAgentId, row.agentId),
+      ),
+    );
+  return handOnMessages(
+    db,
+    pubsub,
+    row,
+    fromAgents.map((m) => m.id),
+  );
 }
 
 /**

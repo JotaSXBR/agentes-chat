@@ -13,12 +13,15 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * person's message) gets a run of its own. A run waiting on a question to people, another agent's answer,
  * help in its browser or its computer still takes them (the message answers, wakes or resumes it), unless the
  * question is for one person and `from`, the person writing, is someone else: their message answers nothing here.
+ * `fromAgent`: another agent wrote it. Only people answer questions, so a run waiting on one holds it, and the note
+ * gets a short run of its own instead of waiting hours for the answer.
  * `transcript` left out: read here when it matters (only for `waiting_input`).
  */
 export async function holdsMessages(
   db: Executor,
   run: Pick<AgentRun, "id" | "orgId" | "status"> & { transcript?: AgentRun["transcript"] },
   from?: string | null,
+  fromAgent = false,
 ): Promise<boolean> {
   if (run.status === "waiting_approval") return true;
   if (run.status !== "waiting_input") return false;
@@ -38,7 +41,7 @@ export async function holdsMessages(
   if (t?.waitingForBrain) return false;
   const calls = (t?.pending?.calls ?? []).filter((c) => !c.result);
   if (calls.some((c) => c.approvalId || c.secretRequestId)) return true;
-  const asked = from ? calls.flatMap((c) => (c.questionId ? [c.questionId] : [])) : [];
+  const asked = from || fromAgent ? calls.flatMap((c) => (c.questionId ? [c.questionId] : [])) : [];
   if (asked.length > 0) {
     const open = await db
       .select({ forUserId: agentQuestions.requestedForUserId })
@@ -46,7 +49,7 @@ export async function holdsMessages(
       .where(
         and(eq(agentQuestions.orgId, run.orgId), inArray(agentQuestions.id, asked), eq(agentQuestions.status, "open")),
       );
-    if (open.length > 0 && open.every((q) => q.forUserId && q.forUserId !== from)) return true;
+    if (open.length > 0 && (fromAgent || open.every((q) => q.forUserId && q.forUserId !== from))) return true;
   }
   // A call's `waitId` (not a question's): a browser handoff, an `ask_agent` consultation, else a mission's own wait.
   const waitIds = calls.flatMap((c) => (!c.questionId && c.waitId ? [c.waitId] : []));

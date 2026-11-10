@@ -554,3 +554,66 @@ describe("a task's own conversation is addressed to its agent (ADR 0145)", () =>
     expect(await loadReplyPolicy(f.db, f.org.id, byAgent.run.id)).toMatchObject({ mayPass: true, listsPass: true });
   });
 });
+
+describe("a run that may pass shows no words until it acts or posts", () => {
+  /** What showed of its words live: text deltas, the typing that comes before them, a step line's words. */
+  const shown = (events: RealtimeEvent[]) =>
+    events.filter(
+      (e) =>
+        (e.type === "agent.delta" && (e as unknown as { text: string }).text !== "") ||
+        e.type === "agent.typing" ||
+        (e.type === "agent.tool" && Boolean((e as unknown as { said?: string }).said)),
+    );
+  const LONG_DOUBT = "Acho que o Theo já respondeu isso aqui mais cedo, com o link dos builds. ".repeat(5);
+
+  test("brought in by the router, it writes at length and then passes: none of it ever showed", async () => {
+    expect(LONG_DOUBT.length).toBeGreaterThan(280);
+    f = await setup({
+      toolSources: [createPassToolSource()],
+      reply: () => ({ chunks: [LONG_DOUBT], toolUses: [{ name: "pass", input: { reason: "já respondido" } }] }),
+    });
+    const events = f.listen(f.general.id);
+    await routed("alguém sabe onde rodam os builds?");
+    expect(await agentMessages()).toEqual([]);
+    await Bun.sleep(5);
+    expect(shown(events)).toEqual([]);
+    expect(events.some((e) => e.type === "agent.passed")).toBe(true);
+  });
+
+  test("brought in, it answers: the answer comes whole as its message, never streamed first", async () => {
+    f = await setup({
+      toolSources: [createPassToolSource()],
+      reply: () => ({ chunks: ["Os builds ", "rodam no GitHub Actions."] }),
+    });
+    const events = f.listen(f.general.id);
+    await routed("alguém sabe onde rodam os builds?");
+    expect(await agentMessages()).toEqual(["Os builds rodam no GitHub Actions."]);
+    await Bun.sleep(5);
+    expect(shown(events)).toEqual([]);
+  });
+
+  test("once it acts with a tool other than pass, what it writes next streams as usual", async () => {
+    const look: ToolSource = {
+      name: "work",
+      tools: async () => [
+        {
+          name: "look",
+          description: "Look at the builds",
+          scope: "context:read",
+          inputSchema: { type: "object", properties: {} },
+          execute: async () => ({ content: "2 builds" }),
+        },
+      ],
+    };
+    f = await setup({
+      toolSources: [createPassToolSource(), look],
+      reply: (_req, n) =>
+        n === 1 ? { chunks: [], toolUses: [{ name: "look", input: {} }] } : { chunks: ["Dois builds ", "na fila."] },
+    });
+    const events = f.listen(f.general.id);
+    await routed("como estão os builds?");
+    expect(await agentMessages()).toEqual(["Dois builds na fila."]);
+    await Bun.sleep(5);
+    expect(deltasOf(events)).toBe("Dois builds na fila.");
+  });
+});

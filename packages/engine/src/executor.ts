@@ -325,6 +325,7 @@ import { carriesCredential, cliErrorWords, maskCredentials, maskCredentialsExcep
 import { chooseToolGroups, keptToolGroups, recentForJudge, type ToolGroupChoice } from "./tool-loading";
 import {
   EVERY_TOOL,
+  HARNESS_PREFIX,
   isCore,
   isStableTool,
   listsEveryTool,
@@ -1755,6 +1756,14 @@ async function executeRunInner(
     catchUp: catchUpMayPass,
     moot: Boolean(atClaim?.requestMoot),
   });
+  /**
+   * Nobody called it by name and it hasn't acted yet: its words stay off the screen ("pensando…") until it calls a
+   * tool other than `pass` or posts, so a pass never takes away words people were reading.
+   */
+  let mayStillPass = policy.mayPass && !atClaim?.executedCalls && !atClaim?.postedCount;
+  const acted = (tool: string) => {
+    if (tool.replace(HARNESS_PREFIX, "") !== PASS_TOOL) mayStillPass = false;
+  };
 
   // Before a catch-up, one Jev call per asker: is what they asked still open (`catch-up-triage.ts`)? It ends here,
   // quietly, only when every ask was closed by a source code checks; in any doubt the agent runs, told what was found.
@@ -4040,6 +4049,7 @@ async function executeRunInner(
             void publishQueueChanged(deps.pubsub, run.orgId, admitted.machineId).catch(() => {});
         },
         quiet: run.background,
+        hold: () => mayStillPass && !transcript?.answerOwed && !transcript?.postedCount,
         scrub: isRightHand(agent),
         stretches: plan.kind === "claude_code",
         place,
@@ -4200,10 +4210,12 @@ async function executeRunInner(
             },
             ...(deps.planLimitGraceMs !== undefined ? { limitGraceMs: deps.planLimitGraceMs } : {}),
             onStarted: (call) => {
+              acted(call.name);
               stepTold.add(call.id);
               ownStep(call);
             },
             onExecuted: (call) => {
+              acted(call.name);
               executedNow.push(call);
               // A brain that tells its calls only once they ended (Codex, an older runner) says the step now.
               if (!stepTold.delete(call.id)) ownStep(call);
@@ -4524,6 +4536,7 @@ async function executeRunInner(
       }
       const toolUses = result.toolCalls;
       if (result.stopReason === "tool_use" && toolUses.length > 0 && toolScope) {
+        for (const use of toolUses) acted(use.name);
         const calls: NonNullable<Transcript["pending"]>["calls"] = [];
         const waiting: Approval[] = [];
         const asks: PauseRequests["questions"] = [];
@@ -5660,6 +5673,8 @@ function createDeltaPublisher(
     onFirst?: () => void;
     /** Background work (a routine's run): nothing of its text shows live in the conversation. */
     quiet?: boolean;
+    /** While true nothing of its text shows yet, nor that it types: it may still pass (`mayStillPass`). */
+    hold?: () => boolean;
     /** The right hand's (`scrubSignIns`): a sign-in or a key never shows, its last word held until it is whole. */
     scrub?: boolean;
     /**
@@ -5714,7 +5729,7 @@ function createDeltaPublisher(
     if (timer) clearTimeout(timer);
     timer = null;
     sentUpTo = all.length;
-    if (first.quiet) return;
+    if (first.quiet || first.hold?.()) return;
     const said = visibleText(showable(final), final);
     const visible = first.scrub ? scrubSignIns(final ? said : said.slice(0, said.search(/\S*$/)), "••••").text : said;
     // A held piece turned out to be the word (now cut): nothing new to show.
@@ -5764,7 +5779,8 @@ function createDeltaPublisher(
         started = true;
         first.onFirst?.();
         // Published in order, before the first delta.
-        if (!first.quiet) pending = pending.then(() => publishChannelEvent(pubsub, { type: "agent.typing", ...where }));
+        if (!first.quiet && !first.hold?.())
+          pending = pending.then(() => publishChannelEvent(pubsub, { type: "agent.typing", ...where }));
       }
       all += text;
       if (text) marks.push([Date.now(), all.length]);

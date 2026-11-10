@@ -2613,6 +2613,11 @@ export const en = {
     forget: "Forget these answers",
     atOnce: "Jobs at once",
     atOnceHelp: "How many jobs nobody asked for it runs at the same time. The others wait their turn.",
+    tasks: "Takes its next task by itself",
+    tasksHelp:
+      "It starts the next task a person gave it as soon as it has room, and comes back to one it left unfinished. Off: a task waits until someone asks it.",
+    tasksAtOnce: "Tasks at once",
+    tasksAtOnceHelp: "How many of its tasks it works on at the same time. The others wait in its queue.",
     prs: "Pull requests an hour",
     prsHelp: "The most its own work opens in an hour.",
     call: "Agents it may call",
@@ -6232,6 +6237,9 @@ export const en = {
     noAssignee: "No assignee",
     agentRole: "Agent · {{role}}",
     pr: "PR #{{number}}",
+    /** A task waiting in its agent's queue of tasks (1 = next): on a board card, and short where the agent is named. */
+    queue: "In {{name}}'s queue · #{{position}}",
+    queueShort: "Queued · #{{position}}",
     open: "#{{number}} {{title}}",
     empty: "A task says who does what, person or agent, and shows where it stands.",
     emptyViewerTitle: "See who does what",
@@ -6384,6 +6392,11 @@ export const en = {
       criterion_checked: 'checked the criterion "{{text}}"',
       criterion_unchecked: 'unchecked the criterion "{{text}}"',
       agent_asked: "asked {{name}} to do it",
+      /** Its agent took it from its queue of tasks by itself (the author is the agent). */
+      agent_queued: "picked it up from its queue",
+      start_approved: "gave {{name}} the go to start it",
+      blocked: "marked it blocked: {{text}}",
+      unblocked: "cleared what blocked it",
     },
   },
   routines: {
@@ -12816,6 +12829,9 @@ export const en = {
     contextHelp: "Write it as if explaining {{name}} to someone who started today.",
     timezone: "Time zone",
     timezoneHelp: "Routines and summaries use this time zone.",
+    taskPump: "Agents take their next task by themselves",
+    taskPumpHelp:
+      "Each agent starts the next task a person gave it as soon as it has room, and comes back to one it left unfinished. Each agent has its own switch too.",
     actionCheck: "Agents check what the team already did",
     actionCheckHelp:
       "Before an email, a message or a pull request, the agent checks whether anyone on the team already did it to the same person or place in the last 30 days, and doesn't repeat it.",
@@ -13274,6 +13290,8 @@ export const en = {
       paused: "Paused · plan limit",
       failed: "Blocked · didn't finish",
       failedWhy: "Blocked · didn't finish: {{why}}",
+      /** Its agent said what stops it, in its own words. */
+      agent: "Blocked · {{why}}",
     },
     working: "In the background",
   },
@@ -13391,6 +13409,10 @@ export const en = {
       agentNote: "Note from {{from}}",
       agentNoteAnon: "Note from another agent",
       waitResult: "What {{name}} was waiting for came in",
+      /** An agent's turn on a task from its queue, in the task's conversation. */
+      taskStart: "{{name}} picked this task up from its queue",
+      taskResume: "{{name}} came back to this task",
+      taskReview: "{{name}} picked this task up to review it",
       followUp: "{{name}} will be back at {{time}} to «{{about}}»",
       followUpOn: "{{name}} will be back on {{day}} at {{time}} to «{{about}}»",
       followUpDone: "{{name}} came back at {{time}} to «{{about}}»",
@@ -13732,6 +13754,14 @@ export const en = {
       general3: "Help me plan the week?",
     },
     /** "Ask Ada to implement": the card at the root of the work thread in the DM, and the line where the issue came from. */
+    /** "Começar estas": the go for the tasks an agent gave agents in its reply, under their chips. */
+    tasksStart: {
+      start_one: "Start it",
+      start_other: "Start them",
+      started: "{{name}} gave the go",
+      someone: "Someone",
+      failed: "Couldn't start them now. Try again.",
+    },
     issueWork: {
       label: "Requested task",
       asked: "You asked for task",

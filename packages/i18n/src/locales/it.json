@@ -2656,6 +2656,10 @@
     "forget": "Dimentica queste risposte",
     "atOnce": "Lavori contemporanei",
     "atOnceHelp": "Quanti lavori che nessuno ha chiesto svolge allo stesso tempo. Gli altri aspettano il loro turno.",
+    "tasks": "Prende da solo il prossimo compito",
+    "tasksHelp": "Inizia il prossimo compito che una persona gli ha dato appena ha spazio, e torna a uno lasciato a metà. Spento, il compito aspetta finché qualcuno non glielo chiede.",
+    "tasksAtOnce": "Compiti contemporanei",
+    "tasksAtOnceHelp": "Quanti dei suoi compiti fa nello stesso momento. Gli altri aspettano nella sua coda.",
     "prs": "Pull request all'ora",
     "prsHelp": "Il massimo che il suo lavoro apre in un'ora.",
     "call": "Agenti che può chiamare",
@@ -6392,6 +6396,8 @@
     "noAssignee": "Nessun assegnatario",
     "agentRole": "Agente · {{role}}",
     "pr": "PR #{{number}}",
+    "queue": "In coda per {{name}} · n. {{position}}",
+    "queueShort": "In coda · n. {{position}}",
     "open": "#{{number}} {{title}}",
     "empty": "Un'attività dice chi fa cosa, persona o agente, e mostra a che punto è.",
     "emptyViewerTitle": "Guarda chi fa cosa",
@@ -6549,7 +6555,11 @@
       "files_removed": "ha tolto {{names}} dagli allegati",
       "criterion_checked": "ha spuntato il criterio \"{{text}}\"",
       "criterion_unchecked": "ha tolto la spunta al criterio \"{{text}}\"",
-      "agent_asked": "ha chiesto a {{name}} di farla"
+      "agent_asked": "ha chiesto a {{name}} di farla",
+      "agent_queued": "l'ha presa dalla sua coda",
+      "start_approved": "ha dato il via a {{name}} per iniziare",
+      "blocked": "l'ha segnata come bloccata: {{text}}",
+      "unblocked": "ha tolto il blocco"
     }
   },
   "routines": {
@@ -13456,6 +13466,8 @@
     "contextHelp": "Scrivilo come se spiegassi {{name}} a qualcuno arrivato oggi.",
     "timezone": "Fuso orario",
     "timezoneHelp": "Routine e riepiloghi usano questo fuso orario.",
+    "taskPump": "Gli agenti prendono da soli il prossimo compito",
+    "taskPumpHelp": "Ogni agente inizia il prossimo compito che una persona gli ha dato appena ha spazio, e torna a uno lasciato a metà. Ogni agente ha anche un suo interruttore.",
     "actionCheck": "Gli agenti controllano cosa ha già fatto il team",
     "actionCheckHelp": "Prima di un'email, un messaggio o una pull request, l'agente controlla se qualcuno del team l'ha già fatto alla stessa persona o nello stesso posto negli ultimi 30 giorni, e non lo ripete.",
     "telemetry": {
@@ -13947,7 +13959,8 @@
       "waiting_computer": "Bloccato · in attesa del computer",
       "paused": "In pausa · limite del piano",
       "failed": "Bloccato · non terminato",
-      "failedWhy": "Bloccato · non terminato: {{why}}"
+      "failedWhy": "Bloccato · non terminato: {{why}}",
+      "agent": "Bloccata · {{why}}"
     },
     "working": "In background"
   },
@@ -14055,6 +14068,9 @@
       "agentNote": "Nota di {{from}}",
       "agentNoteAnon": "Nota di un altro agente",
       "waitResult": "È arrivato ciò che {{name}} aspettava",
+      "taskStart": "{{name}} ha preso questo compito dalla sua coda",
+      "taskResume": "{{name}} è tornato a questo compito",
+      "taskReview": "{{name}} ha preso questo compito per rivederlo",
       "followUp": "{{name}} tornerà alle {{time}} per «{{about}}»",
       "followUpOn": "{{name}} tornerà {{day}} alle {{time}} per «{{about}}»",
       "followUpDone": "{{name}} è tornato alle {{time}} per «{{about}}»",
@@ -14380,6 +14396,14 @@
       "general1": "Ciao, cosa sai fare?",
       "general2": "Riassumi cosa è successo oggi",
       "general3": "Mi aiuti a pianificare la settimana?"
+    },
+    "tasksStart": {
+      "start_one": "Inizia questo",
+      "start_many": "Inizia questi",
+      "start_other": "Inizia questi",
+      "started": "{{name}} ha dato il via",
+      "someone": "Qualcuno",
+      "failed": "Non è stato possibile iniziarli ora. Riprova."
     },
     "issueWork": {
       "label": "Attività richiesta",

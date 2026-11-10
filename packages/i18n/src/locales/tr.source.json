@@ -6229,6 +6229,18 @@
   "brakes.atOnceHelp": {
     "value": "How many jobs nobody asked for it runs at the same time. The others wait their turn."
   },
+  "brakes.tasks": {
+    "value": "Takes its next task by itself"
+  },
+  "brakes.tasksHelp": {
+    "value": "It starts the next task a person gave it as soon as it has room, and comes back to one it left unfinished. Off: a task waits until someone asks it."
+  },
+  "brakes.tasksAtOnce": {
+    "value": "Tasks at once"
+  },
+  "brakes.tasksAtOnceHelp": {
+    "value": "How many of its tasks it works on at the same time. The others wait in its queue."
+  },
   "brakes.prs": {
     "value": "Pull requests an hour"
   },
@@ -14927,6 +14939,12 @@
   "issues.pr": {
     "value": "PR #{{number}}"
   },
+  "issues.queue": {
+    "value": "In {{name}}'s queue · #{{position}}"
+  },
+  "issues.queueShort": {
+    "value": "Queued · #{{position}}"
+  },
   "issues.open": {
     "value": "#{{number}} {{title}}"
   },
@@ -15329,6 +15347,18 @@
   },
   "issues.event.agent_asked": {
     "value": "asked {{name}} to do it"
+  },
+  "issues.event.agent_queued": {
+    "value": "picked it up from its queue"
+  },
+  "issues.event.start_approved": {
+    "value": "gave {{name}} the go to start it"
+  },
+  "issues.event.blocked": {
+    "value": "marked it blocked: {{text}}"
+  },
+  "issues.event.unblocked": {
+    "value": "cleared what blocked it"
   },
   "routines.filters": {
     "value": "Filter routines"
@@ -31619,6 +31649,12 @@
   "settings.timezoneHelp": {
     "value": "Routines and summaries use this time zone."
   },
+  "settings.taskPump": {
+    "value": "Agents take their next task by themselves"
+  },
+  "settings.taskPumpHelp": {
+    "value": "Each agent starts the next task a person gave it as soon as it has room, and comes back to one it left unfinished. Each agent has its own switch too."
+  },
   "settings.actionCheck": {
     "value": "Agents check what the team already did"
   },
@@ -32789,6 +32825,9 @@
   "work.blocked.failedWhy": {
     "value": "Blocked · didn't finish: {{why}}"
   },
+  "work.blocked.agent": {
+    "value": "Blocked · {{why}}"
+  },
   "work.working": {
     "value": "In the background"
   },
@@ -33001,6 +33040,15 @@
   },
   "chat.notice.waitResult": {
     "value": "What {{name}} was waiting for came in"
+  },
+  "chat.notice.taskStart": {
+    "value": "{{name}} picked this task up from its queue"
+  },
+  "chat.notice.taskResume": {
+    "value": "{{name}} came back to this task"
+  },
+  "chat.notice.taskReview": {
+    "value": "{{name}} picked this task up to review it"
   },
   "chat.notice.followUp": {
     "value": "{{name}} will be back at {{time}} to «{{about}}»"
@@ -33921,6 +33969,21 @@
   },
   "chat.suggest.general3": {
     "value": "Help me plan the week?"
+  },
+  "chat.tasksStart.start": {
+    "value": {
+      "one": "Start it",
+      "other": "Start them"
+    }
+  },
+  "chat.tasksStart.started": {
+    "value": "{{name}} gave the go"
+  },
+  "chat.tasksStart.someone": {
+    "value": "Someone"
+  },
+  "chat.tasksStart.failed": {
+    "value": "Couldn't start them now. Try again."
   },
   "chat.issueWork.label": {
     "value": "Requested task"

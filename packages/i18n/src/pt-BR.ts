@@ -2628,6 +2628,11 @@ export const ptBR = {
     forget: "Esquecer essas respostas",
     atOnce: "Trabalhos ao mesmo tempo",
     atOnceHelp: "Quantos trabalhos que ninguém pediu ele faz ao mesmo tempo. Os outros esperam a vez.",
+    tasks: "Pega a próxima tarefa sozinho",
+    tasksHelp:
+      "Começa a próxima tarefa que uma pessoa deu a ele assim que tem espaço, e volta a uma que ficou pela metade. Desligado, a tarefa espera até alguém pedir.",
+    tasksAtOnce: "Tarefas ao mesmo tempo",
+    tasksAtOnceHelp: "Quantas tarefas dele ele faz ao mesmo tempo. As outras esperam na fila dele.",
     prs: "Pull requests por hora",
     prsHelp: "O máximo que o próprio trabalho dele abre em uma hora.",
     call: "Agentes que pode chamar",
@@ -6295,6 +6300,9 @@ export const ptBR = {
     noAssignee: "Sem responsável",
     agentRole: "Agente · {{role}}",
     pr: "PR #{{number}}",
+    /** A task waiting in its agent's queue of tasks (1 = next): on a board card, and short where the agent is named. */
+    queue: "Na fila de {{name}} · {{position}}º",
+    queueShort: "Na fila · {{position}}º",
     open: "#{{number}} {{title}}",
     empty: "Uma tarefa diz quem faz o quê, pessoa ou agente, e mostra em que pé está.",
     emptyViewerTitle: "Veja quem faz o quê",
@@ -6449,6 +6457,11 @@ export const ptBR = {
       criterion_checked: 'marcou o critério "{{text}}"',
       criterion_unchecked: 'desmarcou o critério "{{text}}"',
       agent_asked: "pediu a {{name}} para fazer",
+      /** Its agent took it from its queue of tasks by itself (the author is the agent). */
+      agent_queued: "pegou a tarefa da fila",
+      start_approved: "deu o ok para {{name}} começar",
+      blocked: "marcou como travada: {{text}}",
+      unblocked: "tirou a trava",
     },
   },
   routines: {
@@ -12903,6 +12916,9 @@ export const ptBR = {
     contextHelp: "Escreva como se explicasse a {{name}} para alguém que começou hoje.",
     timezone: "Fuso horário",
     timezoneHelp: "As rotinas e os resumos usam este fuso.",
+    taskPump: "Agentes pegam a próxima tarefa sozinhos",
+    taskPumpHelp:
+      "Cada agente começa a próxima tarefa que uma pessoa deu a ele assim que tem espaço, e volta a uma que ficou pela metade. Cada agente também tem a própria opção.",
     actionCheck: "Agentes conferem o que o time já fez",
     actionCheckHelp:
       "Antes de mandar e-mail, mensagem ou abrir PR, o agente vê se alguém do time já fez isso com a mesma pessoa ou lugar nos últimos 30 dias, e não repete.",
@@ -13369,6 +13385,8 @@ export const ptBR = {
       paused: "Pausado · limite do plano",
       failed: "Bloqueado · não terminou",
       failedWhy: "Bloqueado · não terminou: {{why}}",
+      /** Its agent said what stops it, in its own words. */
+      agent: "Travada · {{why}}",
     },
     working: "Em segundo plano",
   },
@@ -13501,6 +13519,10 @@ export const ptBR = {
       agentNote: "Nota de {{from}}",
       agentNoteAnon: "Nota de outro agente",
       waitResult: "Chegou o resultado que {{name}} esperava",
+      /** An agent's turn on a task from its queue, in the task's conversation. */
+      taskStart: "{{name}} pegou esta tarefa da fila",
+      taskResume: "{{name}} voltou a esta tarefa",
+      taskReview: "{{name}} pegou esta tarefa para revisar",
       followUp: "{{name}} volta às {{time}} para «{{about}}»",
       followUpOn: "{{name}} volta em {{day}} às {{time}} para «{{about}}»",
       followUpDone: "{{name}} voltou às {{time}} para «{{about}}»",
@@ -13840,6 +13862,14 @@ export const ptBR = {
       general3: "Me ajuda a organizar a semana?",
     },
     /** "Ask Ada to implement": the card at the root of the work thread in the DM, and the line where the issue came from. */
+    /** "Começar estas": the go for the tasks an agent gave agents in its reply, under their chips. */
+    tasksStart: {
+      start_one: "Começar esta",
+      start_other: "Começar estas",
+      started: "{{name}} deu o ok",
+      someone: "Alguém",
+      failed: "Não deu para começar agora. Tente de novo.",
+    },
     issueWork: {
       label: "Tarefa pedida",
       asked: "Você pediu a tarefa",

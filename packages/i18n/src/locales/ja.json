@@ -2465,6 +2465,10 @@
     "forget": "これらの回答を忘れる",
     "atOnce": "同時に行う作業",
     "atOnceHelp": "誰も頼んでいない作業を同時にいくつ行うか。ほかは順番を待ちます。",
+    "tasks": "次のタスクに自分で取りかかる",
+    "tasksHelp": "人から任されたタスクに、空きができしだい自分で取りかかり、途中のタスクにも戻ります。オフにすると、誰かが頼むまでタスクは待ちます。",
+    "tasksAtOnce": "同時に行うタスク",
+    "tasksAtOnceHelp": "自分のタスクをいくつ同時に進めるか。残りは待ち行列で待ちます。",
     "prs": "1時間あたりのプルリクエスト",
     "prsHelp": "自分の作業が1時間に開ける最大数。",
     "call": "呼び出せるエージェント",
@@ -5943,6 +5947,8 @@
     "noAssignee": "担当者なし",
     "agentRole": "エージェント · {{role}}",
     "pr": "PR #{{number}}",
+    "queue": "{{name}}の待ち行列 · {{position}}番目",
+    "queueShort": "待ち · {{position}}番目",
     "open": "#{{number}} {{title}}",
     "empty": "タスクを使うと、人かエージェントか、誰が何をするかと進み具合がわかります。",
     "emptyViewerTitle": "誰が何をするかを確認できます",
@@ -6088,7 +6094,11 @@
       "files_removed": "{{names}}を添付ファイルから外しました",
       "criterion_checked": "条件「{{text}}」にチェックを入れました",
       "criterion_unchecked": "条件「{{text}}」のチェックを外しました",
-      "agent_asked": "{{name}}に作業を頼みました"
+      "agent_asked": "{{name}}に作業を頼みました",
+      "agent_queued": "待ち行列から取りかかりました",
+      "start_approved": "{{name}}に開始の許可を出しました",
+      "blocked": "ブロック中にしました：{{text}}",
+      "unblocked": "ブロックを解除しました"
     }
   },
   "routines": {
@@ -12516,6 +12526,8 @@
     "contextHelp": "今日入ったばかりの人に{{name}}を説明するつもりで書いてください。",
     "timezone": "タイムゾーン",
     "timezoneHelp": "ルーティンと要約はこのタイムゾーンを使います。",
+    "taskPump": "エージェントが次のタスクに自分で取りかかる",
+    "taskPumpHelp": "各エージェントは、人から任されたタスクに空きができしだい取りかかり、途中のタスクにも戻ります。エージェントごとの設定もあります。",
     "actionCheck": "エージェントがチームの過去の対応を確認する",
     "actionCheckHelp": "メール、メッセージ、プルリクエストの前に、過去30日以内にチームの誰かが同じ相手や場所に同じことをしていないかを確認し、重複を避けます。",
     "telemetry": {
@@ -12975,7 +12987,8 @@
       "waiting_computer": "ブロック中 · コンピューター待ち",
       "paused": "一時停止中 · プランの上限",
       "failed": "ブロック中 · 完了しませんでした",
-      "failedWhy": "ブロック中 · 完了しませんでした: {{why}}"
+      "failedWhy": "ブロック中 · 完了しませんでした: {{why}}",
+      "agent": "ブロック中 · {{why}}"
     },
     "working": "バックグラウンドで作業中"
   },
@@ -13066,6 +13079,9 @@
       "agentNote": "{{from}}からのメモ",
       "agentNoteAnon": "別のエージェントからのメモ",
       "waitResult": "{{name}}が待っていたものが届きました",
+      "taskStart": "{{name}}が待ち行列からこのタスクに取りかかりました",
+      "taskResume": "{{name}}がこのタスクに戻りました",
+      "taskReview": "{{name}}がこのタスクのレビューに取りかかりました",
       "followUp": "{{name}}は{{time}}に「{{about}}」のために戻ります",
       "followUpOn": "{{name}}は{{day}} {{time}}に「{{about}}」のために戻ります",
       "followUpDone": "{{name}}は{{time}}に「{{about}}」のために戻りました",
@@ -13386,6 +13402,12 @@
       "general1": "こんにちは、何ができるの？",
       "general2": "今日あったことを要約して",
       "general3": "今週の計画を手伝ってくれる？"
+    },
+    "tasksStart": {
+      "start_other": "開始する",
+      "started": "{{name}}が開始を許可しました",
+      "someone": "誰か",
+      "failed": "今は開始できませんでした。もう一度お試しください。"
     },
     "issueWork": {
       "label": "依頼されたタスク",

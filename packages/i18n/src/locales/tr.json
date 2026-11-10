@@ -2554,6 +2554,10 @@
     "forget": "Bu cevapları unut",
     "atOnce": "Aynı anda iş",
     "atOnceHelp": "Kimsenin istemediği kaç işi aynı anda yapacağı. Diğerleri sırasını bekler.",
+    "tasks": "Sıradaki görevi kendisi alır",
+    "tasksHelp": "Bir kişinin ona verdiği sıradaki görevi yer açılır açılmaz başlatır ve yarım kalan bir göreve geri döner. Kapalıysa görev biri isteyene kadar bekler.",
+    "tasksAtOnce": "Aynı anda görev",
+    "tasksAtOnceHelp": "Görevlerinden kaçı üzerinde aynı anda çalıştığı. Diğerleri sırasında bekler.",
     "prs": "Saatte pull request",
     "prsHelp": "Kendi işinin bir saatte açabileceği en fazla sayı.",
     "call": "Çağırabileceği ajanlar",
@@ -6132,6 +6136,8 @@
     "noAssignee": "Atanan yok",
     "agentRole": "Ajan · {{role}}",
     "pr": "PR #{{number}}",
+    "queue": "{{name}} sırasında · {{position}}.",
+    "queueShort": "Sırada · {{position}}.",
     "open": "#{{number}} {{title}}",
     "empty": "Görev, kişi ya da ajan, kimin neyi yaptığını ve işin nerede olduğunu gösterir.",
     "emptyViewerTitle": "Kimin ne yaptığını görün",
@@ -6281,7 +6287,11 @@
       "files_removed": "{{names}} eklerden çıkardı",
       "criterion_checked": "\"{{text}}\" kriterini işaretledi",
       "criterion_unchecked": "\"{{text}}\" kriterinin işaretini kaldırdı",
-      "agent_asked": "{{name}} ajanından yapmasını istedi"
+      "agent_asked": "{{name}} ajanından yapmasını istedi",
+      "agent_queued": "görevi sırasından aldı",
+      "start_approved": "{{name}} ajanına başlama onayı verdi",
+      "blocked": "engellendi olarak işaretledi: {{text}}",
+      "unblocked": "engeli kaldırdı"
     }
   },
   "routines": {
@@ -12940,6 +12950,8 @@
     "contextHelp": "{{name}} hakkında bugün işe başlayan birine anlatır gibi yazın.",
     "timezone": "Saat dilimi",
     "timezoneHelp": "Rutinler ve özetler bu saat dilimini kullanır.",
+    "taskPump": "Ajanlar sıradaki görevi kendileri alır",
+    "taskPumpHelp": "Her ajan, bir kişinin ona verdiği sıradaki görevi yer açılır açılmaz başlatır ve yarım kalan bir göreve geri döner. Her ajanın kendi anahtarı da vardır.",
     "actionCheck": "Ajanlar ekibin zaten yaptıklarını kontrol eder",
     "actionCheckHelp": "Bir e-posta, mesaj ya da pull request'ten önce ajan, son 30 günde ekipten birinin aynı kişiye ya da yere bunu zaten yapıp yapmadığını kontrol eder ve tekrarlamaz.",
     "telemetry": {
@@ -13412,7 +13424,8 @@
       "waiting_computer": "Engellendi · bilgisayar bekleniyor",
       "paused": "Duraklatıldı · plan sınırı",
       "failed": "Engellendi · bitmedi",
-      "failedWhy": "Engellendi · bitmedi: {{why}}"
+      "failedWhy": "Engellendi · bitmedi: {{why}}",
+      "agent": "Engellendi · {{why}}"
     },
     "working": "Arka planda"
   },
@@ -13506,6 +13519,9 @@
       "agentNote": "{{from}} ajanından not",
       "agentNoteAnon": "Başka bir ajandan not",
       "waitResult": "{{name}} ajanının beklediği şey geldi",
+      "taskStart": "{{name}} bu görevi sırasından aldı",
+      "taskResume": "{{name}} bu göreve geri döndü",
+      "taskReview": "{{name}} bu görevi incelemek için aldı",
       "followUp": "{{name}}, «{{about}}» için saat {{time}} geri dönecek",
       "followUpOn": "{{name}}, «{{about}}» için {{day}}, saat {{time}} geri dönecek",
       "followUpDone": "{{name}}, «{{about}}» için saat {{time}} geri döndü",
@@ -13828,6 +13844,13 @@
       "general1": "Merhaba, neler yapabilirsin?",
       "general2": "Bugün olanları özetle",
       "general3": "Haftayı planlamama yardım eder misin?"
+    },
+    "tasksStart": {
+      "start_one": "Başlat",
+      "start_other": "Başlat",
+      "started": "{{name}} başlama onayı verdi",
+      "someone": "Biri",
+      "failed": "Şu anda başlatılamadı. Tekrar deneyin."
     },
     "issueWork": {
       "label": "İstenen görev",

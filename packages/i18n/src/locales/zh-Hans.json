@@ -2466,6 +2466,10 @@
     "forget": "忘记这些回答",
     "atOnce": "同时进行的工作",
     "atOnceHelp": "它同时进行多少项没人要求的工作。其余的排队等候。",
+    "tasks": "自己接手下一项任务",
+    "tasksHelp": "一有空位就开始别人交给它的下一项任务，也会回到做了一半的任务。关闭后，任务会一直等到有人请它去做。",
+    "tasksAtOnce": "同时进行的任务",
+    "tasksAtOnceHelp": "它同时进行自己的几项任务。其余的在它的队列里等待。",
     "prs": "每小时拉取请求数",
     "prsHelp": "它自己的工作一小时内最多打开的数量。",
     "call": "可以呼叫的智能体",
@@ -5981,6 +5985,8 @@
     "noAssignee": "无负责人",
     "agentRole": "智能体 · {{role}}",
     "pr": "PR #{{number}}",
+    "queue": "{{name}} 的队列 · 第 {{position}} 位",
+    "queueShort": "排队中 · 第 {{position}} 位",
     "open": "#{{number}} {{title}}",
     "empty": "任务说明谁做什么，无论是成员还是智能体，也能看到进度。",
     "emptyViewerTitle": "查看谁在做什么",
@@ -6130,7 +6136,11 @@
       "files_removed": "从附件中移除了 {{names}}",
       "criterion_checked": "勾选了标准“{{text}}”",
       "criterion_unchecked": "取消勾选了标准“{{text}}”",
-      "agent_asked": "请 {{name}} 来完成"
+      "agent_asked": "请 {{name}} 来完成",
+      "agent_queued": "从队列中接手了这项任务",
+      "start_approved": "同意 {{name}} 开始",
+      "blocked": "标记为受阻：{{text}}",
+      "unblocked": "解除了受阻"
     }
   },
   "routines": {
@@ -12570,6 +12580,8 @@
     "contextHelp": "就像向今天刚入职的人介绍 {{name}} 一样来写。",
     "timezone": "时区",
     "timezoneHelp": "例行工作和摘要使用此时区。",
+    "taskPump": "智能体自己接手下一项任务",
+    "taskPumpHelp": "每个智能体一有空位就开始别人交给它的下一项任务，也会回到做了一半的任务。每个智能体也有自己的开关。",
     "actionCheck": "智能体会检查团队已经做过的事",
     "actionCheckHelp": "在发送邮件、消息或 Pull Request 之前，智能体会检查过去 30 天内团队中是否已有人对同一个人或同一个地方做过同样的事，避免重复。",
     "telemetry": {
@@ -13023,7 +13035,8 @@
       "waiting_computer": "已阻塞 · 等待电脑",
       "paused": "已暂停 · 套餐限额",
       "failed": "已阻塞 · 未完成",
-      "failedWhy": "已阻塞 · 未完成：{{why}}"
+      "failedWhy": "已阻塞 · 未完成：{{why}}",
+      "agent": "受阻 · {{why}}"
     },
     "working": "后台进行中"
   },
@@ -13125,6 +13138,9 @@
       "agentNote": "来自 {{from}} 的备注",
       "agentNoteAnon": "来自另一个智能体的备注",
       "waitResult": "{{name}} 等待的结果到了",
+      "taskStart": "{{name}} 从队列中接手了这项任务",
+      "taskResume": "{{name}} 回到了这项任务",
+      "taskReview": "{{name}} 接手这项任务来审核",
       "followUp": "{{name}} 会在 {{time}} 回来跟进“{{about}}”",
       "followUpOn": "{{name}} 会在 {{day}} {{time}} 回来跟进“{{about}}”",
       "followUpDone": "{{name}} 在 {{time}} 回来跟进了“{{about}}”",
@@ -13446,6 +13462,12 @@
       "general1": "你好，你能做什么？",
       "general2": "总结一下今天发生的事",
       "general3": "帮我规划这一周？"
+    },
+    "tasksStart": {
+      "start_other": "开始",
+      "started": "{{name}} 同意开始",
+      "someone": "有人",
+      "failed": "现在无法开始。请再试一次。"
     },
     "issueWork": {
       "label": "请求的任务",

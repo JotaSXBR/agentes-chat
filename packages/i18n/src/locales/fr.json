@@ -2655,6 +2655,10 @@
     "forget": "Oublier ces réponses",
     "atOnce": "Travaux en même temps",
     "atOnceHelp": "Combien de travaux que personne n'a demandés il mène en même temps. Les autres attendent leur tour.",
+    "tasks": "Prend sa prochaine tâche tout seul",
+    "tasksHelp": "Il commence la prochaine tâche qu'une personne lui a donnée dès qu'il a de la place, et revient à une tâche laissée en cours. Désactivé, une tâche attend qu'on la lui demande.",
+    "tasksAtOnce": "Tâches en même temps",
+    "tasksAtOnceHelp": "Combien de ses tâches il fait en même temps. Les autres attendent dans sa file.",
     "prs": "Pull requests par heure",
     "prsHelp": "Le maximum que son propre travail ouvre en une heure.",
     "call": "Agents qu'il peut appeler",
@@ -6386,6 +6390,8 @@
     "noAssignee": "Aucun responsable",
     "agentRole": "Agent · {{role}}",
     "pr": "PR #{{number}}",
+    "queue": "Dans la file de {{name}} · n° {{position}}",
+    "queueShort": "En file · n° {{position}}",
     "open": "#{{number}} {{title}}",
     "empty": "Une tâche dit qui fait quoi, personne ou agent, et montre où elle en est.",
     "emptyViewerTitle": "Voyez qui fait quoi",
@@ -6543,7 +6549,11 @@
       "files_removed": "a retiré {{names}} des pièces jointes",
       "criterion_checked": "a coché le critère « {{text}} »",
       "criterion_unchecked": "a décoché le critère « {{text}} »",
-      "agent_asked": "a demandé à {{name}} de la faire"
+      "agent_asked": "a demandé à {{name}} de la faire",
+      "agent_queued": "l'a prise dans sa file",
+      "start_approved": "a donné le feu vert à {{name}} pour commencer",
+      "blocked": "l'a marquée comme bloquée : {{text}}",
+      "unblocked": "a levé le blocage"
     }
   },
   "routines": {
@@ -13447,6 +13457,8 @@
     "contextHelp": "Écrivez-le comme si vous présentiez {{name}} à quelqu'un qui commence aujourd'hui.",
     "timezone": "Fuseau horaire",
     "timezoneHelp": "Les routines et les résumés utilisent ce fuseau horaire.",
+    "taskPump": "Les agents prennent leur prochaine tâche tout seuls",
+    "taskPumpHelp": "Chaque agent commence la prochaine tâche qu'une personne lui a donnée dès qu'il a de la place, et revient à une tâche laissée en cours. Chaque agent a aussi son propre interrupteur.",
     "actionCheck": "Les agents vérifient ce que l'équipe a déjà fait",
     "actionCheckHelp": "Avant un e-mail, un message ou une pull request, l'agent vérifie si quelqu'un de l'équipe l'a déjà fait pour la même personne ou au même endroit dans les 30 derniers jours, et ne le refait pas.",
     "telemetry": {
@@ -13944,7 +13956,8 @@
       "waiting_computer": "Bloqué · en attente de l'ordinateur",
       "paused": "En pause · limite de l'abonnement",
       "failed": "Bloqué · pas terminé",
-      "failedWhy": "Bloqué · pas terminé : {{why}}"
+      "failedWhy": "Bloqué · pas terminé : {{why}}",
+      "agent": "Bloquée · {{why}}"
     },
     "working": "En arrière-plan"
   },
@@ -14052,6 +14065,9 @@
       "agentNote": "Note de {{from}}",
       "agentNoteAnon": "Note d'un autre agent",
       "waitResult": "Ce que {{name}} attendait est arrivé",
+      "taskStart": "{{name}} a pris cette tâche dans sa file",
+      "taskResume": "{{name}} est revenu à cette tâche",
+      "taskReview": "{{name}} a pris cette tâche pour la relire",
       "followUp": "{{name}} reviendra à {{time}} pour « {{about}} »",
       "followUpOn": "{{name}} reviendra le {{day}} à {{time}} pour « {{about}} »",
       "followUpDone": "{{name}} est revenu à {{time}} pour « {{about}} »",
@@ -14377,6 +14393,14 @@
       "general1": "Bonjour, que sais-tu faire ?",
       "general2": "Résume ce qui s'est passé aujourd'hui",
       "general3": "Tu m'aides à planifier la semaine ?"
+    },
+    "tasksStart": {
+      "start_one": "La commencer",
+      "start_many": "Les commencer",
+      "start_other": "Les commencer",
+      "started": "{{name}} a donné le feu vert",
+      "someone": "Quelqu'un",
+      "failed": "Impossible de les commencer maintenant. Réessayez."
     },
     "issueWork": {
       "label": "Tâche demandée",

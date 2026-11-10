@@ -2565,6 +2565,10 @@
     "forget": "Deze antwoorden vergeten",
     "atOnce": "Klussen tegelijk",
     "atOnceHelp": "Hoeveel klussen waar niemand om vroeg hij tegelijk doet. De rest wacht op zijn beurt.",
+    "tasks": "Pakt zelf de volgende taak",
+    "tasksHelp": "Begint aan de volgende taak die iemand hem gaf zodra er ruimte is, en gaat verder met een taak die half af is. Uit: een taak wacht tot iemand erom vraagt.",
+    "tasksAtOnce": "Taken tegelijk",
+    "tasksAtOnceHelp": "Aan hoeveel van zijn taken hij tegelijk werkt. De rest wacht in zijn wachtrij.",
     "prs": "Pull requests per uur",
     "prsHelp": "Het hoogste aantal dat zijn eigen werk in een uur opent.",
     "call": "Agents die hij mag roepen",
@@ -6210,6 +6214,8 @@
     "noAssignee": "Niet toegewezen",
     "agentRole": "Agent · {{role}}",
     "pr": "PR #{{number}}",
+    "queue": "In de wachtrij van {{name}} · nr. {{position}}",
+    "queueShort": "In de wachtrij · nr. {{position}}",
     "open": "#{{number}} {{title}}",
     "empty": "Een taak zegt wie wat doet, mens of agent, en laat zien hoe het ervoor staat.",
     "emptyViewerTitle": "Zie wie wat doet",
@@ -6363,7 +6369,11 @@
       "files_removed": "heeft {{names}} uit de bijlagen gehaald",
       "criterion_checked": "heeft het criterium \"{{text}}\" aangevinkt",
       "criterion_unchecked": "heeft het criterium \"{{text}}\" uitgevinkt",
-      "agent_asked": "heeft {{name}} gevraagd het te doen"
+      "agent_asked": "heeft {{name}} gevraagd het te doen",
+      "agent_queued": "pakte hem uit de wachtrij",
+      "start_approved": "gaf {{name}} het startsein",
+      "blocked": "markeerde hem als geblokkeerd: {{text}}",
+      "unblocked": "hief de blokkade op"
     }
   },
   "routines": {
@@ -13058,6 +13068,8 @@
     "contextHelp": "Schrijf het alsof je {{name}} uitlegt aan iemand die vandaag begon.",
     "timezone": "Tijdzone",
     "timezoneHelp": "Routines en samenvattingen gebruiken deze tijdzone.",
+    "taskPump": "Agents pakken zelf hun volgende taak",
+    "taskPumpHelp": "Elke agent begint aan de volgende taak die iemand hem gaf zodra er ruimte is, en gaat verder met een taak die half af is. Elke agent heeft ook een eigen schakelaar.",
     "actionCheck": "Agents checken wat het team al deed",
     "actionCheckHelp": "Voor een e-mail, bericht of pull request checkt de agent of iemand in het team dat in de afgelopen 30 dagen al bij dezelfde persoon of plek deed, en herhaalt het niet.",
     "telemetry": {
@@ -13530,7 +13542,8 @@
       "waiting_computer": "Geblokkeerd · wacht op de computer",
       "paused": "Gepauzeerd · limiet van het abonnement",
       "failed": "Geblokkeerd · niet afgemaakt",
-      "failedWhy": "Geblokkeerd · niet afgemaakt: {{why}}"
+      "failedWhy": "Geblokkeerd · niet afgemaakt: {{why}}",
+      "agent": "Geblokkeerd · {{why}}"
     },
     "working": "Op de achtergrond"
   },
@@ -13635,6 +13648,9 @@
       "agentNote": "Notitie van {{from}}",
       "agentNoteAnon": "Notitie van een andere agent",
       "waitResult": "Waar {{name}} op wachtte, is binnen",
+      "taskStart": "{{name}} pakte deze taak uit de wachtrij",
+      "taskResume": "{{name}} ging verder met deze taak",
+      "taskReview": "{{name}} pakte deze taak op om te beoordelen",
       "followUp": "{{name}} komt om {{time}} terug voor «{{about}}»",
       "followUpOn": "{{name}} komt {{day}} om {{time}} terug voor «{{about}}»",
       "followUpDone": "{{name}} kwam om {{time}} terug voor «{{about}}»",
@@ -13958,6 +13974,13 @@
       "general1": "Hoi, wat kun je allemaal?",
       "general2": "Vat samen wat er vandaag gebeurde",
       "general3": "Help je me de week te plannen?"
+    },
+    "tasksStart": {
+      "start_one": "Deze starten",
+      "start_other": "Deze starten",
+      "started": "{{name}} gaf het startsein",
+      "someone": "Iemand",
+      "failed": "Kon ze nu niet starten. Probeer het opnieuw."
     },
     "issueWork": {
       "label": "Gevraagde taak",

@@ -309,9 +309,10 @@ export function PlanPanel(props: PlanPanelProps) {
   const { t } = useTranslation();
   const { choice, forWhom, locked } = props;
   const [agent] = forWhom;
+  const steps = agent ? <PlanSteps {...props} /> : <Spinner />;
   return (
     <Card as="section" className="ai-panel ai-panel--plan" aria-label={planTitle(t, choice)}>
-      {locked ? <SettingNote icon="lock">{locked}</SettingNote> : agent ? <PlanSteps {...props} /> : <Spinner />}
+      {locked ? <SettingNote icon="lock">{locked}</SettingNote> : steps}
     </Card>
   );
 }

@@ -59,3 +59,14 @@ In a plain chat an agent asked a person to send a login "by `request_secret`": i
 4. **The fast reply** (`talker.ts`), which reads the task's steps by tool name, gets the same rule in its prompt.
 
 A DM "oi" grows by 195 characters (45,632 measured), and the `turns-eval` ceiling goes from 45,900 to 46,100.
+
+## Addendum (2026-11-10): nothing a person was answered vanishes
+
+A person asked an agent where a task came from, in that task's conversation. The answer streamed on screen, the turn-end check held it as a give-up it hadn't tried, the next try passed, and the app took the text away: no answer at all. Item 3 above made held replies leave the screen at once and never come back, which kept that outcome. The same day other answers appeared and vanished on a pass, a follow-up in a task's conversation was canceled when it came due, a stop dropped the person's own newest instruction, and one answer showed twice.
+
+1. **A held reply is owed** (`Transcript.held`, with the post count when it was held). While nothing is posted after it, a try that passes or ends quietly posts it as the answer, a try that writes nothing answers with it instead of a nudge to answer, and a failure posts it first (not for an agent held, paused, archived or with no AI). A later turn that acted and wrote nothing still closes with its own line, and a stop still never posts it.
+2. **A run that may pass shows no words until it acts** (`mayStillPass`, the delta publisher's `hold`): no text and no typing until it calls a tool other than `pass`, posts, or a person writes into it. The apps show it thinking, and its answer arrives whole. A `pass` step line never carries the words before it.
+3. **A task's own conversation is addressed to its agent** (`ownTask` in `replyPolicyFor`, ADR 0145): a person's message there that the router gives the task's agent can't be passed on, like a router follow-up. Another agent brought in there may still pass.
+4. **Follow-ups there come**: `personCanPost` takes a task's reader as one who can post in its conversation, as posting itself does.
+5. **A stop of one's own message before its run started keeps it** (ADR 0128): the agent reads that the message still stands (`refs.own`), instead of "Don't pick it up again". A stop asked of the right hand in words, of someone else's message or of a run already working keeps the old line.
+6. **One notice per answer** (ADR 0095): notes to one colleague that its one reply closed come back as one `consult_reply` notice with each of their asks, still with one wake.

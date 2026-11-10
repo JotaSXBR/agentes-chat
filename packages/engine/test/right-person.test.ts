@@ -8,6 +8,7 @@ import {
   insertMessageWithRuns,
   type JudgeQuestion,
   mentionNeedsNothing,
+  openDm,
   postPersonMessage,
   releaseHeldInbox,
   sendNote,
@@ -116,6 +117,43 @@ describe("an agent that handed work on names who has it without waking it again"
     const question = judge.calls[0]?.questions.nothing_0 as JudgeQuestion & { criteria: Record<string, string> };
     expect(question.criteria.true).toContain("a recap or status report written for the people");
     expect(question.criteria.false).toContain("work pointed at it that nobody handed it yet");
+  });
+});
+
+describe("a person's message in a DM answers only that DM's own agent", () => {
+  test("another agent's card placed in the DM stays open, and the DM's agent gets the message", async () => {
+    f = await setup({
+      askAgent: true,
+      askUser: true,
+      judge: (kind) => (kind === "note_reply" ? 0.9 : undefined),
+      reply: (req) => {
+        const last = lastText(req);
+        if (isFor(req, "ops")) {
+          if (last.includes("The person answered")) return { chunks: ["Painel pronto."] };
+          return askUser("Qual período o painel deve cobrir?");
+        }
+        if (last.includes("tool_result")) return { chunks: ["Passei para o ops."] };
+        if (last.includes("painel"))
+          return {
+            chunks: [],
+            toolUses: [{ name: "tell_agent", input: { agent: "@ops", message: "Monte o painel de vendas." } }],
+          };
+        return { chunks: ["Combinado, fico com os relatórios."] };
+      },
+    });
+    const ops = await addAgent("ops", "Ops", "Operações");
+    const dm = await openDm(f.db, f.owner.id, f.org.id, { agentId: f.agent.id });
+    await say(dm.id, "monte o painel de vendas com o ops");
+    await drainOutbox(f.db, f.handlers);
+    const [card] = await questions();
+    expect(card).toMatchObject({ agentId: ops.id, channelId: dm.id, status: "open" });
+
+    const unrelated = await say(dm.id, "a partir de hoje você cuida dos relatórios semanais");
+    await drainOutbox(f.db, f.handlers);
+    expect((await questions())[0]?.status).toBe("open");
+    const answeredBy = (await runs()).filter((r) => r.triggerMessageId === unrelated.id);
+    expect(answeredBy.map((r) => r.agentId)).toEqual([f.agent.id]);
+    expect((await runs()).find((r) => r.id === card?.runId)?.status).toBe("waiting_input");
   });
 });
 

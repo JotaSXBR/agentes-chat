@@ -9,6 +9,7 @@ import {
   STATUS_ICON,
   tasksStartOf,
 } from "@agenteschat/client/lib/issues";
+import { can } from "@agenteschat/client/lib/permissions";
 import { Button, Chip, EventPill, Icon } from "@agenteschat/ui";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
@@ -137,11 +138,13 @@ function TasksStart({
   const toast = useToast();
   if (start.state === "started")
     return (
-      <span className="ac-iconline iw-chips__go small muted">
+      <span className="ac-iconline small muted">
         <Icon name="check" size={14} />
         {t("chat.tasksStart.started", { name: dir.memberById.get(start.by)?.name ?? t("chat.tasksStart.someone") })}
       </span>
     );
+  // The go is for who may post (the server refuses anyone else).
+  if (!can(org, "post")) return null;
   return (
     <Button
       size="sm"

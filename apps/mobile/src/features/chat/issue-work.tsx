@@ -6,8 +6,10 @@ import {
   issueTakenOf,
   tasksStartOf,
 } from "@agenteschat/client/lib/issues";
+import { can } from "@agenteschat/client/lib/permissions";
 import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, View } from "react-native";
+import { useOrg } from "@/providers/org";
 import { Button, EventPill, Icon, Text } from "@/ui";
 import { router } from "@/ui/navigation";
 import { StateChip } from "../issues/parts";
@@ -122,7 +124,8 @@ function TasksStart({
   const { t } = useTranslation();
   const c = useColors();
   const dir = useDirectory();
-  const startTasks = useStartTasks(useOrgId());
+  const { orgId, org } = useOrg();
+  const startTasks = useStartTasks(orgId);
   const failed = useFailed();
   if (start.state === "started")
     return (
@@ -135,6 +138,8 @@ function TasksStart({
         </Text>
       </View>
     );
+  // As on the web: the go is for who may post.
+  if (!can(org, "post")) return null;
   return (
     <Button
       variant="primary"

@@ -71,9 +71,17 @@ describe("the judge is asked what must not wake", () => {
     const [call] = judge.calls;
     expect(call?.kind).toBe("mention_needs_nothing");
     const q = call?.questions.nothing_0 as Extract<JudgeQuestion, { type: "noul" }>;
-    for (const nothing of ["thanks", "'ok'", "sign-off", "'as @agent said'", "'talk to @agent'", "waits for a person"])
+    for (const nothing of [
+      "thanks",
+      "'ok'",
+      "sign-off",
+      "'as @agent said'",
+      "'talk to @agent'",
+      "a recap",
+      "waits for a person",
+    ])
       expect(q.criteria.true).toContain(nothing);
-    for (const needs of ["a handover", "a summary", "a verdict", "a question", "'I'll ask @agent to review it'"])
+    for (const needs of ["a handover", "results", "a verdict", "a question", "'I'll ask @agent to review it'"])
       expect(q.criteria.false).toContain(needs);
   });
 });

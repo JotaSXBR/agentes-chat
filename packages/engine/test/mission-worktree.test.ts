@@ -152,6 +152,9 @@ async function started(ensure: EnsurePlan[] = [], options: { start?: boolean } =
     title: "Mobile app",
     repoDir: "app",
   });
+  // Its main session would think with Claude Code, which this runner plays no turns of, and the API never stands in
+  // for a computer brain (ADR 0032's addendum of 2026-11-09): here it thinks with the test's model.
+  await f.db.update(schema.missions).set({ brain: "model" }).where(eq(schema.missions.id, view.id));
   await drainOutbox(f.db, f.handlers);
   r.state.ensure.push(...ensure);
   if (options.start !== false) await startMission(f.missionDeps, f.owner.id, f.org.id, view.id);
@@ -240,7 +243,8 @@ describe("one worktree per mission (ADR 0044)", () => {
     expect(mission.worktreeState).toBe("ready");
     expect(mission.worktreePath).toBe(path);
     expect((await told()).some((t) => t.startsWith(START_PROMPT))).toBe(true);
-    // The main session's brain works in the mission's folder now.
+    // The main session's brain works in the mission's folder now: its own, from its executor, a computer brain.
+    await f.db.update(schema.missions).set({ brain: null }).where(eq(schema.missions.id, view.id));
     const turn = await missionTurnFor(f.db, {
       orgId: f.org.id,
       agentId: f.agent.id,

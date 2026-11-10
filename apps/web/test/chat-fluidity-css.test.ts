@@ -20,8 +20,10 @@ test("the activity bar's room opens and closes in a glide (from 0, not from auto
 });
 
 test("an image alone on a message keeps its loading size too (the lone tile's height: auto doesn't win)", () => {
-  // The lone picture's `height: auto` would collapse it until the picture decodes: it needs its own loading rule.
-  const lone = ".artifact-cards > .artifact-tile[data-media]:only-child .artifact-tile__picture[data-loading]";
+  // The lone picture's `height: auto` would collapse it until the picture decodes: one whose size its ref doesn't say
+  // needs its own loading rule (a known size holds its box with a canvas of that size).
+  const lone =
+    ".artifact-cards > .artifact-tile[data-media]:only-child .artifact-tile__picture[data-loading]:not([data-sized])";
   expect(last(topLevel(css), lone, "height")).toBe("180px");
   expect(last(topLevel(css), lone, "width")).toBe("240px");
 });

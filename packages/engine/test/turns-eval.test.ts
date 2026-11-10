@@ -108,7 +108,7 @@ const size = (r: ModelRequest) =>
  * other words tightened for it), 45,632 with the rule that people can't see or use the agent's tools (ADR 0147
  * addendum), 46,423 before the trust batch, 46,831 with it: the tasks an agent gives that wait for a person's go,
  * a question's default and a routine's creator asked first, with the system text 71 shorter (ADR 0147 addendum
- * 2026-11-10), 46,631 once `ask_user` said its default once, and 46,676 with feedback named in the rarer tools' label
+ * 2026-11-10), 46,631 once `ask_user` said its default once, and 46,675 with feedback named in the rarer tools' label
  * (ADR 0160 §11); the ceiling leaves a little room. Where each workspace gets its own computer, `workspaceComputerText`
  * adds its 447 to that.
  */

@@ -44,7 +44,7 @@ describe("a form that is sending turns its controls off", () => {
   test("answering a choice card leaves the keyboard to the composer, which `Locked` would close", () => {
     const card = read("features/blocks/ChoicesCard.tsx");
     expect(card).not.toContain("<Locked");
-    expect(card).toContain("disabled={answer.isPending}");
+    expect(card).toContain("disabled={answer.isPending || !ready}");
     expect(card).toContain("answer.isPending && styles.sending");
   });
 

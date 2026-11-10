@@ -584,10 +584,10 @@ describe("a receipt never adds a line to its row", () => {
     // The turn's last bubble ends on the cut corner, on the side it stands.
     expect(row).toContain("solo: { borderBottomRightRadius: BUBBLE_CUT }");
     expect(row).toContain("end: { borderTopRightRadius: 6, borderBottomRightRadius: BUBBLE_CUT }");
-    // Someone else's: absolutely placed in room their name line always keeps, so a mark that comes wraps nothing.
-    expect(row).toContain('m.author.type === "person" && !inBubble && !compact && styles.whoRoom');
-    expect(row).toMatch(/whoMark: \{ position: "absolute"/);
-    expect(num(row, /whoRoom: \{ paddingRight: (\d+) \}/)).toBeGreaterThanOrEqual(16 + 4 + 12);
+    // Someone else's: next to the time, in a slot their name line keeps with or without one, as wide as a face, so a
+    // mark that comes wraps nothing.
+    expect(row).toContain('{!inBubble && !compact && m.author.type === "person" ? (');
+    expect(num(row, /whoMark: \{ width: (\d+)/)).toBeGreaterThanOrEqual(16);
     // No line of its own: neither the steer line under my bubble nor "Visto" under the list's row.
     expect(row).not.toContain("SteerLine");
     expect(src("features/chat/ChatScreen.tsx")).not.toContain('t("mobile.chat.seen")');

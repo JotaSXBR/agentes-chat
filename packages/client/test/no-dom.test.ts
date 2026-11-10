@@ -30,8 +30,9 @@ const FORBIDDEN: [RegExp, string][] = [
   [/\bimport\.meta\.env\b/, "import.meta.env (Vite)"],
   [/\b(HTMLElement|HTMLCanvasElement|HTMLInputElement|FileList|MutationObserver|IntersectionObserver)\b/, "DOM type"],
   [/from\s+["']react-dom(\/[^"']*)?["']/, "react-dom"],
-  // `@agenteschat/ui/markdown` is the one shared parser, plain TypeScript the engine reads too (held below).
-  [/from\s+["']@agenteschat\/ui(?!\/markdown["'])(\/[^"']*)?["']/, "@agenteschat/ui"],
+  // `@agenteschat/ui/markdown` (the one shared parser) and `@agenteschat/ui/plan-state` (a plan meter's numbers) are
+  // plain TypeScript the other apps read too (held below).
+  [/from\s+["']@agenteschat\/ui(?!\/(?:markdown|plan-state)["'])(\/[^"']*)?["']/, "@agenteschat/ui"],
   [/from\s+["']@tanstack\/react-router["']/, "@tanstack/react-router (web routing)"],
   [/from\s+["']react-i18next["']/, "react-i18next (each app sets up i18n)"],
   [/from\s+["']@\//, "the web app's @/ alias"],
@@ -58,6 +59,12 @@ describe("@agenteschat/client stays platform-neutral", () => {
     const source = code(readFileSync(join(SRC, "..", "..", "ui", "src", "markdown.ts"), "utf8"));
     expect(FORBIDDEN.filter(([re]) => re.test(source)).map(([, what]) => what)).toEqual([]);
     expect([...source.matchAll(/from\s+["']([^"']+)["']/g)].map((m) => m[1])).toEqual(["@agenteschat/i18n/everyone"]);
+  });
+
+  test("the plan meter's numbers it shares with @agenteschat/ui hold to the same rules, with no imports", () => {
+    const source = code(readFileSync(join(SRC, "..", "..", "ui", "src", "plan-state.ts"), "utf8"));
+    expect(FORBIDDEN.filter(([re]) => re.test(source)).map(([, what]) => what)).toEqual([]);
+    expect([...source.matchAll(/from\s+["']([^"']+)["']/g)]).toEqual([]);
   });
 
   test("no .tsx: shared code builds elements without JSX", () => {

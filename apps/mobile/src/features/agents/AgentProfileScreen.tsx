@@ -70,8 +70,10 @@ import { LetMeTalkButton } from "../chat/ReachLines";
 import { AgentComputerButton, AgentComputerPicture } from "../computer/AgentComputerRow";
 import { ConnectorIcon } from "../connectors/ConnectorIcon";
 import { chatHref } from "../links/logic";
+import { mayCreate } from "../new/logic";
 import { UsageQueueSheet } from "../queue/UsageQueueSheet";
 import { openRightHandSettings, RightHandMine } from "../right-hand/SettingsScreen";
+import { AgentRoutines } from "../routines/RoutinesScreen";
 import { useConnectedById } from "../settings/hooks";
 import { agentBadgeInset } from "../shared/Face";
 import { useColors, useDirectory, useMeId, useNow, useOrgId, useWhen } from "../shared/hooks";
@@ -124,16 +126,16 @@ const AREA_ICON: Record<string, IconName> = {
   desktop: "laptop",
 };
 
-/** The profile's views: what it is on and did for you, what it can reach, what it knows. */
-type ProfileTab = "today" | "access" | "memory";
+/** The profile's views: what it is on and did for you, what it can reach, what it knows, what it does by itself. */
+type ProfileTab = "today" | "access" | "memory" | "routines";
 
 /**
  * An agent's profile as a teammate: its sky and living body (its presence on the badge), its name and one plain line
- * of what it does, Chat (and its computer beside it), then three views on the grouped gray. Today: what waits on you,
+ * of what it does, Chat (and its computer beside it), then four views on the grouped gray. Today: what waits on you,
  * what it is on now, what it did for you and its month in one row. Access: what it thinks with, what it can use (apps,
  * areas and mailboxes in one list), what it runs without asking and who answers for it. Memory: what it knows about
- * you and how it works (tap to correct or forget, for its owner and admins). Someone it doesn't answer sees only what
- * it is on now.
+ * you and how it works (tap to correct or forget, for its owner and admins). Routines, ahead of those two as on the
+ * web: what it does by itself, and Nova rotina for it. Someone it doesn't answer sees only what it is on now.
  */
 export function AgentProfileScreen({ id }: { id: string }) {
   const { t } = useTranslation();
@@ -783,18 +785,28 @@ function Profile({ id }: { id: string }) {
               <Segmented
                 items={[
                   { key: "today", label: t("common.today") },
+                  { key: "routines", label: t("agentPage.tabs.routines") },
                   { key: "access", label: t("agentPage.fields.levels") },
                   { key: "memory", label: t("agentPage.tabs.memory") },
                 ]}
                 value={tab}
                 onChange={(k) => setTab(k as ProfileTab)}
-                wide
+                // Four views, each as wide as its words, so "Aujourd'hui" or "Gedächtnis" never breaks mid-word.
+                wide="fit"
               />
             </View>
             {/* A view picked fades in; the one the profile opens on just shows. */}
             <LayoutAnimationConfig skipEntering>
               <Animated.View key={tab} entering={reduced ? undefined : TAB_IN} style={styles.page}>
-                {tab === "today" ? todayView : tab === "access" ? accessView : memoryView}
+                {tab === "today" ? (
+                  todayView
+                ) : tab === "access" ? (
+                  accessView
+                ) : tab === "memory" ? (
+                  memoryView
+                ) : (
+                  <AgentRoutines agentId={id} mayNew={mayCreate(org, "routine", { ownsAgent: mine })} />
+                )}
               </Animated.View>
             </LayoutAnimationConfig>
           </>
@@ -1107,7 +1119,8 @@ export function MemoryFix({
 const TAB_IN = FadeIn.duration(160);
 
 /** A saved tab, or Hoje. */
-const profileTabOf = (v: string | null): ProfileTab => (v === "access" || v === "memory" ? v : "today");
+const profileTabOf = (v: string | null): ProfileTab =>
+  v === "access" || v === "memory" || v === "routines" ? v : "today";
 
 /** How long the face holds its smile when the profile opens. */
 const HELLO_MS = 900;

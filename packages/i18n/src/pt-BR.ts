@@ -4694,6 +4694,7 @@ export const ptBR = {
     tabs: {
       overview: "Visão geral",
       instructions: "Instruções",
+      routines: "Rotinas",
       access: "Ferramentas e acesso",
       memory: "Memória",
       files: "Arquivos",

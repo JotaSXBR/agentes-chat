@@ -16,7 +16,7 @@ import {
   type Saved,
 } from "@/lib/agent-edit";
 import { ADA_ID, createFakeApi, ENG_ID, GENERAL_ID, NOW, ORG_ID, seedState } from "./fake-api";
-import { renderApp, screen, settle } from "./render";
+import { renderApp, screen, settle, showIn } from "./render";
 
 afterEach(() => cleanup());
 
@@ -72,14 +72,14 @@ const updates = (state: ReturnType<typeof seedState>) =>
   state.calls.filter((c) => c.method === "agents.update").map((c) => c.args[2]);
 
 describe("agent page: tabs and the URL", () => {
-  test("four tabs and More; the chosen one goes to ?tab=; a link opens a tab; the memory tab counts the proposal", async () => {
+  test("its tabs (its routines and tools among them) and More; the chosen one goes to ?tab=; a link opens a tab; the memory tab counts the proposal", async () => {
     const { router } = await go();
     const tabs = screen().getByRole("tablist", { name: "Seções da Ada" });
     expect(
       within(tabs)
         .getAllByRole("tab")
         .map((t) => t.textContent),
-    ).toEqual(["Visão geral", "Instruções", "Memória1", "Atividade"]);
+    ).toEqual(["Visão geral", "Instruções", "Rotinas", "Ferramentas e acesso", "Memória1", "Atividade"]);
     // The rest are in More; the one opened from there shows in the bar, and More keeps the others.
     await openTab(/^Uso/);
     expect(router.state.location.search).toMatchObject({ tab: "usage" });
@@ -87,7 +87,7 @@ describe("agent page: tabs and the URL", () => {
       within(screen().getByRole("tablist", { name: "Seções da Ada" }))
         .getAllByRole("tab")
         .map((t) => t.textContent),
-    ).toEqual(["Visão geral", "Instruções", "Memória1", "Atividade", "Uso"]);
+    ).toEqual(["Visão geral", "Instruções", "Rotinas", "Ferramentas e acesso", "Memória1", "Atividade", "Uso"]);
     await act(async () =>
       fireEvent.pointerDown(
         within(screen().getByRole("tablist", { name: "Seções da Ada" })).getByRole("button", { name: /^Mais/ }),
@@ -99,7 +99,7 @@ describe("agent page: tabs and the URL", () => {
       within(screen().getByRole("menu", { name: "Mais" }))
         .getAllByRole("menuitem")
         .map((m) => m.textContent),
-    ).toEqual(["Ferramentas e acesso", "Arquivos", "Configurações"]);
+    ).toEqual(["Arquivos", "Configurações"]);
     await act(async () => fireEvent.keyDown(screen().getByRole("menu", { name: "Mais" }), { key: "Escape" }));
     await settle(2);
     expect(screen().getByRole("heading", { level: 1, name: "Ada" })).toBeTruthy();
@@ -142,6 +142,79 @@ describe("agent page: tabs and the URL", () => {
     expect(screen().getByRole("heading", { level: 1 }).textContent).toBe("Ada");
     expect(hero.querySelector(".agp-handle")?.textContent).toContain("@ada");
     expect(work.textContent).toContain("Pela API");
+  });
+});
+
+describe("agent page: its routines", () => {
+  test("Rotinas lists its routines as Rotinas does: one opens in place, its switch pauses it, Nova rotina starts one for it", async () => {
+    const { state } = await go("?tab=routines");
+    const panel = screen().getByRole("tabpanel");
+    // Only Ada's, on the air first, then paused.
+    expect(
+      within(panel)
+        .getAllByRole("article")
+        .map((a) => a.getAttribute("aria-label")),
+    ).toEqual(["Revisar PR aberto", "Relatório mensal de reviews"]);
+    expect(
+      within(panel)
+        .getAllByRole("heading", { level: 2 })
+        .map((h) => h.textContent),
+    ).toEqual(["No ar1", "Pausadas1"]);
+    await click(within(panel).getByRole("switch", { name: "Ativa: Revisar PR aberto" }));
+    expect(state.calls.filter((c) => c.method === "routines.setActive").map((c) => c.args.at(-1))).toEqual([false]);
+    // Its details open over the page, which stays on the tab.
+    await click(within(panel).getByRole("button", { name: "Relatório mensal de reviews" }));
+    expect(screen().getByRole("dialog", { name: "Relatório mensal de reviews" })).toBeTruthy();
+    await act(async () => fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" }));
+    await settle(2);
+    expect(screen().queryByRole("dialog", { name: "Relatório mensal de reviews" })).toBeNull();
+    // Nova rotina, by the first group's heading: the form opens with Ada picked.
+    await click(within(panel).getByRole("button", { name: "Nova rotina" }));
+    const form = screen().getByRole("dialog", { name: "Nova rotina" });
+    expect(within(form).getByRole("combobox", { name: "Agente" }).textContent).toContain("Ada");
+  });
+
+  test("worst case: a long name, a one-off that ran, and the tab row in German and Russian", async () => {
+    const api = createFakeApi(seedState());
+    const made = [
+      {
+        name: "Conferir as notas fiscais dos fornecedores internacionais e lançar no ERP",
+        trigger: { type: "event", event: "github.pr_opened" },
+      },
+      {
+        name: "Lembrar a Aleksandra Wiśniewska-Kowalczyk da reunião de fechamento",
+        trigger: { type: "once", at: new Date(NOW.getTime() - 86_400_000).toISOString() },
+      },
+    ] as const;
+    for (const r of made) {
+      const routine = await api.routines.create(ORG_ID, {
+        agentId: ADA_ID,
+        prompt: "Faça o que o nome diz.",
+        target: { type: "dm" },
+        ...r,
+      });
+      if (r.trigger.type === "once") await api.routines.setActive(ORG_ID, routine.id, false);
+    }
+    const { services } = await renderApp(`/org/${ORG_ID}/agents/${ADA_ID}?tab=routines`, { api });
+    await settle(8);
+    const panel = screen().getByRole("tabpanel");
+    expect(within(panel).getByRole("article", { name: made[0].name })).toBeTruthy();
+    // The one-off that ran waits folded under Concluídos.
+    expect(within(panel).getByRole("button", { name: "Concluídos (1)" })).toBeTruthy();
+    for (const lang of ["de", "ru"] as const) await showIn(services, lang);
+    expect(screen().getByRole("tablist").textContent).toContain("Регулярные задачи");
+  });
+
+  test("an agent with no routines: the first step, for who may make one, and asking the agent itself", async () => {
+    await renderApp(`/org/${ORG_ID}/agents/${ADA_ID}?tab=routines`, {
+      api: createFakeApi(seedState(), { seed: false }),
+    });
+    await settle(8);
+    const panel = screen().getByRole("tabpanel");
+    expect(within(panel).queryByRole("article")).toBeNull();
+    expect(within(panel).getByText("Deixe o trabalho repetido com os agentes")).toBeTruthy();
+    expect(within(panel).getByRole("button", { name: "Nova rotina" })).toBeTruthy();
+    expect(within(panel).getByRole("button", { name: "Peça à Ada" })).toBeTruthy();
   });
 });
 

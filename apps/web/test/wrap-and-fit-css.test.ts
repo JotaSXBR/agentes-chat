@@ -59,6 +59,25 @@ test("a text field of several lines in a settings row keeps its rows: the row's 
   expect(squeezed).toEqual([]);
 });
 
+test('on the narrowest phone a routine\'s switch and its "…" get a line of their own, under when it runs', () => {
+  const narrow = atRule(css, "@media (max-width: 359px)");
+  // Its row and column as written, or as the build folds the two into `grid-area`.
+  const cell = (selector: string) => {
+    const area = last(narrow, selector, "grid-area")?.replace(/\s+/g, "").split("/");
+    const row = area?.[0] ?? last(narrow, selector, "grid-row");
+    const column = area
+      ? area
+          .slice(1)
+          .filter((_, i) => i !== 1)
+          .join("/")
+      : last(narrow, selector, "grid-column");
+    return { row: row?.replace(/\s+/g, ""), column: column?.replace(/\s+/g, "") };
+  };
+  expect(last(narrow, ".routine-row", "grid-template-columns")?.replace(/\s+/g, "")).toBe("36pxminmax(0,1fr)");
+  expect(cell(".routine-row__when").column).toBe("2");
+  expect(cell(".routine-row__actions")).toEqual({ row: "3", column: "2" });
+});
+
 test("what a row says wraps instead of losing its end to an ellipsis", () => {
   for (const selector of [
     ".routine-row__when-text b",

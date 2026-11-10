@@ -206,12 +206,18 @@ export function MenuOverlayItem({
         </span>
         {description && <span className="ac-menu__desc">{description}</span>}
       </span>
-      <span className="ac-menu__hint">
-        {hint}
-        <Kbd className="ac-mo__kbd" aria-hidden="true">
-          {shortcut ?? ""}
-        </Kbd>
-      </span>
+      {/* Only a shortcut gets its key: an empty one would hold its room after the hint ("Você está aqui"), which would
+          then end further from the row's edge than the row's start is from the other. */}
+      {(hint || shortcut) && (
+        <span className="ac-menu__hint">
+          {hint}
+          {shortcut && (
+            <Kbd className="ac-mo__kbd" aria-hidden="true">
+              {shortcut}
+            </Kbd>
+          )}
+        </span>
+      )}
     </button>
   );
 }

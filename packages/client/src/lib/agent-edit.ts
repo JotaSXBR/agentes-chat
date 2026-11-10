@@ -11,6 +11,7 @@ import { readBudget } from "./new-agent";
 export const AGENT_TABS = [
   "overview",
   "instructions",
+  "routines",
   "access",
   "memory",
   "files",

@@ -1,4 +1,5 @@
 import type {
+  Agent,
   Routine,
   RoutineEvent,
   RoutineHookCall,
@@ -122,7 +123,7 @@ import {
 } from "@agenteschat/ui";
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { TFunction } from "i18next";
-import { type CSSProperties, type ReactNode, useDeferredValue, useEffect, useMemo, useState } from "react";
+import { type CSSProperties, type ReactNode, useDeferredValue, useEffect, useId, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FoldedBody } from "@/chat/FoldedBody";
 import { AgentAvatar, AgentSpinner } from "@/components/AgentAvatar";
@@ -306,7 +307,6 @@ export function RoutinesPage() {
   const [creating, setCreating] = useState(false);
   // The routine whose details are open, in the URL (`?open=…`).
   const [openId, setOpenId] = useOpenParam();
-  const [showDone, setShowDone] = useState(false);
   const [status, setStatus] = useState<"all" | "active" | "paused" | "event">("all");
   const [q, setQ] = useState("");
   const list = routines.data ?? [];
@@ -340,8 +340,12 @@ export function RoutinesPage() {
   const live = current.filter((r) => byStatus(r) && !isPaused(r));
   const paused = current.filter((r) => byStatus(r) && isPaused(r));
   const open = list.find((r) => r.id === openId) ?? null;
-  const toggleOpen = (id: string) => setOpenId(openId === id ? null : id);
   const filtered = agents.length > 0 || query.length > 0 || status !== "all";
+  const clearFilters = () => {
+    setAgents([]);
+    setQ("");
+    setStatus("all");
+  };
   // "N" opens "Nova rotina" (not while typing).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -354,24 +358,6 @@ export function RoutinesPage() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
-  const group = (title: string, rows: Routine[]) =>
-    rows.length > 0 && (
-      <section className="routines-group" aria-label={title}>
-        <GroupHeading title={title} count={rows.length} />
-        <div className="routines-list">
-          {rows.map((r) => (
-            <RoutineRow
-              key={r.id}
-              routine={r}
-              now={now}
-              selected={r.id === openId}
-              onOpen={() => toggleOpen(r.id)}
-              onEdit={() => setOpenId(r.id)}
-            />
-          ))}
-        </div>
-      </section>
-    );
   return (
     <div className="page routines">
       <div className="routines__main">
@@ -413,7 +399,7 @@ export function RoutinesPage() {
         )}
         {list.length > 0 && (
           <>
-            <RoutineHorizon routines={list} now={now} onOpen={toggleOpen} />
+            <RoutineHorizon routines={list} now={now} onOpen={(id) => setOpenId(openId === id ? null : id)} />
             <Toolbar
               search={
                 <SearchField
@@ -439,11 +425,7 @@ export function RoutinesPage() {
               <FilterBar
                 label={t("routines.filters")}
                 clearText={copy.clearAll}
-                onClear={() => {
-                  setAgents([]);
-                  setQ("");
-                  setStatus("all");
-                }}
+                onClear={clearFilters}
                 filters={[
                   {
                     key: "agents",
@@ -465,65 +447,174 @@ export function RoutinesPage() {
                 ]}
               />
             </Toolbar>
-            <div className="ac-groups">
-              {group(status === "paused" ? t("routines.groupPaused") : t("routines.groupLive"), live)}
-              {group(t("routines.groupPaused"), paused)}
-              {live.length === 0 && paused.length === 0 && filtered && (
-                <EmptyState
-                  size="panel"
-                  actions={
-                    <Button
-                      onClick={() => {
-                        setAgents([]);
-                        setQ("");
-                        setStatus("all");
-                      }}
-                    >
-                      {copy.clearAll}
-                    </Button>
-                  }
-                >
-                  {t("routines.noResults")}
-                </EmptyState>
-              )}
-              {done.length > 0 && status === "all" && (
-                <section className="routines-group" aria-label={t("routines.done")}>
-                  <GroupHeading
-                    title={
-                      <button
-                        type="button"
-                        aria-expanded={showDone}
-                        aria-controls="routines-done-list"
-                        onClick={() => setShowDone((v) => !v)}
-                      >
-                        <Icon name={showDone ? "chevronDown" : "chevronRight"} size={14} />
-                        {t("routines.doneToggle", { count: done.length })}
-                      </button>
-                    }
-                  />
-                  {showDone && (
-                    <div id="routines-done-list" className="routines-list">
-                      {done.map((r) => (
-                        <RoutineRow
-                          key={r.id}
-                          routine={r}
-                          now={now}
-                          selected={r.id === openId}
-                          onOpen={() => toggleOpen(r.id)}
-                          onEdit={() => setOpenId(r.id)}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </section>
-              )}
-            </div>
+            <RoutineList
+              live={live}
+              paused={paused}
+              done={status === "all" ? done : []}
+              liveTitle={status === "paused" ? t("routines.groupPaused") : t("routines.groupLive")}
+              now={now}
+              openId={openId}
+              onOpenId={setOpenId}
+              empty={
+                filtered && (
+                  <EmptyState size="panel" actions={<Button onClick={clearFilters}>{copy.clearAll}</Button>}>
+                    {t("routines.noResults")}
+                  </EmptyState>
+                )
+              }
+            />
           </>
         )}
       </div>
       {open && <RoutineDetails routine={open} now={now} onClose={() => setOpenId(null)} />}
       <RoutineDialog open={creating} onClose={() => setCreating(false)} onWebhook={(r) => setOpenId(r.id)} />
     </div>
+  );
+}
+
+/**
+ * Routines in their groups: on the air, paused, and the one-offs that already ran folded under "Concluídos". `empty`
+ * stands where the two groups would be when neither has one; `aside` ends the first heading drawn (Nova rotina).
+ */
+function RoutineList({
+  live,
+  paused,
+  done,
+  liveTitle,
+  now,
+  openId,
+  onOpenId,
+  empty,
+  aside,
+}: {
+  live: Routine[];
+  paused: Routine[];
+  done: Routine[];
+  liveTitle: string;
+  now: Date;
+  openId: string | null;
+  onOpenId: (id: string | null) => void;
+  empty?: ReactNode;
+  aside?: ReactNode;
+}) {
+  const { t } = useTranslation();
+  const [showDone, setShowDone] = useState(false);
+  const doneList = useId();
+  const first = live.length > 0 ? "live" : paused.length > 0 ? "paused" : "done";
+  const rows = (list: Routine[]) =>
+    list.map((r) => (
+      <RoutineRow
+        key={r.id}
+        routine={r}
+        now={now}
+        selected={r.id === openId}
+        onOpen={() => onOpenId(openId === r.id ? null : r.id)}
+        onEdit={() => onOpenId(r.id)}
+      />
+    ));
+  const group = (kind: "live" | "paused", title: string, list: Routine[]) =>
+    list.length > 0 && (
+      <section className="routines-group" aria-label={title}>
+        <GroupHeading title={title} count={list.length} aside={first === kind ? aside : undefined} />
+        <div className="routines-list">{rows(list)}</div>
+      </section>
+    );
+  return (
+    <div className="ac-groups">
+      {group("live", liveTitle, live)}
+      {group("paused", t("routines.groupPaused"), paused)}
+      {live.length === 0 && paused.length === 0 && empty}
+      {done.length > 0 && (
+        <section className="routines-group" aria-label={t("routines.done")}>
+          <GroupHeading
+            aside={first === "done" ? aside : undefined}
+            title={
+              <button
+                type="button"
+                aria-expanded={showDone}
+                aria-controls={doneList}
+                onClick={() => setShowDone((v) => !v)}
+              >
+                <Icon name={showDone ? "chevronDown" : "chevronRight"} size={14} />
+                {t("routines.doneToggle", { count: done.length })}
+              </button>
+            }
+          />
+          {showDone && (
+            <div id={doneList} className="routines-list">
+              {rows(done)}
+            </div>
+          )}
+        </section>
+      )}
+    </div>
+  );
+}
+
+/**
+ * An agent's routines on its page (its Rotinas tab), as Rotinas lists them: a click opens one, its switch pauses it,
+ * and Nova rotina starts one for this agent, for who may create one for it.
+ */
+export function AgentRoutines({ agent }: { agent: Agent }) {
+  const { t } = useTranslation();
+  const { org, me } = useOrg();
+  const routines = useRoutines(org.id);
+  const now = useNow();
+  const [creating, setCreating] = useState(false);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const list = (routines.data ?? []).filter((r) => r.agentId === agent.id);
+  const current = list.filter((r) => !isDoneOnce(r));
+  // The server's rule: who manages routines, or the agent's owner.
+  const mayCreate = can(org, "manage_routines") || agent.ownerUserId === me.user.id;
+  const open = list.find((r) => r.id === openId) ?? null;
+  const create = (size?: "sm") => (
+    <Button variant="primary" size={size} icon="plus" onClick={() => setCreating(true)}>
+      {t("routines.new")}
+    </Button>
+  );
+  return (
+    <>
+      {routines.isLoading && <LoadingCards count={2} />}
+      {routines.isError && !routines.data && (
+        <ErrorState error={routines.error} onRetry={() => void routines.refetch()} />
+      )}
+      {routines.isSuccess && list.length === 0 && (
+        <EmptyState
+          size="panel"
+          agent={lookOf(agent) ?? true}
+          title={t(mayCreate ? "routines.emptyTitle" : "routines.emptyViewerTitle")}
+          actions={
+            mayCreate && (
+              <>
+                {create()}
+                <AskAgentButton agent={agent} draft={t("routines.askText")} />
+              </>
+            )
+          }
+        >
+          {t(mayCreate ? "routines.empty" : "routines.emptyViewer")}
+        </EmptyState>
+      )}
+      {list.length > 0 && (
+        <RoutineList
+          live={current.filter((r) => !isPaused(r))}
+          paused={current.filter(isPaused)}
+          done={list.filter(isDoneOnce)}
+          liveTitle={t("routines.groupLive")}
+          now={now}
+          openId={openId}
+          onOpenId={setOpenId}
+          aside={mayCreate && create("sm")}
+        />
+      )}
+      {open && <RoutineDetails routine={open} now={now} onClose={() => setOpenId(null)} />}
+      <RoutineDialog
+        open={creating}
+        agentId={agent.id}
+        onClose={() => setCreating(false)}
+        onWebhook={(r) => setOpenId(r.id)}
+      />
+    </>
   );
 }
 
@@ -2244,12 +2335,15 @@ function RoutineDialog({
   part,
   onSaved,
   onWebhook,
+  agentId: forAgent,
 }: {
   open: boolean;
   onClose: () => void;
   routine?: Routine;
   /** With `routine`: only this part of the form. */
   part?: RoutinePart;
+  /** A new routine's agent to start with (Nova rotina on an agent's page). */
+  agentId?: string;
   /** A part was saved. */
   onSaved?: () => void;
   /** It just became a webhook routine (made, or switched to one): its address is on its page, which opens. */
@@ -2268,7 +2362,7 @@ function RoutineDialog({
   const myZone = actors.dir.memberById.get(me.user.id)?.timezone || browserTimezone() || "America/Sao_Paulo";
   const savedZone = zoneOf(routine);
   const wasUtc = editing && routine !== undefined && !isEventDriven(routine) && isUtc(savedZone);
-  const [agentId, setAgentId] = useState(routine?.agentId ?? "");
+  const [agentId, setAgentId] = useState(routine?.agentId ?? forAgent ?? "");
   const [target, setTarget] = useState(targetChoice(routine?.target));
   const [prompt, setPrompt] = useState(routine?.prompt ?? "");
   const [name, setName] = useState(routine?.name ?? "");

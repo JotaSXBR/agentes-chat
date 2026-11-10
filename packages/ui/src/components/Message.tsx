@@ -7,6 +7,7 @@ import {
   useContext,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
@@ -88,7 +89,11 @@ export interface MessageProps extends Omit<HTMLAttributes<HTMLElement>, "childre
   nameColor?: readonly [string, string];
   /** Lays the body out as a column (approval cards). */
   stacked?: boolean;
-  /** Muted, at the end of the first line, the header's or a grouped message's text's (e.g. the receipt check). */
+  /**
+   * A small muted mark (e.g. the receipt's check): right after the time on the name's line, or on a grouped message at
+   * the end of its words' last line, as chat apps put a message's ticks. Phrasing content (spans, buttons): there it
+   * ends a paragraph.
+   */
   aside?: ReactNode;
   /** A line under the message, the same on a first and a grouped one (e.g. a receipt with words). */
   foot?: ReactNode;
@@ -128,6 +133,23 @@ function menuPlace(row: HTMLElement, tap: { x: number; y: number }) {
   return { x: box.left, y: top, width: box.width, height: bottom - top };
 }
 
+/** What starts a line of its own: words after it would stand under it, not beside its last line. */
+const BLOCK = "div, p, pre, table, ul, ol, li, blockquote, details, hr, figure, section, aside, h1, h2, h3, h4, h5, h6";
+
+/**
+ * Where a grouped message's mark goes: the box whose last line ends its last words (a paragraph, a list's last item, a
+ * quote, plain words), down through the blocks that only hold others. None when its words end in a block of their
+ * own (code, a table) or it has none (a picture).
+ */
+function lastLineOf(body: HTMLElement | null): HTMLElement | null {
+  const texts = body?.querySelectorAll<HTMLElement>(":scope > .ac-msg__text");
+  let at: Element | null | undefined = texts?.[texts.length - 1];
+  while (at?.lastElementChild?.matches(".md, ul, ol, li, blockquote, p")) at = at.lastElementChild;
+  if (!(at instanceof HTMLElement)) return null;
+  const last = [...at.childNodes].reverse().find((n) => n.nodeType !== Node.TEXT_NODE || n.textContent?.trim());
+  return last && !(last instanceof Element && last.matches(BLOCK)) ? at : null;
+}
+
 /** A chat line: avatar, author, time and text. Agents are told apart by the avatar only. */
 export function Message({
   avatar,
@@ -155,6 +177,7 @@ export function Message({
   onClick,
   onFocus,
   onBlur,
+  onPointerEnter,
   style,
   ...rest
 }: MessageProps) {
@@ -171,6 +194,47 @@ export function Message({
   const [menuAt, setMenuAt] = useState<ReturnType<typeof menuPlace>>(null);
   const menuOpen = Boolean(menu) && menuAt !== null;
   const footed = mine && !inBubble && (run === "end" || run === "solo");
+  // A grouped message has no name's line: its mark ends its words' last line, in a slot of its own there (undefined
+  // until looked for; null where its words end in no line, which keeps it at the first line's end).
+  const ends = Boolean(aside) && grouped && !mine && !inBubble;
+  const body = useRef<HTMLDivElement>(null);
+  const slot = useRef<HTMLSpanElement | null>(null);
+  const [end, setEnd] = useState<HTMLSpanElement | null | undefined>(undefined);
+  // After every render: the words may have re-rendered their last line without the slot.
+  useLayoutEffect(() => {
+    if (!ends) {
+      slot.current?.remove();
+      return;
+    }
+    const line = lastLineOf(body.current);
+    if (!line) {
+      slot.current?.remove();
+      setEnd(null);
+      return;
+    }
+    if (!slot.current) {
+      slot.current = document.createElement("span");
+      slot.current.className = "ac-msg__aside ac-msg__aside--end";
+    }
+    if (line.lastChild !== slot.current) line.append(slot.current);
+    setEnd(slot.current);
+  });
+  useEffect(() => () => slot.current?.remove(), []);
+  // The bar stays clear of a mark under it (a one-line message whose end reaches its place): it stands left of it.
+  const clearBar = () => {
+    const el = row.current;
+    const bar = el?.querySelector<HTMLElement>(":scope > .ac-msg__body > .ac-msg__actions");
+    if (!el || !bar) return;
+    bar.style.removeProperty("right");
+    const r = el.getBoundingClientRect();
+    const b = bar.getBoundingClientRect();
+    for (const mark of el.querySelectorAll<HTMLElement>(".ac-msg__aside:not(:empty)")) {
+      const m = mark.getBoundingClientRect();
+      // Shown, the bar has its middle on the row's top edge. A mark it would touch puts it 8px to the mark's left.
+      if (m.top < r.top + b.height / 2 && m.right + 4 > b.left && m.left < b.right)
+        bar.style.right = `${r.right - m.left + 8}px`;
+    }
+  };
   // The keys' focus in my row: its head is hidden, so its time's details open under its bubble.
   const [keysIn, setKeysIn] = useState(false);
   useEffect(() => {
@@ -219,6 +283,7 @@ export function Message({
       <span className="ac-msg__author">{author}</span>
       {/* In a bubble the time is its last thing; my row's hidden head still reads it. */}
       {(!inBubble || mine) && clock}
+      {aside && !grouped && !mine && !inBubble && <span className="ac-msg__aside">{aside}</span>}
       {note && (
         // Focusable so the reason is reachable without a mouse.
         <Tip
@@ -239,7 +304,6 @@ export function Message({
       {/* A run's earlier row of mine has no line under it once sent, so none while it sends: its hidden head
           reads the state out. */}
       {!footed && !inBubble && statusNode}
-      {aside && !grouped && !mine && !inBubble && <span className="ac-msg__aside">{aside}</span>}
     </div>
   );
   // What a bubble ends with: the time, what the row is doing (a send in flight stands in the time's place, as under
@@ -297,6 +361,11 @@ export function Message({
       onFocus={(e) => {
         onFocus?.(e);
         if (footed) setKeysIn(movesByKeys());
+        clearBar();
+      }}
+      onPointerEnter={(e) => {
+        onPointerEnter?.(e);
+        clearBar();
       }}
       onBlur={(e) => {
         onBlur?.(e);
@@ -327,11 +396,14 @@ export function Message({
       ) : (
         <span className="ac-msg__avatar">{avatar}</span>
       )}
-      <div className="ac-msg__body" style={stacked ? { display: "flex", flexDirection: "column" } : undefined}>
+      <div
+        ref={body}
+        className="ac-msg__body"
+        style={stacked ? { display: "flex", flexDirection: "column" } : undefined}
+      >
         {(!inBubble || mine) && head}
-        {aside && grouped && !mine && !inBubble && (
-          <span className="ac-msg__aside ac-msg__aside--floating">{aside}</span>
-        )}
+        {ends && end === null && <span className="ac-msg__aside ac-msg__aside--floating">{aside}</span>}
+        {ends && end && createPortal(aside, end)}
         <BubbleContext.Provider
           value={
             inBubble || (quote && quoteInBubble)

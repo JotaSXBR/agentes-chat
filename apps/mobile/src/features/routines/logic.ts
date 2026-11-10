@@ -405,10 +405,13 @@ export interface RoutineDraft {
   report: RoutineReport;
 }
 
-/** The form for a new routine, or starting from one (`zone`: the zone the form shows). */
-export function draftOf(r: Routine | undefined, zone: string, today = new Date()): RoutineDraft {
+/**
+ * The form for a new routine, or starting from one (`zone`: the zone the form shows). `forAgent`: a new one's agent
+ * (Nova rotina on an agent's profile); a routine keeps its own.
+ */
+export function draftOf(r: Routine | undefined, zone: string, today = new Date(), forAgent = ""): RoutineDraft {
   return {
-    agentId: r?.agentId ?? "",
+    agentId: r?.agentId ?? forAgent,
     target: targetChoice(r?.target),
     prompt: r?.prompt ?? "",
     name: r?.name ?? "",

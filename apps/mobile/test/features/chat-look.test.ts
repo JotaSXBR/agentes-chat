@@ -199,8 +199,17 @@ describe("Tamanho do texto on the phone", () => {
     const row = await read("chat/MessageRow.tsx");
     expect(row).toContain("const timeSize = look.text ? chatTimeOf(look.text) : undefined;");
     expect(row).toContain("maxFontSizeMultiplier={timeSize ? CHAT_TEXT_MAX_SCALE : undefined}");
-    // A receipt at the end of someone else's name line centres on that line, as tall as the name's at every step.
+    // A receipt right after the time on someone else's name line (never at its far end) centres on that line, as
+    // tall as the name's at every step.
     expect(row).toContain("[styles.whoMark, nameSize ? { height: nameSize.lineHeight } : null]");
+    const who = row.slice(row.indexOf("const who = (inBubble: boolean)"), row.indexOf("const pinLine ="));
+    const time = who.indexOf("{when.time(m.createdAt)}");
+    expect(time).toBeGreaterThan(0);
+    // After the time and what marks the message itself (a pin), the last thing on the line, in its own flow.
+    expect(who.indexOf("styles.whoMark")).toBeGreaterThan(who.indexOf("<PinMark />"));
+    expect(who.indexOf("<PinMark />")).toBeGreaterThan(time);
+    expect(row).not.toMatch(/whoMark: \{[^}]*position: "absolute"/);
+    expect(row).not.toContain("whoRoom");
     const live = await read("chat/LiveRows.tsx");
     expect(live).toContain("style={look.text ? chatTimeOf(look.text) : undefined}");
     expect(live.match(/maxFontSizeMultiplier=\{look\.text \? CHAT_TEXT_MAX_SCALE : undefined\}/g)).toHaveLength(2);

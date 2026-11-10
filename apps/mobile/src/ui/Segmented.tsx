@@ -12,8 +12,9 @@ import { CHROME_MAX_SCALE, weights } from "./type-scale";
 
 export type SegmentedProps = FiltersProps & {
   /**
-   * As wide as its box, the segments sharing it evenly (a screen's views, as an agent's Hoje · Acesso · Memória).
-   * `fit`: each as wide as its words first, so long labels stay on one line (a form's choice).
+   * As wide as its box, the segments sharing it evenly (a screen's views). `fit`: each as wide as its words first, so
+   * long labels stay on one line (a form's choice, an agent's Hoje · Acesso · Memória · Rotinas); words wider than the
+   * box together share it, the longest wrapping, never past its edge.
    */
   wide?: boolean | "fit";
 };
@@ -81,7 +82,7 @@ export function Segmented({ items, value, onChange, wide = false }: SegmentedPro
               );
             }}
             style={({ pressed }) => [
-              wide === "fit" ? { flexGrow: 1 } : wide ? { flex: 1 } : null,
+              wide === "fit" ? { flexGrow: 1, flexShrink: 1 } : wide ? { flex: 1 } : null,
               pressed && !on ? { opacity: 0.6 } : null,
             ]}
             // The slop gives a segment the 44 a finger needs, past the track's own padding.

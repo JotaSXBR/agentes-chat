@@ -117,7 +117,7 @@ export function AgentHero({
                 {t("agent.viewMemory")}
               </MenuItem>
               {viewer !== "member" && (
-                <MenuItem icon="routines" onSelect={() => goTo("activity")}>
+                <MenuItem icon="waiting" onSelect={() => goTo("activity")}>
                   {t("agent.viewRuns")}
                 </MenuItem>
               )}

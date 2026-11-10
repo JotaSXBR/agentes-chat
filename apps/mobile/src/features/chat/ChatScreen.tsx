@@ -1751,8 +1751,8 @@ function Chat({
   const hasPins = useMemo(() => pinsIn(pinsData ?? [], threadId).length > 0, [pinsData, threadId]);
 
   // ── Agents' receipts and "no AI" ──
-  // One receipt on screen (`receiptMessageId`): a mark beside my bubble, or at the end of the name line of someone
-  // else's turn; a line under the message only for what asks something of you.
+  // One receipt on screen (`receiptMessageId`): a mark beside my bubble, or next to the time on the name line of
+  // someone else's turn; a line under the message only for what asks something of you.
   const receiptId = useMemo(() => receiptMessageId(shownMessages, live.receipts), [shownMessages, live.receipts]);
   const receiptMine = Boolean(meId && shownMessages.find((m) => m.id === receiptId)?.author.id === meId);
   // Someone else's message sent into a task at work says nothing here (mine wears it: `ReceiptMark`).

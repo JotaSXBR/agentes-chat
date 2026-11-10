@@ -11191,6 +11191,9 @@
   "agentPage.tabs.instructions": {
     "value": "Instructions"
   },
+  "agentPage.tabs.routines": {
+    "value": "Routines"
+  },
   "agentPage.tabs.access": {
     "value": "Tools and access"
   },

@@ -186,8 +186,8 @@ export function markLabel(
 }
 
 /**
- * Where someone else's receipt mark goes: the end of the name line of the turn its message ends. A grouped row has
- * no name line, and its text runs to the edge.
+ * Where someone else's receipt mark goes: next to the time on the name line of the turn its message ends. A grouped
+ * row has no name line, and its text runs to the edge.
  */
 export function turnHeadId(
   rows: readonly { kind: string; message?: Message; grouped?: boolean }[],

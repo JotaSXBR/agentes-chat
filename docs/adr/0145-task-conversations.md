@@ -68,3 +68,25 @@ Migration `0215_task_conversations.sql` adds `task` to `channel_kind` and the tw
 ## Addendum (2026-11-06): who sees a task
 
 ADR 0151 replaces §2's "the workspace's, or of a channel they are in": a task may be limited to a list of people, and administrators always see it, so `taskReaderSql` reads `taskSeenSql`. A task tied to a DM or a private channel stays tied. "Mostrar para todos" is `setIssueAudience` with `everyone`, for anyone who sees the task.
+
+## Addendum (2026-11-10): agents take their tasks by themselves, one queue each
+
+### Context
+
+Making a task started its agent at once when the right hand made it (ADR 0137 §14), and nothing else ever started one: an assigned task waited until someone pressed "Pedir ao" or wrote to the agent, and a run that ended with its task unfinished left it there. One request for a list of tasks started an agent per task at once, all on one computer, and an agent assigned from outside saw only its own task, so it made the same tasks again. Elsewhere, agents sat free with many tasks to do while their work came through slower, throttled hand-offs.
+
+### Decision
+
+1. **Making a task starts nobody.** `create_issue` and `update_issue` from an agent attach the task to the agent's reply (`meta.tasks`, `held`), and the reply's one card ("Começar estas") gives the go for all of them (`startHeldTasks`, a `start_approved` event by whoever pressed it; anyone who reads the conversation and may post). A routine's run gets no card: its tasks wait for a person on the task. A run that only reacted still posts the card. The right hand may leave a task unassigned.
+2. **A queue per agent (`task-pump.ts`, job `tasks.pump`).** It takes only tasks a person gave it: the latest making, assignment, go or "Pedir ao" (`taskStarters`) is a person who still belongs to the workspace. Order: in-progress work nothing has worked on for 15 minutes (and no follow-up of its agent pending there), then reviews it hasn't done since the task entered review or reached it, then to-dos by priority, due date and board order. "Tarefas ao mesmo tempo" (default 2) minus its task runs `queued` or `running`: a run waiting on a person frees its place.
+3. **When it holds back.** The workspace not active, the agent archived or on hold, no AI to think with or its computer away, its computer with a line, a plan or budget wait, a person it may not work for. At most 3 automatic starts of a task a day and `AGENT_TASK_STARTS_PER_DAY` (200) in a workspace. A task its agent marked blocked (`update_issue` `blocked`) waits until a person writes in its conversation or asks for the work.
+4. **One start (`startTaskWork`)**, under the agent's lock, in the task's conversation: a person's "Pedir ao" is written as them; a start from the queue is a `task_start` notice written as the agent, naming the person (`refs.personId`). The authority walk and the stretch read that person, so their approvals, "Aprovar sempre" and the agent's merge list apply, and no routine's guard does. No hand-off note is written, so nothing expires as "never got to it".
+5. **When it runs**: on a person's assignment, a go, a block answered, the end of a task's run, and a minute's tick for workspaces with a task their agent may take now (`enqueueTaskPumps`, which reads the same rules in SQL). Each is one job per workspace and minute.
+6. **Switches**, on by default: the workspace's (`organization_settings.task_pump`) and each agent's (`autonomy_brakes.tasks`, `tasksAtOnce`). The board says "Na fila de Ada · 2º".
+7. **Where a task comes from.** Its brief and `get_issue` say who made it and when, the message it came from (quoted only from a public channel), its parent, and the other open tasks asked with it, by number and title. `create_issue` takes `parent` and refuses an open task the agent sees whose title says the same (`meaningKey`), naming it.
+
+### Consequences
+
+- Work a person assigns goes on overnight without anyone in the chat, two tasks at a time per agent, within the computer's room and the plan.
+- An agent held for long (no AI, its computer away) still gets a job each minute that starts nothing.
+- A workspace that parks tasks assigned to agents turns its switch off, or each agent's.

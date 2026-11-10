@@ -81,7 +81,7 @@ describe("chooseAutoModel", () => {
   });
 
   test("a question on the agent's own work, a correction or a complaint never gets the small tier or low effort", async () => {
-    for (const stance of ["questions", "corrects"]) {
+    for (const stance of ["questions", "chases", "corrects"]) {
       const judge = createFakeJudge((_kind, id) => (id === "tier" ? "small" : id === "effort" ? "low" : stance));
       expect(
         await chooseAutoModel(judge, {

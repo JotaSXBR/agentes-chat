@@ -112,8 +112,9 @@ export const choiceP = (answer: JudgeAnswer | undefined, option: string) =>
 
 /**
  * What a person's message (`key` in the state) does to the agent that reads it, asked beside a judgment's own
- * questions: an agent questioned on what it did answers and stops (`continuationVerdict`), and Automático never
- * answers that, a correction or a complaint on the small tier or with low effort (`chooseAutoModel`).
+ * questions: an agent questioned on what it did answers and stops (`continuationVerdict`), one chased for work it owes
+ * still does it, and Automático never answers either, a correction or a complaint on the small tier or with low effort
+ * (`chooseAutoModel`).
  */
 export const stanceQuestion = (key: string): JudgeQuestion => ({
   type: "choice",
@@ -121,6 +122,8 @@ export const stanceQuestion = (key: string): JudgeQuestion => ({
   criteria: {
     questions:
       "Asks the agent about itself or what it did (why, whether anyone asked for it, whether it uses, knows or saw something), or objects to it (stop, that's wrong, nobody asked), and asks for nothing new.",
+    chases:
+      "Asks after work it was asked for and hasn't delivered: whether it is done or why not ('did you…?', 'why didn't you…?', 'how come you don't have…?'). It still wants that work.",
     corrects: "Corrects or complains about what the agent did or said, and asks for something else instead.",
     asks: "Asks for work, information or a result, even worded as a question ('can you…?').",
     other: "Anything else: thanks, news, chat.",

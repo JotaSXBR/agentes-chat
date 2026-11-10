@@ -1097,6 +1097,8 @@ describe("the turn-end check holds the reply to what the person asked", () => {
     expect(await verdictWith("secret", "questions")).toBe("secret");
     expect(await verdictWith("continue", "corrects")).toBe("continue");
     expect(await verdictWith("untried", "asks")).toBe("untried");
+    // Chased for work it owes ("how come you don't have the link?"): it still goes and gets it.
+    expect(await verdictWith("untried", "chases")).toBe("untried");
   });
 
   test("the judge is asked what the message does only where a person wrote to it, and ask_choices counts as asking", async () => {
@@ -1120,6 +1122,36 @@ describe("the turn-end check holds the reply to what the person asked", () => {
     expect(criteria.untried).toContain(
       "A sign-in or an access the person's request (`ask`, else `request`) doesn't need is no way left to try.",
     );
+  });
+
+  test("going against what the person said is never done, and a 'why didn't you' asks for the work", async () => {
+    const refusal = "Não mando as duas planilhas assim: ficam longas demais.";
+    f = await setup({
+      judge: (kind, id, state) =>
+        kind === "follow_through" && id === "verdict" ? (state.reply === refusal ? "untried" : "done") : undefined,
+      reply: (_request, call) => ({ chunks: [call === 1 ? refusal : "Mandei as duas planilhas como estão."] }),
+    });
+    await ask(f, "@dev manda as duas planilhas como estão, sem resumir");
+    await drainOutbox(f.db, f.handlers);
+
+    const verdict = judgedCalls(f)[0]?.questions.verdict as { criteria: Record<string, string> } | undefined;
+    expect(verdict?.criteria.done).toContain(
+      "Going against what the person told it to do (`ask`, else `request`), with no safety, permission or other people's data reason, is not done: that is untried.",
+    );
+    expect(verdict?.criteria.untried).toContain(
+      "Also when it refused or went against what the person told it to do, with no safety, permission or other people's data reason",
+    );
+    expect(verdict?.criteria.done).toContain(
+      "a question about work it was asked for and hasn't delivered ('did you…?', 'why didn't you…?') asks for that work",
+    );
+    expect((stanceQuestion("request") as { criteria: Record<string, string> }).criteria.chases).toContain(
+      "Asks after work it was asked for and hasn't delivered",
+    );
+    // The refusal is held, never posted; the nudge quotes what was asked.
+    expect(lastUserText(f.provider.calls[1]?.request as ModelRequest)).toContain(
+      'Asked: "@dev manda as duas planilhas como estão, sem resumir".',
+    );
+    expect((await agentMessages(f)).map((m) => m.body)).toEqual(["Mandei as duas planilhas como estão."]);
   });
 
   test("the untried nudge quotes the ask, never reaches for an access it doesn't need, and says the reply was held", () => {

@@ -172,7 +172,9 @@ export async function chooseAutoModel(
     if (!picked || !MODEL_TIERS.includes(picked) || !pickedEffort || !AUTO_EFFORTS.includes(pickedEffort)) {
       return fallbackChoice("error");
     }
-    const aboutAgent = choiceP(answers.stance, "questions") + choiceP(answers.stance, "corrects") >= 0.5;
+    const aboutAgent =
+      choiceP(answers.stance, "questions") + choiceP(answers.stance, "chases") + choiceP(answers.stance, "corrects") >=
+      0.5;
     const tier = lifted(answers.tier, "small", aboutAgent) ? "medium" : picked;
     const effort = lifted(answers.effort, "low", aboutAgent) ? "medium" : pickedEffort;
     const tierP = percent(answers.tier?.probabilities?.[picked]);

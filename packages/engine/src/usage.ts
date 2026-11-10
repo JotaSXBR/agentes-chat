@@ -29,6 +29,23 @@ export async function orgDefaultAgentBudget(db: Database, orgId: string): Promis
   })) as number;
 }
 
+/**
+ * Whether agents' monthly budgets apply in this workspace: only where it pays for API use with a key of its own. Where
+ * every AI is a subscription and there is no API key, a budget would only count what plans or the server's key pay for,
+ * so there are no budget limits, notices or pause cards there (product decision). Cached with the workspace's keys.
+ */
+export async function budgetsApply(db: Database, orgId: string): Promise<boolean> {
+  return (await caches.credentials.getOrLoad(`${orgId}:default:budgets`, async () => {
+    const { providerCredentials } = schema;
+    const [key] = await db
+      .select({ id: providerCredentials.id })
+      .from(providerCredentials)
+      .where(and(eq(providerCredentials.orgId, orgId), isNull(providerCredentials.revokedAt)))
+      .limit(1);
+    return Boolean(key);
+  })) as boolean;
+}
+
 /** Every agent has a budget: its own, else the organization's default. */
 export async function effectiveAgentBudget(
   db: Database,

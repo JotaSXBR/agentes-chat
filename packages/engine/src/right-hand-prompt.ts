@@ -6,7 +6,7 @@ import type { WorkspaceComputer } from "./context";
 import { can, getMembership } from "./organizations";
 import type { RolePermission } from "./permissions";
 import { accountInUse, isBillingHold, orgStanding } from "./standing";
-import { agentBudgetsThisMonth } from "./usage";
+import { agentBudgetsThisMonth, budgetsApply } from "./usage";
 
 const {
   agents,
@@ -88,7 +88,11 @@ export async function rightHandPrompt(
       .orderBy(organizationMembers.createdAt)
       .limit(SNAPSHOT_MAX + 1),
     listChannels(db, personId, orgId),
-    agentBudgetsThisMonth(db, orgId),
+    // A workspace with no API key has no budgets: nothing to say about them.
+    budgetsApply(db, orgId).then(
+      (on): Promise<Awaited<ReturnType<typeof agentBudgetsThisMonth>>> =>
+        on ? agentBudgetsThisMonth(db, orgId) : Promise.resolve(new Map()),
+    ),
     db
       .select({ label: connectorConnections.label })
       .from(connectorConnections)

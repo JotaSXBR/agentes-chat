@@ -65,7 +65,8 @@ async function onPlan(fx: Fixture, agentId: string) {
 
 test("an agent whose monthly budget is spent is out of office until the next month", async () => {
   f = await setup();
-  expect((await statusOf(f, f.agent.id))?.presence).toBe("away");
+  // Just made: online, not out.
+  expect((await statusOf(f, f.agent.id))?.presence).toBe("online");
   await spendBudget(f, f.agent.id);
   const s = await statusOf(f, f.agent.id);
   expect(s?.presence).toBe("out");
@@ -86,7 +87,7 @@ test("a plan at its limit: out, though the workspace has a key (the API never st
   });
 
   clearPlanLimits();
-  expect((await statusOf(f, f.agent.id))?.presence).toBe("away");
+  expect((await statusOf(f, f.agent.id))?.presence).toBe("online");
 });
 
 test("out of office keeps the agent's own words, and a held agent still reads offline", async () => {

@@ -1,209 +1,38 @@
 import type { TFunction } from "i18next";
-import type { Agent, AgentSetupChecklist, AgentSetupStep, AudienceMode, ConnectorDef, SetupStep } from "../api/types";
-import type { Level } from "./access-levels";
-import { presetChannels, ROLE_DEFAULTS, ROLE_IDS, type RoleId } from "./new-agent";
+import type { Agent, AgentSetupChecklist, ConnectorDef, SetupStep } from "../api/types";
+import { ROLE_DEFAULTS, ROLE_IDS, type RoleId } from "./new-agent";
+import { providerLabel } from "./providers";
 
 /*
- * A new agent's setup checklist (ADR 0155 §2): the top of its chat, in its voice, lists what it still needs. The
- * server keeps the role it started from and the steps a person confirmed; a step is also done when the agent's data
- * says so (an AI that works, an app it may use, a channel it is in). These are the rules the apps share.
+ * The right hand's first run (ADR 0155 §6, ADR 0158): the one setup checklist, inside its greeting for the
+ * workspace's owners. Other agents have none: one that needs something asks for it in the conversation, when it does.
+ * The server keeps the rows skipped, and the ready-made role each agent started from. These are the rules the apps
+ * share.
  */
 
-export const SETUP_STEPS: readonly AgentSetupStep[] = ["ai", "apps", "where", "who", "how"];
-
-/** Only who manages agents changes its apps and how it works; its owner changes its AI, channels and audience. */
-const ADMIN_STEPS: ReadonlySet<AgentSetupStep> = new Set<AgentSetupStep>(["apps", "how"]);
-
-/** The ready-made role it started from, if the apps know it ("custom" is from scratch: none). */
+/** The ready-made role an agent started from, if the apps know it ("custom" is from scratch: none). */
 export const setupRole = (setup: AgentSetupChecklist | null | undefined): RoleId | null =>
   setup?.role && setup.role !== "custom" && (ROLE_IDS as readonly string[]).includes(setup.role)
     ? (setup.role as RoleId)
     : null;
 
-/**
- * The steps this person sees, in order: who manages agents, all of them; its owner, the ones they may change; anyone
- * else, none (the checklist is for who sets the agent up). An agent made before the checklist, or the right hand: none.
- */
-export function setupSteps(
-  agent: Pick<Agent, "setup" | "ownerUserId" | "builtin">,
-  viewer: { meId: string; admin: boolean },
-): AgentSetupStep[] {
-  if (!agent.setup || agent.builtin) return [];
-  if (viewer.admin) return [...SETUP_STEPS];
-  if (agent.ownerUserId !== viewer.meId) return [];
-  return SETUP_STEPS.filter((s) => !ADMIN_STEPS.has(s));
-}
-
-/** What the agent's data says, so a step done some other way (its page, a card) is done here too. */
-export interface SetupFacts {
-  /** Its AI works, or waits for its computer (not "no AI"). */
-  ai?: boolean;
-  /** It may use at least one app. */
-  apps?: boolean;
-  /** It is in at least one channel (DMs aside). */
-  where?: boolean;
-}
-
-/** The steps done: confirmed by a person, or done as its data says. */
-export function setupDone(setup: AgentSetupChecklist, facts: SetupFacts): Set<AgentSetupStep> {
-  const done = new Set<AgentSetupStep>(setup.done.filter((s): s is AgentSetupStep => SETUP_STEPS.includes(s as never)));
-  if (facts.ai) done.add("ai");
-  if (facts.apps) done.add("apps");
-  if (facts.where) done.add("where");
-  return done;
-}
-
-/** The first step not done yet (the one whose button is the primary one), or null. */
-export const nextStep = (steps: readonly AgentSetupStep[], done: ReadonlySet<AgentSetupStep>) =>
-  steps.find((s) => !done.has(s)) ?? null;
-
-/** The apps (catalog connector ids) its role suggests, at their levels; none for an agent from scratch. */
-export const suggestedLevels = (role: RoleId | null): Record<string, Level> => (role ? ROLE_DEFAULTS[role].levels : {});
-
-/**
- * The channels its role suggests among the ones given (by name); with none, the workspace's general channel, where
- * mentions reach it.
- */
-export function suggestedChannels<C extends { id: string; name: string }>(
-  role: RoleId | null,
-  channels: C[],
-): string[] {
-  const picked = role ? presetChannels(role, channels) : [];
-  if (picked.length > 0) return picked;
-  const general = channels.find((c) => c.name === "general" || c.name === "geral");
-  return general ? [general.id] : [];
-}
-
-/** How many first tasks a ready-made role suggests (`newAgent.roles.{id}.tasks.{a,b,c}`) and a blank one. */
-export const TASK_KEYS = ["a", "b", "c"] as const;
-export const BLANK_TASK_KEYS = ["a", "b"] as const;
-
-/** One line of instructions short enough to say back ("Você me pediu: …"): what an agent from scratch was asked. */
-export function askedLine(instructions: string): string | null {
-  const text = instructions.trim();
-  return text && !text.includes("\n") && text.length <= 200 ? text : null;
-}
-
-/** The keys of its first tasks: a ready-made role's three, or a blank agent's own two. */
-export const setupTaskKeys = (role: RoleId | null): string[] =>
-  role
-    ? TASK_KEYS.map((k) => `newAgent.roles.${role}.tasks.${k}`)
-    : BLANK_TASK_KEYS.map((k) => `agentSetup.tasks.${k}`);
-
-/** What a row says, from what the app read: names already joined in the person's language. */
-export interface SetupRowFacts {
-  org: string;
-  role: RoleId | null;
-  /** The apps it may use ("o Gmail e o Drive"), and the ones its role suggests; null when none. */
-  granted: string | null;
-  suggested: string | null;
-  /** The channels it is in ("#suporte e #geral"), and the first one its role suggests ("#suporte"); null when none. */
-  channels: string | null;
-  firstChannel: string | null;
-  audience: AudienceMode;
-  /** Its owner's first name when that isn't the person reading; null for them, or nobody. */
-  otherOwner: string | null;
-  /** It thinks with someone's plan (whose terms say who it may answer). */
-  onPlan: boolean;
-}
-
-/** One row of the checklist, in the agent's voice: what it says, a line under it while left, its button's word. */
+/** One row of the checklist: what it says, a line under it while left, its button's word. */
 export interface SetupRow {
   title: string;
   desc?: string;
   action: string;
 }
 
-/** A row's words (the web's dialog buttons and the phone's screens say the same). */
-export function setupRow(t: TFunction, step: AgentSetupStep, done: boolean, f: SetupRowFacts): SetupRow {
-  switch (step) {
-    case "ai":
-      return done
-        ? { title: t("agentSetup.ai.done"), action: t("agentSetup.switch") }
-        : { title: t("agentSetup.ai.todo"), desc: t("agentSetup.ai.todoDesc"), action: t("agentSetup.ai.action") };
-    case "apps":
-      if (done) {
-        return {
-          title: f.granted ? t("agentSetup.apps.done", { apps: f.granted }) : t("agentSetup.apps.doneNone"),
-          action: t("agentSetup.change"),
-        };
-      }
-      return f.suggested
-        ? {
-            title: t("agentSetup.apps.todo", { apps: f.suggested }),
-            desc: t("agentSetup.apps.todoDesc"),
-            action: t("agentSetup.apps.action"),
-          }
-        : {
-            title: t("agentSetup.apps.todoNone", { org: f.org }),
-            desc: t("agentSetup.apps.todoNoneDesc"),
-            action: t("agentSetup.choose"),
-          };
-    case "where":
-      if (done) {
-        return {
-          title: f.channels ? t("agentSetup.where.done", { channels: f.channels }) : t("agentSetup.where.doneNone"),
-          action: t("agentSetup.change"),
-        };
-      }
-      return f.firstChannel
-        ? {
-            title: t("agentSetup.where.todo", { channel: f.firstChannel }),
-            desc: t("agentSetup.where.todoDesc"),
-            action: t("agentSetup.where.action"),
-          }
-        : {
-            title: t("agentSetup.where.todoNone"),
-            desc: t("agentSetup.where.todoDesc"),
-            action: t("agentSetup.choose"),
-          };
-    case "who":
-      if (done) {
-        const title =
-          f.audience === "everyone"
-            ? t("agentSetup.who.doneEveryone", { org: f.org })
-            : f.audience === "owner"
-              ? f.otherOwner
-                ? t("agentSetup.who.doneOwner", { name: f.otherOwner })
-                : t("agentSetup.who.doneYou")
-              : t("agentSetup.who.donePeople");
-        return { title, action: t("agentSetup.change") };
-      }
-      return f.onPlan
-        ? {
-            title: t("agentSetup.who.todoPlan"),
-            desc: t("agentSetup.who.todoPlanDesc"),
-            action: t("agentSetup.choose"),
-          }
-        : {
-            title: t("agentSetup.who.todo", { org: f.org }),
-            desc: t("agentSetup.who.todoDesc"),
-            action: t("agentSetup.choose"),
-          };
-    case "how":
-      return done
-        ? { title: t("agentSetup.how.done"), action: t("agentSetup.see") }
-        : {
-            title: t("agentSetup.how.todo"),
-            desc: f.role
-              ? t("agentSetup.how.todoDesc", { role: t(`newAgent.roles.${f.role}.name`) })
-              : t("agentSetup.how.todoDescBlank"),
-            action: t("agentSetup.see"),
-          };
-  }
-}
-
-/* ---------- The right hand's first run (ADR 0155 §6) ---------- */
-
-/** Its rows, one order everywhere: AI after the team, because on the Cloud an AI opens only after the plan. */
-export const FIRST_RUN_STEPS = ["about", "team", "ai", "apps", "people"] as const satisfies readonly SetupStep[];
+/**
+ * Its rows, one order everywhere: what the onboarding's steps leave (they made the workspace, said what it does and
+ * made the team): an AI, apps, people.
+ */
+export const FIRST_RUN_STEPS = ["ai", "apps", "people"] as const satisfies readonly SetupStep[];
 export type FirstRunStep = (typeof FIRST_RUN_STEPS)[number];
 
-/** What may each row's button do for this person (`stepPermissions` in lib/home, plus `configure`). */
+/** What may each row's button do for this person (`stepPermissions` in lib/home). */
 export interface FirstRunPowers {
   owner: boolean;
-  configure: boolean;
-  createAgents: boolean;
   connectAi: boolean;
   pay: boolean;
   connectors: boolean;
@@ -218,8 +47,6 @@ export interface FirstRunPowers {
 export function firstRunSteps(agent: Pick<Agent, "setup" | "builtin">, may: FirstRunPowers): FirstRunStep[] {
   if (agent.builtin !== "right_hand" || !agent.setup || !may.owner) return [];
   const row: Record<FirstRunStep, boolean> = {
-    about: may.configure,
-    team: may.createAgents,
     ai: may.connectAi || may.pay,
     apps: may.connectors,
     people: may.invite,
@@ -229,59 +56,66 @@ export function firstRunSteps(agent: Pick<Agent, "setup" | "builtin">, may: Firs
 
 /** What the workspace's data says, read by the apps (mirror of the prompt's `cardOpen`, engine right-hand-prompt). */
 export interface FirstRunFacts {
-  /** The workspace's context isn't empty. */
-  context: boolean;
-  /** An agent besides the right hand exists. */
-  team: boolean;
   /** The right hand's AI is ready or waiting for its computer, and no billing hold. */
   ai: boolean;
   /** An app is connected. */
   apps: boolean;
-  /** More than one member. */
+  /** More than one member, or an invitation waiting for its answer. */
   people: boolean;
 }
 
 /** The rows done: from the data, or skipped ("Agora não", the only thing stored). */
 export function firstRunDone(setup: AgentSetupChecklist, facts: FirstRunFacts): Set<FirstRunStep> {
   const done = new Set<FirstRunStep>();
-  if (facts.context) done.add("about");
-  if (facts.team) done.add("team");
   if (facts.ai) done.add("ai");
   if (facts.apps || setup.done.includes("apps")) done.add("apps");
   if (facts.people || setup.done.includes("people")) done.add("people");
   return done;
 }
 
-/** How a row reads now: done; open; open with a team card waiting in the chat; or waiting for the plan. */
-export type FirstRunRowState = "done" | "open" | "card" | "plan" | "afterPlan";
+/**
+ * What the right hand's line of the moment follows: each row done, the people row twice, `invited` while its
+ * invitations only wait for an answer, then `people` once someone joined. Joining is what it celebrates; an
+ * invitation it only says is sent.
+ */
+export type FirstRunBeat = FirstRunStep | "invited";
 
-/** A row's state on a billing hold: the AI opens with the plan, apps and people after it; the rest as they are. */
-export function firstRunRowState(
+export const firstRunBeats = (done: readonly FirstRunStep[], f: { members: number; invited: number }): FirstRunBeat[] =>
+  done.map((s) => (s === "people" && f.members <= 1 && f.invited > 0 ? "invited" : s));
+
+/** The row a beat's line shows under. */
+export const beatRow = (beat: FirstRunBeat): FirstRunStep => (beat === "invited" ? "people" : beat);
+
+/** How a row reads now: done, open, or waiting for the plan (a billing hold: the hold's banner holds the plan). */
+export type FirstRunRowState = "done" | "open" | "afterPlan";
+
+export const firstRunRowState = (
   step: FirstRunStep,
-  s: { done: ReadonlySet<FirstRunStep>; held: boolean; teamCard: boolean },
-): FirstRunRowState {
-  if (s.done.has(step)) return "done";
-  if (s.held && step === "ai") return "plan";
-  if (s.held && (step === "apps" || step === "people")) return "afterPlan";
-  if (step === "team" && s.teamCard) return "card";
-  return "open";
-}
+  s: { done: ReadonlySet<FirstRunStep>; held: boolean },
+): FirstRunRowState => (s.done.has(step) ? "done" : s.held ? "afterPlan" : "open");
 
-/** The foot's asks wait for a team that can think: rows 2 and 3, and never on a hold. */
-export const firstRunAsks = (done: ReadonlySet<FirstRunStep>, held: boolean) =>
-  !held && done.has("team") && done.has("ai");
+/** The foot's asks wait for a team that can think: a team and an AI, never on a hold. */
+export const firstRunAsks = (done: ReadonlySet<FirstRunStep>, held: boolean, team: boolean) =>
+  !held && team && done.has("ai");
 
 /** What the rows say, from what the app read: names already joined in the person's language. */
 export interface FirstRunRowFacts {
   org: string;
-  /** Agents besides the right hand. */
-  agents: number;
   /** What the right hand thinks with ("Claude"), once it does. */
   label: string | null;
   /** The apps connected ("o Gmail e o Drive"); null when none. */
   apps: string | null;
   members: number;
+  /** Who was invited and hasn't answered yet ("João e Ana"); null when nobody. */
+  invited: string | null;
 }
+
+/**
+ * What the card names as the right hand's AI ("Penso com …"): a plan's line ("Sonnet pelo plano do Claude"), else the
+ * maker of the API it runs on ("Claude"), the workspace key's or its model's; null when unknown.
+ */
+export const firstRunAiLabel = (thinks: { text: string; kind: string }, maker: string | null | undefined) =>
+  thinks.kind !== "agent" ? thinks.text : maker ? providerLabel(maker) : null;
 
 /** One row's words: its title, a line under it while open, its button's word, and "Agora não" where a row skips. */
 export function firstRunRow(
@@ -294,24 +128,22 @@ export function firstRunRow(
   // Keys built from the row's id, so read through an untyped `t`.
   const t = tr as unknown as (key: string, o?: Record<string, unknown>) => string;
   const k = (key: string) => `agentSetup.firstRun.${step}.${key}`;
-  if (state === "plan")
-    return { title: t("agentSetup.firstRun.ai.plan"), action: t("agentSetup.firstRun.ai.planAction") };
   if (state === "afterPlan")
     return { title: t(k("todo"), { org: f.org }), desc: t("agentSetup.firstRun.afterPlan"), action: "" };
-  if (state === "card") return { title: t(k("todo")), desc: t("agentSetup.firstRun.team.card"), action: "" };
   if (state === "done") {
     switch (step) {
-      case "about":
-        return { title: t(k("done"), { org: f.org }), action: t("agentSetup.change") };
-      case "team":
-        return { title: t(k("done"), { count: f.agents }), action: t("agentSetup.see") };
       case "ai":
         return { title: f.label ? t(k("done"), { label: f.label }) : t(k("doneAny")), action: t("agentSetup.switch") };
       case "apps":
         return { title: f.apps ? t(k("done"), { apps: f.apps }) : t(k("doneNone")), action: t("agentSetup.change") };
       case "people":
         return {
-          title: skipped && f.members <= 1 ? t(k("doneNone")) : t(k("done"), { count: f.members }),
+          title:
+            f.members <= 1 && f.invited
+              ? t(k("invited"), { names: f.invited })
+              : skipped && f.members <= 1
+                ? t(k("doneNone"))
+                : t(k("done"), { count: f.members }),
           action: t(k("action")),
         };
     }

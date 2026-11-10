@@ -671,6 +671,42 @@ export const en = {
       left_other: "{{count}} steps left",
       done: "All set",
     },
+    /** The blue rail with Lodi (ADR 0158): its steps, Lodi's line on each, the preview and the plan step. */
+    flow: {
+      steps: {
+        name: "Workspace name",
+        business: "What you do",
+        team: "Your team",
+        plan: "Turn the team on",
+      },
+      stepOf: "Step {{n}} of {{total}}",
+      lodi: {
+        name: "Hi, {{first}}. I'm {{name}}. I'll put the team together with you in about two minutes.",
+        business: "With that I'll know who to bring onto the team.",
+        team: "This is the team I'd put together. You can change anything later.",
+        plan: "After the plan, all that's left is connecting an AI. I'll show you where.",
+      },
+      preview: {
+        label: "Your workspace, as you answer",
+        /** The workspace's name in the preview until one is typed. */
+        name: "Your workspace",
+        ghost: "Your team shows up here",
+      },
+      team: { title: "Your team" },
+      plan: {
+        title: "Turn your team on",
+        lead: "Your team is ready. With the plan and an AI, it starts today.",
+        asleep: "Asleep until the plan",
+        price: "<b>{{name}} plan</b> · {{price}} a month",
+        name: "<b>{{name}} plan</b>",
+        generic: "An agentes.chat plan",
+        cancel: "Cancel anytime",
+        cta: "Turn the team on",
+        all: "See all plans",
+        skip: "Go to the workspace without it",
+      },
+      account: "Your account",
+    },
     railValue: {
       context: "Written",
       skipped: "Skipped",
@@ -1288,19 +1324,18 @@ export const en = {
     },
   },
   webPushAsk: {
-    title: "Know when an agent needs you",
-    text: "They work while you do something else. Even with the tab closed, we'll tell you when they need your ok, finish what you asked or call you.",
     on: "Turn on notifications",
     later: "Not now",
     done: "Notifications on in this browser",
     failed: "Couldn't turn on notifications. Try again in Settings\u00a0›\u00a0Notifications.",
     someone: "An agent",
-    examples: "Examples of notifications",
     now: "now",
-    minutes: "{{n}} min",
-    approval: { title: "{{name}} needs your ok", body: "Can I go ahead with what you asked?" },
     finished: { title: "{{name}} is done", body: "What you asked for is ready." },
-    mention: { title: "{{name}} called you", body: "Can you take a look when you have a minute?" },
+    /** Under an agent's first answer to the person (ADR 0071): never on arrival. */
+    inline: {
+      title: "Want to know the moment {{name}} answers?",
+      why: "Even with the tab closed. Change it anytime in Settings\u00a0›\u00a0Notifications.",
+    },
   },
   shell: {
     otherChannels: "Other channels",
@@ -1960,8 +1995,6 @@ export const en = {
     label: "your right hand",
     /** The one-time dot on its row until it is first opened. */
     newDot: "New",
-    /** Its role, wherever an agent's role shows. */
-    role: "Workspace assistant",
     /** In its DM's header, after the label. */
     actsAsYou: "acts with your permissions",
     /** After "Message to {{name}} ·" in its DM's composer. */
@@ -1983,9 +2016,6 @@ export const en = {
         question: "Want to build the team with me?",
         action: "Build the team",
         message: "Help me build the team.",
-      },
-      next: {
-        firstTask: "Give {{name}} a first task",
       },
       /** Asked once, until the person picks (ADR 0147): how every agent here talks to them. */
       style: {
@@ -5190,105 +5220,12 @@ export const en = {
       app: "Sent through an AI app",
     },
   },
-  /** A new agent's setup checklist at the top of its chat, in its voice (ADR 0155 §2). */
+  /** The setup card's words: the right hand's first run (ADR 0155 §6), the one setup checklist. */
   agentSetup: {
-    greeting: "Hi, {{person}}. I'm {{name}}.",
-    greetingRole: "Hi, {{person}}. I'm {{name}}, the new {{role}} agent.",
-    /** What an agent from scratch was asked, said back. */
-    asked: "You asked me: “{{what}}”.",
-    lead: "To get started, help me with a few quick things:",
-    title: "To get started",
-    ready: "I'm ready.",
-    /** On its page. */
-    titleProfile: "For {{name}} to get started",
     count: "{{done}} of {{total}}",
     change: "Change",
     switch: "Switch",
-    choose: "Choose",
-    see: "See",
     suggested: "Suggested",
-    ai: {
-      todo: "Connect an AI",
-      todoDesc: "So I can think.",
-      action: "Connect",
-      done: "I have an AI to think with",
-    },
-    apps: {
-      todo: "Read {{apps}}",
-      todoDesc: "Reading never changes anything.",
-      action: "Allow",
-      todoNone: "Use the apps of {{org}}",
-      todoNoneDesc: "The ones you already connected, like Gmail and Drive.",
-      done: "I use {{apps}}",
-      doneNone: "No apps for now",
-      title: "What {{name}} can use",
-      desc: "Reading never changes anything. Sending, deleting and paying ask for your approval.",
-      ok_one: "Allow {{count}} app",
-      ok_other: "Allow {{count}} apps",
-      okNone: "Continue without apps",
-      empty: "{{org}} has no apps connected yet.",
-      connectOther: "Connect another app",
-    },
-    where: {
-      todo: "Join {{channel}}",
-      todoDesc: "I answer when someone calls me there.",
-      action: "Join",
-      todoNone: "Join a channel",
-      done: "I'm in {{channels}}",
-      doneNone: "I stay in our direct chat",
-      title: "Where {{name}} works",
-      desc: "It answers when someone calls it there. The direct chat always counts.",
-      okNone: "Direct chat only",
-      okOne: "Join {{channel}}",
-      ok_one: "Join {{count}} channel",
-      ok_other: "Join {{count}} channels",
-    },
-    who: {
-      todo: "Talk to everyone at {{org}}",
-      todoDesc: "Anyone can call me.",
-      todoPlan: "Talk only to you",
-      todoPlanDesc: "Your plan is personal.",
-      doneEveryone: "I talk to everyone at {{org}}",
-      doneYou: "I talk only to you",
-      doneOwner: "I talk only to {{name}}",
-      donePeople: "I talk to the people you picked",
-      title: "Who talks to {{name}}",
-      people: "People and roles",
-      add: "Choose people",
-      addMore: "Add someone else",
-      /** Who it answers in "Only {{owner}} talks to…", when that's the person reading. */
-      you: "you",
-      youCap: "You",
-      ownerHelp: "Gets its approval requests and alerts.",
-    },
-    how: {
-      todo: "See how I work",
-      todoDesc: "I start from the {{role}} instructions.",
-      todoDescBlank: "I start from what you wrote.",
-      done: "I work your way",
-      title: "How {{name}} works",
-      desc: "Write as you would to someone new on the team.",
-      instructions: "Instructions",
-      budget: "Monthly limit",
-      budgetHelp: "We let you know at 80%. At the limit, it pauses and tells you.",
-      more: "More options",
-      model: "Model",
-    },
-    /** Its line once a step is done. */
-    say: {
-      ai: "Now I can think.",
-      apps: "Done, I can use the apps now.",
-      where: "I'll keep an eye on it there.",
-      who: "Got it, I know who to talk to.",
-      how: "Got it, I know how you want me to work.",
-    },
-    tasksLead: "We can start already. Ask me something:",
-    tasksAllDone: "All set. Ask me something:",
-    /** First tasks of an agent from scratch (a ready-made one has its role's). */
-    tasks: {
-      a: "What can you do for me?",
-      b: "Where do we start?",
-    },
     /**
      * The right hand's first run (ADR 0155 §6): its checklist card for the workspace's owners, one row per thing to set
      * up, read done from the data; `{{org}}`: the workspace.
@@ -5300,23 +5237,10 @@ export const en = {
       /** Apps and people on a billing hold: no button, they open with the plan. */
       afterPlan: "Opens with the plan.",
       about: {
-        todo: "Tell me what {{org}} does.",
-        todoDesc: "Every agent reads this.",
-        action: "Tell",
-        done: "I know what {{org}} does",
         title: "What does {{org}} do?",
         desc: "Every agent reads this. You can change it anytime.",
         line: "In one sentence",
         optional: "Optional. Without one, the type you picked counts.",
-      },
-      team: {
-        todo: "Build the team.",
-        todoDesc: "A template for your business, you can change everything later.",
-        action: "See the team",
-        done_one: "{{count}} agent on the team",
-        done_other: "{{count}} agents on the team",
-        /** While a team card the right hand proposed waits in the chat. */
-        card: "Continue on the card below",
       },
       ai: {
         todo: "Connect an AI.",
@@ -5324,8 +5248,6 @@ export const en = {
         action: "Connect",
         done: "I think with {{label}}",
         doneAny: "I think with an AI now",
-        plan: "Opens with the agentes.chat plan.",
-        planAction: "See agentes.chat plans",
       },
       apps: {
         todo: "Connect your work apps.",
@@ -5345,14 +5267,19 @@ export const en = {
         done_one: "{{count}} person here",
         done_other: "{{count}} people here",
         doneNone: "Just you for now",
+        /** Invited, not in yet: the row is done, saying who. */
+        invited: "Invited {{names}} · waiting",
+        email: "name@company.com",
+        send: "Send",
+        more: "More options",
       },
-      /** Its line for a moment once a row is done. */
+      /** Its line for a moment once a row is done (a skip says nothing). */
       say: {
-        about: "Noted. Every agent reads this.",
-        team: "The team is here.",
         ai: "Now the team thinks.",
         apps: "Done, I can read the apps now.",
         people: "Good to have more people here.",
+        /** An invitation sent, nobody in yet: it says it went out, and celebrates nothing. */
+        invited: "Invite sent.",
       },
       /** Once the team can think: what the person may ask next. `fit` and `who` are sent to the right hand as written. */
       asks: {
@@ -5412,11 +5339,6 @@ export const en = {
         desc: "Codes, reviews PRs and investigates bugs.",
         instructions:
           "Investigates first: reads the code and the related tasks and errors before answering, and comes back with what it found and a concrete PR proposal with a test.\nWorks in branches and opens small PRs. For big changes, opens the PR as a draft and explains the plan there.\nNever merges alone: asks a person for review.",
-        tasks: {
-          a: "What's the most frequent error right now?",
-          b: "Review the latest open PR",
-          c: "Pick up the oldest task in the backlog",
-        },
       },
       ops: {
         name: "Ops",
@@ -5424,11 +5346,6 @@ export const en = {
         desc: "Watches errors, queues and deploys.",
         instructions:
           "Follows errors and deploys and writes incident reports.\nWhen an alert fires, investigates first (errors, logs, recent deploys) and posts in the channel what it found: since when, how big, the likely cause and the next step.\nRollback and deploy only with approval.",
-        tasks: {
-          a: "Anything odd since the last deploy?",
-          b: "Summarize today's errors",
-          c: "What changed in the latest release?",
-        },
       },
       qa: {
         name: "QA",
@@ -5436,11 +5353,6 @@ export const en = {
         desc: "Tests flows and reproduces reported bugs.",
         instructions:
           "Reproduces every reported bug before opening a task. Writes clear steps and attaches evidence.\nIf it can't reproduce, first checks the errors, recent changes and related tasks. Asks for the environment and version only if they aren't there.\nPrioritizes what blocks customers.",
-        tasks: {
-          a: "Reproduce the latest reported bug",
-          b: "Which bugs have no steps?",
-          c: "Any new error since the deploy?",
-        },
       },
       pm: {
         name: "PM",
@@ -5448,7 +5360,6 @@ export const en = {
         desc: "Organizes tasks and summaries.",
         instructions:
           "Looks things up first (tasks, threads, wiki, feedback) and only asks what's left.\nOrganizes tasks, summarizes long discussions and keeps the roadmap up to date.",
-        tasks: { a: "Summarize what the team did this week", b: "Which tasks are stuck?", c: "Update the roadmap" },
       },
       support: {
         name: "Support",
@@ -5456,11 +5367,6 @@ export const en = {
         desc: "Answers customers and hands off what needs a person.",
         instructions:
           "Before answering, looks up the customer's history, past conversations and the help center, and comes back with a ready reply and where it came from.\nIf it's a product problem, opens a task with the steps and tells the team. Never promises a date or a fix that doesn't exist.\nMessages to customers, refunds and discounts only with approval.",
-        tasks: {
-          a: "Which customers have waited longest for an answer?",
-          b: "Summarize this week's complaints",
-          c: "Draft a reply to the latest customer email",
-        },
       },
       sales: {
         name: "Sales",
@@ -5468,11 +5374,6 @@ export const en = {
         desc: "Prepares proposals and follows up with leads.",
         instructions:
           "Before talking to anyone, researches the company, the history with it and what was already agreed, and comes back with a summary and the next step.\nKeeps the list of leads up to date and reminds the team of what's stalled.\nNever makes up prices, discounts or terms: uses only what's in the price list. Sends a proposal or email to a customer only with approval.",
-        tasks: {
-          a: "Who has been quiet for over a week?",
-          b: "Prepare a proposal for the latest lead",
-          c: "How much came in from new customers this month?",
-        },
       },
       marketing: {
         name: "Marketing",
@@ -5480,11 +5381,6 @@ export const en = {
         desc: "Plans campaigns, posts and website pages.",
         instructions:
           "Starts by looking at what was already done, the results and the brand's voice before suggesting something new.\nWrites drafts of campaigns, posts and pages, with one main idea and who it's for.\nNever makes up numbers or testimonials. Publishes on the website or social media only with approval.",
-        tasks: {
-          a: "Suggest 3 posts for this week",
-          b: "Plan the next campaign",
-          c: "Review the copy on the pricing page",
-        },
       },
       content: {
         name: "Content",
@@ -5492,11 +5388,6 @@ export const en = {
         desc: "Writes and edits texts, articles and newsletters.",
         instructions:
           "Before writing, reads what already exists on the subject (wiki, documents, conversations) and confirms who the text is for.\nDelivers clear, short drafts with the sources at the end. When editing, explains what changed and why.\nNever makes up data or quotes. Publishes or sends outside the team only with approval.",
-        tasks: {
-          a: "Write this month's newsletter",
-          b: "Review the latest blog post",
-          c: "List 5 topics for articles",
-        },
       },
       data: {
         name: "Data",
@@ -5504,7 +5395,6 @@ export const en = {
         desc: "Answers questions with numbers and builds reports.",
         instructions:
           "Gets the numbers from the source before answering and shows where they came from, the period and how it calculated them.\nIf the data isn't enough or looks wrong, says so instead of guessing. Never makes up a number.\nEvery Monday, posts a summary of the week's main numbers.",
-        tasks: { a: "How did sales go this week?", b: "Build this month's report", c: "Which customers buy the most?" },
       },
       finance: {
         name: "Finance",
@@ -5512,7 +5402,6 @@ export const en = {
         desc: "Keeps track of payments, billing and spending.",
         instructions:
           "Checks payments, billing and spending at the source before answering and shows amounts with the date and where they came from.\nFlags what's out of the ordinary: failing charges, spending above what's expected, invoices coming due.\nPayments, refunds and any money movement only with approval. Never makes up amounts.",
-        tasks: { a: "How much came in this month?", b: "Which charges failed?", c: "Summarize last month's spending" },
       },
       people: {
         name: "People",
@@ -5520,11 +5409,6 @@ export const en = {
         desc: "Helps with hiring, onboarding and the team's questions.",
         instructions:
           "Before answering, looks in the policies, the wiki and the team's documents, and says where it found the answer.\nOrganizes openings, interviews and new joiners' first days, with clear checklists.\nHandles personal data with care and shares it only with who needs it. Messages candidates only with approval.",
-        tasks: {
-          a: "Plan the first week of whoever starts Monday",
-          b: "What are the vacation rules?",
-          c: "Schedule this week's interviews",
-        },
       },
       research: {
         name: "Research",
@@ -5532,11 +5416,6 @@ export const en = {
         desc: "Researches a subject and delivers a summary with sources.",
         instructions:
           "Looks first at what the team already has (wiki, documents, conversations), then at outside sources.\nDelivers a short summary with the main findings, what's still unknown and the sources for each point.\nKeeps facts apart from opinions and never makes up data or quotes.",
-        tasks: {
-          a: "Research the 5 biggest competitors",
-          b: "Summarize what we already know about the market",
-          c: "Compare the competitors' prices",
-        },
       },
       assistant: {
         name: "Assistant",
@@ -5544,11 +5423,6 @@ export const en = {
         desc: "Takes care of the calendar, emails and reminders.",
         instructions:
           "Before asking, checks the calendar, the emails and recent conversations, and comes back with what it found and a suggestion.\nOrganizes meetings, drafts replies and sends reminders at the right time.\nSending emails or messages on someone's behalf, accepting invites and making payments only with approval.",
-        tasks: {
-          a: "Summarize my emails from today",
-          b: "What did I promise to answer this week?",
-          c: "Find the quarter's goals spreadsheet",
-        },
       },
       custom: { name: "From scratch", desc: "You write everything. No access until you grant it.", instructions: "" },
     },
@@ -13691,6 +13565,7 @@ export const en = {
         startingWork: "Started a long work",
         updatingWork: "Updated a long work",
         withdrawingRequest: "Withdrew a request",
+        releasingAgent: "Released a waiting agent",
         schedulingAction: "Prepared an action for later",
         updatingDashboard: "Worked on a dashboard",
         readingDashboards: "Looked at the dashboards",
@@ -13800,6 +13675,7 @@ export const en = {
       startingWork: "starting a long work",
       updatingWork: "updating a long work",
       withdrawingRequest: "withdrawing a request",
+      releasingAgent: "releasing a waiting agent",
       schedulingAction: "preparing an action for later",
       updatingDashboard: "working on a dashboard",
       readingDashboards: "looking at the dashboards",
@@ -15956,11 +15832,9 @@ export const en = {
     firstTask: {
       suggestion: "suggestion",
       lead: "One short task per agent, so you see each one working today.",
-      heldLead:
-        "One short task per agent. Finish the sentence and send it. They start once the workspace has an agentes.chat plan.",
-      /** Over the template's sample of its first agent's work: an example, never something it wrote. */
-      example: "Example of what {{name}} delivers",
       open: "Open with the task",
+      /** Over the composer while a first task waits, untouched, for the person to finish its sentence. */
+      finish: "Finish the sentence and send it",
       invite: "Invite {{names}}",
       later: "Later",
     },
@@ -16122,7 +15996,7 @@ export const en = {
     },
     software: {
       name: "Software and apps",
-      sub: "Support, billing and code",
+      sub: "Customer care, billing and code",
       desc: "For a company that sells software and looks after its own customers.",
     },
     support: {
@@ -16135,61 +16009,77 @@ export const en = {
       sub: "Accounting, law, consulting",
       desc: "For an office that books clients, sends proposals and bills them.",
     },
+    /** The team's hello in #general once it can work (ADR 0158): Lodi's line, then each agent's. */
+    hello: {
+      lodi: {
+        starting: "Plan active! My computer is starting up. Let's get to work!",
+        ready: "Plan active! Let's get to work!",
+        created: "The team is here! Let's get to work!",
+      },
+      /** The same, while no AI is connected: the plan brings none, and the bar under the lines connects one. */
+      lodiNoAi: {
+        starting: "Plan active! My computer is starting up. Connect an AI and we'll get to work.",
+        ready: "Plan active! Connect an AI and we'll get to work.",
+        created: "The team is here! Connect an AI and we'll get to work.",
+      },
+    },
     agents: {
       iara: {
         role: "Customer service",
         line: "Answers customers on WhatsApp and email. Calls you when she doesn't know.",
         routine: "Sum up what was left unanswered",
         task: "Write a reply to this customer message:",
+        hello: "Hi, {{first}}! Leave whoever writes on WhatsApp to me.",
       },
       caio: {
         role: "Billing",
         line: "Reminds whoever is late on payment and sends the reminder after your ok.",
         routine: "List who is late on payment",
         task: "Write a friendly payment reminder for:",
+        hello: "Hello! I'll handle billing and only send reminders after your ok.",
       },
       ada: {
         role: "Dev",
         line: "Fixes the bugs customers report and opens the PR.",
         routine: "List the new bugs",
         task: "Tell me where to start looking at this bug:",
+        hello: "Hi! Send me the bugs that come in, I'll dig in and open the PR.",
       },
       lia: {
         role: "Content",
         line: "Writes posts and scripts in the company's voice and schedules them after your ok.",
         routine: "Propose the week's posts",
         task: "Suggest three posts for this week about:",
+        hello: "Hi, everyone! This week's posts are on me.",
       },
       theo: {
         role: "Sales",
         line: "Follows up on everyone who asked for a quote and writes the proposals.",
         routine: "List who asked for a quote and got no answer",
         task: "Write a short quote for this request:",
+        hello: "Hi, {{first}}! Nobody who asks for a quote will go unanswered.",
       },
       nina: {
         role: "Scheduling",
         line: "Books, confirms and moves appointments, and reminds clients the day before.",
         routine: "Confirm tomorrow's appointments",
         task: "Organize tomorrow's schedule:",
+        hello: "Hello! The calendar is mine, and I'll remind clients the day before.",
       },
       otto: {
         role: "Orders",
         line: "Follows orders and stock and warns what is running out.",
         routine: "Warn what is running out in stock",
         task: "List what's left to do on these orders:",
+        hello: "I'm here. I'll watch the orders and tell you if stock runs low.",
       },
       bia: {
         role: "Answer base",
         line: "Keeps the answer base up to date with what the team answers.",
         routine: "Update the base with the week's answers",
         task: "Write answers to these customer questions:",
+        hello: "Hi! I'll keep the answer base up to date with what the team says.",
       },
-    },
-    /** On a billing hold, under Primeira tarefa: what the template's first agent delivers, labelled and never posted. */
-    example: {
-      iara: "Hi Marina. Your order left yesterday and arrives by Friday. The tracking code is right below. If Friday doesn't work, I'll find another date.",
-      lia: "1. Three common mistakes when hiring an agency. 2. Behind the scenes of a project that almost went wrong. 3. A question for your followers: what do you want to see here?",
-      nina: "Tomorrow: 9:00 Carla, 10:30 Pedro, 14:00 open. Pedro hasn't confirmed yet. Want me to write to him?",
     },
     channels: {
       iara: "support",

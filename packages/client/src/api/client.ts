@@ -495,9 +495,14 @@ export interface ApiClient {
      * A signed link that opens the workspace's plan and billing on the billing service (owners and admins; ADR
      * 0079). Navigate to it at once and keep it nowhere else: it lasts 5 minutes and opens once. `billing.off` 404
      * on a server without billing. `returnTo`: the page it was opened from, where the billing service sends the
-     * person back.
+     * person back. `plan`: the plan picked in the app (the billing service's key), whose Checkout it opens.
      */
-    billingLink(orgId: string, from: BillingFrom, returnTo?: string): Promise<{ url: string; expiresAt: string }>;
+    billingLink(
+      orgId: string,
+      from: BillingFrom,
+      returnTo?: string,
+      plan?: string,
+    ): Promise<{ url: string; expiresAt: string }>;
     /** People, files and today's uploads against the workspace's limits (any member; ADR 0079). */
     limits(orgId: string): Promise<WorkspaceLimits>;
     members(orgId: string): Promise<Member[]>;
@@ -651,7 +656,7 @@ export interface ApiClient {
     /** Decides an agent's proposal of costly work nobody asked for (ADR 0131): its card's `signalId`. */
     decideCostly(orgId: string, signalId: string, decision: CostlyDecision): Promise<{ state: CostlyDecision }>;
     update(orgId: string, agentId: string, input: Partial<AgentInput>): Promise<Agent>;
-    /** Confirms a step of a new agent's setup checklist (ADR 0155 §2): its owner or whoever manages agents. */
+    /** Confirms or skips a step of an agent's setup (ADR 0155): the right hand's first-run skips. */
     confirmSetup(orgId: string, agentId: string, step: SetupStep): Promise<Agent>;
     /** The mailboxes saving `audience` would take from it (others gave them), taking nothing: ask before widening. */
     mailLoss(orgId: string, agentId: string, audience: AgentAudience): Promise<ForeignMailbox[]>;

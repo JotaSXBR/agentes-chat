@@ -669,6 +669,42 @@
       "left_other": "Encore {{count}} étapes",
       "done": "Tout est prêt"
     },
+    "flow": {
+      "steps": {
+        "name": "Nom de l'espace de travail",
+        "business": "Ce que vous faites",
+        "team": "Votre équipe",
+        "plan": "Activer l'équipe"
+      },
+      "stepOf": "Étape {{n}} sur {{total}}",
+      "lodi": {
+        "name": "Bonjour {{first}}. Je suis {{name}}. Je monte l'équipe avec vous en deux minutes environ.",
+        "business": "Avec ça, je sais qui appeler dans l'équipe.",
+        "team": "Voici l'équipe que je monterais. Vous pourrez tout changer ensuite.",
+        "plan": "Après l'abonnement, il ne reste qu'à connecter une IA. Je vous montre où."
+      },
+      "preview": {
+        "label": "Votre espace de travail, pendant que vous répondez",
+        "name": "Votre espace de travail",
+        "ghost": "Votre équipe apparaît ici"
+      },
+      "team": {
+        "title": "Votre équipe"
+      },
+      "plan": {
+        "title": "Activez votre équipe",
+        "lead": "Votre équipe est prête. Avec l'abonnement et une IA, elle commence aujourd'hui.",
+        "asleep": "Endormie jusqu'à l'abonnement",
+        "price": "<b>Abonnement {{name}}</b> · {{price}} par mois",
+        "name": "<b>Abonnement {{name}}</b>",
+        "generic": "Un abonnement agentes.chat",
+        "cancel": "Résiliable à tout moment",
+        "cta": "Activer l'équipe",
+        "all": "Voir tous les abonnements",
+        "skip": "Entrer dans l'espace de travail sans l'activer"
+      },
+      "account": "Votre compte"
+    },
     "railValue": {
       "context": "Rédigé",
       "skipped": "Passé",
@@ -1327,27 +1363,19 @@
     }
   },
   "webPushAsk": {
-    "title": "Sachez quand un agent a besoin de vous",
-    "text": "Ils travaillent pendant que vous faites autre chose. Même avec l'onglet fermé, nous vous prévenons quand ils ont besoin de votre accord, terminent ce que vous avez demandé ou vous appellent.",
     "on": "Activer les notifications",
     "later": "Pas maintenant",
     "done": "Notifications activées dans ce navigateur",
     "failed": "Impossible d'activer les notifications. Réessayez dans Paramètres › Notifications.",
     "someone": "Un agent",
-    "examples": "Exemples de notifications",
     "now": "maintenant",
-    "minutes": "{{n}} min",
-    "approval": {
-      "title": "{{name}} a besoin de votre accord",
-      "body": "Je peux lancer ce que vous avez demandé ?"
-    },
     "finished": {
       "title": "{{name}} a terminé",
       "body": "Ce que vous avez demandé est prêt."
     },
-    "mention": {
-      "title": "{{name}} vous a appelé",
-      "body": "Vous pouvez jeter un œil quand vous avez une minute ?"
+    "inline": {
+      "title": "Vous voulez savoir tout de suite quand {{name}} répond ?",
+      "why": "Même avec l'onglet fermé. Modifiez-le quand vous voulez dans Paramètres › Notifications."
     }
   },
   "shell": {
@@ -2035,7 +2063,6 @@
   "rightHand": {
     "label": "votre bras droit",
     "newDot": "Nouveau",
-    "role": "Assistant du workspace",
     "actsAsYou": "agit avec vos permissions",
     "composerHint": "rien ne change sans vous",
     "intro": {
@@ -2051,9 +2078,6 @@
         "question": "Vous voulez monter l'équipe avec moi ?",
         "action": "Monter l'équipe",
         "message": "Aidez-moi à monter l'équipe."
-      },
-      "next": {
-        "firstTask": "Donner une première tâche à {{name}}"
       },
       "style": {
         "question": "Comment préférez-vous que je vous parle ?",
@@ -5296,141 +5320,27 @@
     }
   },
   "agentSetup": {
-    "greeting": "Bonjour {{person}}. Je suis {{name}}.",
-    "greeting_female": "Bonjour {{person}}. Je suis {{name}}.",
-    "greetingRole": "Bonjour {{person}}. Je suis {{name}}, le nouvel agent {{role}}.",
-    "greetingRole_female": "Bonjour {{person}}. Je suis {{name}}, la nouvelle agente {{role}}.",
-    "asked": "Vous m'avez demandé : « {{what}} ».",
-    "lead": "Pour commencer, aidez-moi sur quelques points rapides :",
-    "title": "Pour commencer",
-    "ready": "Je suis prêt.",
-    "ready_female": "Je suis prête.",
-    "titleProfile": "Pour que {{name}} démarre",
-    "titleProfile_female": "Pour que {{name}} démarre",
     "count": "{{done}} sur {{total}}",
     "change": "Modifier",
     "switch": "Changer",
-    "choose": "Choisir",
-    "see": "Voir",
     "suggested": "Suggéré",
-    "ai": {
-      "todo": "Connecter une IA",
-      "todoDesc": "Pour que je puisse réfléchir.",
-      "action": "Connecter",
-      "done": "J'ai une IA pour réfléchir"
-    },
-    "apps": {
-      "todo": "Lire {{apps}}",
-      "todoDesc": "Lire ne change jamais rien.",
-      "action": "Autoriser",
-      "todoNone": "Utiliser les apps de {{org}}",
-      "todoNoneDesc": "Celles que vous avez déjà connectées, comme Gmail et Drive.",
-      "done": "J'utilise {{apps}}",
-      "doneNone": "Pas d'apps pour l'instant",
-      "title": "Ce que {{name}} peut utiliser",
-      "title_female": "Ce que {{name}} peut utiliser",
-      "desc": "Lire ne change jamais rien. Envoyer, supprimer et payer demandent votre approbation.",
-      "ok_one": "Autoriser {{count}} app",
-      "ok_many": "Autoriser {{count}} d'apps",
-      "ok_other": "Autoriser {{count}} apps",
-      "okNone": "Continuer sans apps",
-      "empty": "{{org}} n'a encore aucune app connectée.",
-      "connectOther": "Connecter une autre app"
-    },
-    "where": {
-      "todo": "Rejoindre {{channel}}",
-      "todoDesc": "Je réponds quand quelqu'un m'appelle là-bas.",
-      "action": "Rejoindre",
-      "todoNone": "Rejoindre un canal",
-      "done": "Je suis dans {{channels}}",
-      "doneNone": "Je reste dans notre discussion directe",
-      "title": "Où {{name}} travaille",
-      "title_female": "Où {{name}} travaille",
-      "desc": "Il répond quand quelqu'un l'appelle là-bas. La discussion directe compte toujours.",
-      "okNone": "Discussion directe seulement",
-      "okOne": "Rejoindre {{channel}}",
-      "ok_one": "Rejoindre {{count}} canal",
-      "ok_many": "Rejoindre {{count}} de canaux",
-      "ok_other": "Rejoindre {{count}} canaux"
-    },
-    "who": {
-      "todo": "Parler à tout le monde chez {{org}}",
-      "todoDesc": "Tout le monde peut m'appeler.",
-      "todoPlan": "Parler seulement à vous",
-      "todoPlanDesc": "Votre abonnement est personnel.",
-      "doneEveryone": "Je parle à tout le monde chez {{org}}",
-      "doneYou": "Je parle seulement à vous",
-      "doneOwner": "Je parle seulement à {{name}}",
-      "donePeople": "Je parle aux personnes que vous avez choisies",
-      "title": "Qui parle à {{name}}",
-      "title_female": "Qui parle à {{name}}",
-      "people": "Personnes et rôles",
-      "add": "Choisir des personnes",
-      "addMore": "Ajouter quelqu'un d'autre",
-      "you": "vous",
-      "youCap": "Vous",
-      "ownerHelp": "Reçoit ses demandes d'approbation et ses alertes.",
-      "ownerHelp_female": "Reçoit ses demandes d'approbation et ses alertes."
-    },
-    "how": {
-      "todo": "Voir comment je travaille",
-      "todoDesc": "Je pars des instructions de {{role}}.",
-      "todoDescBlank": "Je pars de ce que vous avez écrit.",
-      "done": "Je travaille à votre façon",
-      "title": "Comment {{name}} travaille",
-      "title_female": "Comment {{name}} travaille",
-      "desc": "Écrivez comme pour quelqu'un de nouveau dans l'équipe.",
-      "instructions": "Instructions",
-      "budget": "Limite mensuelle",
-      "budgetHelp": "Nous vous prévenons à 80 %. À la limite, il se met en pause et vous le dit.",
-      "budgetHelp_female": "Nous vous prévenons à 80 %. À la limite, elle se met en pause et vous le dit.",
-      "more": "Plus d'options",
-      "model": "Modèle"
-    },
-    "say": {
-      "ai": "Maintenant, je peux réfléchir.",
-      "apps": "C'est fait, je peux utiliser les apps.",
-      "where": "Je garde un œil dessus là-bas.",
-      "who": "Compris, je sais à qui parler.",
-      "how": "Compris, je sais comment vous voulez que je travaille."
-    },
-    "tasksLead": "Nous pouvons déjà commencer. Demandez-moi quelque chose :",
-    "tasksAllDone": "Tout est prêt. Demandez-moi quelque chose :",
-    "tasks": {
-      "a": "Que peux-tu faire pour moi ?",
-      "b": "Par où commence-t-on ?"
-    },
     "firstRun": {
       "title": "Pour que l'équipe de {{org}} se mette au travail",
       "complete": "Tout est prêt.",
       "notNow": "Pas maintenant",
       "afterPlan": "S'ouvre avec l'offre.",
       "about": {
-        "todo": "Dites-moi ce que fait {{org}}.",
-        "todoDesc": "Tous les agents lisent ceci.",
-        "action": "Raconter",
-        "done": "Je sais ce que fait {{org}}",
         "title": "Que fait {{org}} ?",
         "desc": "Tous les agents lisent ceci. Vous le changez quand vous voulez.",
         "line": "En une phrase",
         "optional": "Facultatif. Sans phrase, c'est le type coché qui compte."
-      },
-      "team": {
-        "todo": "Montez l'équipe.",
-        "todoDesc": "Un modèle pour votre activité, vous changez tout après.",
-        "action": "Voir l'équipe",
-        "done_one": "{{count}} agent dans l'équipe",
-        "done_other": "{{count}} agents dans l'équipe",
-        "card": "Continuez sur la carte ci-dessous"
       },
       "ai": {
         "todo": "Connectez une IA.",
         "todoDesc": "Celle que vous payez déjà convient.",
         "action": "Connecter",
         "done": "Je pense avec {{label}}",
-        "doneAny": "Je pense avec une IA",
-        "plan": "S'ouvre avec l'offre agentes.chat.",
-        "planAction": "Voir les offres agentes.chat"
+        "doneAny": "Je pense avec une IA"
       },
       "apps": {
         "todo": "Connectez vos applis de travail.",
@@ -5449,14 +5359,17 @@
         "action": "Inviter",
         "done_one": "{{count}} personne ici",
         "done_other": "{{count}} personnes ici",
-        "doneNone": "Juste vous pour l'instant"
+        "doneNone": "Juste vous pour l'instant",
+        "invited": "J'ai invité {{names}} · en attente",
+        "email": "nom@entreprise.com",
+        "send": "Envoyer",
+        "more": "Plus d'options"
       },
       "say": {
-        "about": "Noté. Tous les agents lisent ceci.",
-        "team": "L'équipe est là.",
         "ai": "L'équipe pense maintenant.",
         "apps": "C'est fait, je lis les applis.",
-        "people": "Content d'avoir plus de monde ici."
+        "people": "Content d'avoir plus de monde ici.",
+        "invited": "Invitation envoyée."
       },
       "asks": {
         "lead": "Maintenant, demandez-moi quelque chose :",
@@ -5513,144 +5426,79 @@
         "name": "Dev",
         "agent": "Ada",
         "desc": "Code, relit les PR et enquête sur les bugs.",
-        "instructions": "Enquête d'abord : lit le code, les tâches et les erreurs liées avant de répondre, et revient avec ce qu'il a trouvé et une proposition de PR concrète avec un test.\nTravaille dans des branches et ouvre de petites PR. Pour les gros changements, ouvre la PR en brouillon et y explique le plan.\nNe merge jamais seul : demande une relecture à une personne.",
-        "tasks": {
-          "a": "Quelle est l'erreur la plus fréquente en ce moment ?",
-          "b": "Relis la dernière PR ouverte",
-          "c": "Prends la plus ancienne tâche du backlog"
-        }
+        "instructions": "Enquête d'abord : lit le code, les tâches et les erreurs liées avant de répondre, et revient avec ce qu'il a trouvé et une proposition de PR concrète avec un test.\nTravaille dans des branches et ouvre de petites PR. Pour les gros changements, ouvre la PR en brouillon et y explique le plan.\nNe merge jamais seul : demande une relecture à une personne."
       },
       "ops": {
         "name": "Ops",
         "agent": "Atlas",
         "desc": "Surveille les erreurs, les files d'attente et les déploiements.",
-        "instructions": "Suit les erreurs et les déploiements et rédige les rapports d'incident.\nQuand une alerte se déclenche, enquête d'abord (erreurs, logs, déploiements récents) et publie dans le canal ce qu'il a trouvé : depuis quand, quelle ampleur, la cause probable et la prochaine étape.\nRollback et déploiement uniquement avec approbation.",
-        "tasks": {
-          "a": "Quelque chose d'étrange depuis le dernier déploiement ?",
-          "b": "Résume les erreurs d'aujourd'hui",
-          "c": "Qu'est-ce qui a changé dans la dernière version ?"
-        }
+        "instructions": "Suit les erreurs et les déploiements et rédige les rapports d'incident.\nQuand une alerte se déclenche, enquête d'abord (erreurs, logs, déploiements récents) et publie dans le canal ce qu'il a trouvé : depuis quand, quelle ampleur, la cause probable et la prochaine étape.\nRollback et déploiement uniquement avec approbation."
       },
       "qa": {
         "name": "QA",
         "agent": "Iris",
         "desc": "Teste les parcours et reproduit les bugs signalés.",
-        "instructions": "Reproduit chaque bug signalé avant d'ouvrir une tâche. Écrit des étapes claires et joint des preuves.\nS'il n'arrive pas à reproduire, vérifie d'abord les erreurs, les changements récents et les tâches liées. Ne demande l'environnement et la version que s'ils manquent.\nDonne la priorité à ce qui bloque les clients.",
-        "tasks": {
-          "a": "Reproduis le dernier bug signalé",
-          "b": "Quels bugs n'ont pas d'étapes ?",
-          "c": "Y a-t-il de nouvelles erreurs depuis le déploiement ?"
-        }
+        "instructions": "Reproduit chaque bug signalé avant d'ouvrir une tâche. Écrit des étapes claires et joint des preuves.\nS'il n'arrive pas à reproduire, vérifie d'abord les erreurs, les changements récents et les tâches liées. Ne demande l'environnement et la version que s'ils manquent.\nDonne la priorité à ce qui bloque les clients."
       },
       "pm": {
         "name": "PM",
         "agent": "Theo",
         "desc": "Organise les tâches et les résumés.",
-        "instructions": "Cherche d'abord (tâches, fils, wiki, retours) et ne demande que ce qui manque.\nOrganise les tâches, résume les longues discussions et tient la feuille de route à jour.",
-        "tasks": {
-          "a": "Résume ce que l'équipe a fait cette semaine",
-          "b": "Quelles tâches sont bloquées ?",
-          "c": "Mets à jour la feuille de route"
-        }
+        "instructions": "Cherche d'abord (tâches, fils, wiki, retours) et ne demande que ce qui manque.\nOrganise les tâches, résume les longues discussions et tient la feuille de route à jour."
       },
       "support": {
         "name": "Support",
         "agent": "Nina",
         "desc": "Répond aux clients et transmet ce qui demande une personne.",
-        "instructions": "Avant de répondre, consulte l'historique du client, les conversations passées et le centre d'aide, et revient avec une réponse prête et sa source.\nSi c'est un problème produit, ouvre une tâche avec les étapes et prévient l'équipe. Ne promet jamais une date ou un correctif qui n'existe pas.\nMessages aux clients, remboursements et remises uniquement avec approbation.",
-        "tasks": {
-          "a": "Quels clients attendent une réponse depuis le plus longtemps ?",
-          "b": "Résume les réclamations de cette semaine",
-          "c": "Rédige une réponse au dernier e-mail d'un client"
-        }
+        "instructions": "Avant de répondre, consulte l'historique du client, les conversations passées et le centre d'aide, et revient avec une réponse prête et sa source.\nSi c'est un problème produit, ouvre une tâche avec les étapes et prévient l'équipe. Ne promet jamais une date ou un correctif qui n'existe pas.\nMessages aux clients, remboursements et remises uniquement avec approbation."
       },
       "sales": {
         "name": "Ventes",
         "agent": "Leo",
         "desc": "Prépare les propositions et relance les prospects.",
-        "instructions": "Avant de parler à qui que ce soit, se renseigne sur l'entreprise, l'historique avec elle et ce qui a déjà été convenu, et revient avec un résumé et la prochaine étape.\nTient la liste des prospects à jour et rappelle à l'équipe ce qui est bloqué.\nN'invente jamais de prix, de remises ou de conditions : utilise uniquement ce qui figure dans la grille tarifaire. N'envoie une proposition ou un e-mail à un client qu'avec approbation.",
-        "tasks": {
-          "a": "Qui est silencieux depuis plus d'une semaine ?",
-          "b": "Prépare une proposition pour le dernier prospect",
-          "c": "Combien ont rapporté les nouveaux clients ce mois-ci ?"
-        }
+        "instructions": "Avant de parler à qui que ce soit, se renseigne sur l'entreprise, l'historique avec elle et ce qui a déjà été convenu, et revient avec un résumé et la prochaine étape.\nTient la liste des prospects à jour et rappelle à l'équipe ce qui est bloqué.\nN'invente jamais de prix, de remises ou de conditions : utilise uniquement ce qui figure dans la grille tarifaire. N'envoie une proposition ou un e-mail à un client qu'avec approbation."
       },
       "marketing": {
         "name": "Marketing",
         "agent": "Mila",
         "desc": "Planifie les campagnes, les publications et les pages du site.",
-        "instructions": "Commence par regarder ce qui a déjà été fait, les résultats et le ton de la marque avant de proposer du nouveau.\nRédige des brouillons de campagnes, de publications et de pages, avec une idée principale et un public cible.\nN'invente jamais de chiffres ni de témoignages. Ne publie sur le site ou les réseaux sociaux qu'avec approbation.",
-        "tasks": {
-          "a": "Propose 3 posts pour cette semaine",
-          "b": "Planifie la prochaine campagne",
-          "c": "Relis le texte de la page des tarifs"
-        }
+        "instructions": "Commence par regarder ce qui a déjà été fait, les résultats et le ton de la marque avant de proposer du nouveau.\nRédige des brouillons de campagnes, de publications et de pages, avec une idée principale et un public cible.\nN'invente jamais de chiffres ni de témoignages. Ne publie sur le site ou les réseaux sociaux qu'avec approbation."
       },
       "content": {
         "name": "Contenu",
         "agent": "Bento",
         "desc": "Écrit et révise des textes, des articles et des newsletters.",
-        "instructions": "Avant d'écrire, lit ce qui existe déjà sur le sujet (wiki, documents, conversations) et confirme à qui s'adresse le texte.\nLivre des brouillons clairs et courts avec les sources à la fin. En révisant, explique ce qui a changé et pourquoi.\nN'invente jamais de données ni de citations. Ne publie ou n'envoie hors de l'équipe qu'avec approbation.",
-        "tasks": {
-          "a": "Écris la newsletter de ce mois-ci",
-          "b": "Relis le dernier article de blog",
-          "c": "Liste 5 sujets d'articles"
-        }
+        "instructions": "Avant d'écrire, lit ce qui existe déjà sur le sujet (wiki, documents, conversations) et confirme à qui s'adresse le texte.\nLivre des brouillons clairs et courts avec les sources à la fin. En révisant, explique ce qui a changé et pourquoi.\nN'invente jamais de données ni de citations. Ne publie ou n'envoie hors de l'équipe qu'avec approbation."
       },
       "data": {
         "name": "Données",
         "agent": "Dora",
         "desc": "Répond aux questions avec des chiffres et crée des rapports.",
-        "instructions": "Récupère les chiffres à la source avant de répondre et montre leur provenance, la période et le mode de calcul.\nSi les données ne suffisent pas ou semblent fausses, le dit au lieu de deviner. N'invente jamais un chiffre.\nChaque lundi, publie un résumé des principaux chiffres de la semaine.",
-        "tasks": {
-          "a": "Comment se sont passées les ventes cette semaine ?",
-          "b": "Prépare le rapport de ce mois-ci",
-          "c": "Quels clients achètent le plus ?"
-        }
+        "instructions": "Récupère les chiffres à la source avant de répondre et montre leur provenance, la période et le mode de calcul.\nSi les données ne suffisent pas ou semblent fausses, le dit au lieu de deviner. N'invente jamais un chiffre.\nChaque lundi, publie un résumé des principaux chiffres de la semaine."
       },
       "finance": {
         "name": "Finance",
         "agent": "Otto",
         "desc": "Suit les paiements, la facturation et les dépenses.",
-        "instructions": "Vérifie les paiements, la facturation et les dépenses à la source avant de répondre et donne les montants avec la date et leur provenance.\nSignale ce qui sort de l'ordinaire : prélèvements en échec, dépenses au-dessus du prévu, factures qui arrivent à échéance.\nPaiements, remboursements et tout mouvement d'argent uniquement avec approbation. N'invente jamais de montants.",
-        "tasks": {
-          "a": "Combien est entré ce mois-ci ?",
-          "b": "Quels prélèvements ont échoué ?",
-          "c": "Résume les dépenses du mois dernier"
-        }
+        "instructions": "Vérifie les paiements, la facturation et les dépenses à la source avant de répondre et donne les montants avec la date et leur provenance.\nSignale ce qui sort de l'ordinaire : prélèvements en échec, dépenses au-dessus du prévu, factures qui arrivent à échéance.\nPaiements, remboursements et tout mouvement d'argent uniquement avec approbation. N'invente jamais de montants."
       },
       "people": {
         "name": "RH",
         "agent": "Clara",
         "desc": "Aide au recrutement, à l'intégration et aux questions de l'équipe.",
-        "instructions": "Avant de répondre, cherche dans les politiques, le wiki et les documents de l'équipe, et indique où il a trouvé la réponse.\nOrganise les postes ouverts, les entretiens et les premiers jours des nouveaux arrivants, avec des checklists claires.\nTraite les données personnelles avec soin et ne les partage qu'avec qui en a besoin. N'écrit aux candidats qu'avec approbation.",
-        "tasks": {
-          "a": "Planifie la première semaine de la personne qui commence lundi",
-          "b": "Quelles sont les règles pour les congés ?",
-          "c": "Planifie les entretiens de cette semaine"
-        }
+        "instructions": "Avant de répondre, cherche dans les politiques, le wiki et les documents de l'équipe, et indique où il a trouvé la réponse.\nOrganise les postes ouverts, les entretiens et les premiers jours des nouveaux arrivants, avec des checklists claires.\nTraite les données personnelles avec soin et ne les partage qu'avec qui en a besoin. N'écrit aux candidats qu'avec approbation."
       },
       "research": {
         "name": "Recherche",
         "agent": "Hugo",
         "desc": "Étudie un sujet et livre un résumé avec ses sources.",
-        "instructions": "Regarde d'abord ce que l'équipe a déjà (wiki, documents, conversations), puis les sources externes.\nLivre un résumé court avec les principales conclusions, ce qui reste inconnu et les sources de chaque point.\nSépare les faits des opinions et n'invente jamais de données ni de citations.",
-        "tasks": {
-          "a": "Recherche les 5 plus grands concurrents",
-          "b": "Résume ce que nous savons déjà du marché",
-          "c": "Compare les prix des concurrents"
-        }
+        "instructions": "Regarde d'abord ce que l'équipe a déjà (wiki, documents, conversations), puis les sources externes.\nLivre un résumé court avec les principales conclusions, ce qui reste inconnu et les sources de chaque point.\nSépare les faits des opinions et n'invente jamais de données ni de citations."
       },
       "assistant": {
         "name": "Assistant",
         "agent": "Eva",
         "desc": "S'occupe de l'agenda, des e-mails et des rappels.",
-        "instructions": "Avant de demander, consulte l'agenda, les e-mails et les conversations récentes, et revient avec ce qu'il a trouvé et une suggestion.\nOrganise les réunions, rédige des réponses et envoie des rappels au bon moment.\nEnvoyer des e-mails ou des messages au nom de quelqu'un, accepter des invitations et effectuer des paiements uniquement avec approbation.",
-        "tasks": {
-          "a": "Résume mes e-mails d'aujourd'hui",
-          "b": "Qu'ai-je promis de répondre cette semaine ?",
-          "c": "Trouve le tableau des objectifs du trimestre"
-        }
+        "instructions": "Avant de demander, consulte l'agenda, les e-mails et les conversations récentes, et revient avec ce qu'il a trouvé et une suggestion.\nOrganise les réunions, rédige des réponses et envoie des rappels au bon moment.\nEnvoyer des e-mails ou des messages au nom de quelqu'un, accepter des invitations et effectuer des paiements uniquement avec approbation."
       },
       "custom": {
         "name": "Partir de zéro",
@@ -14363,6 +14211,7 @@
         "startingWork": "A commencé un long travail",
         "updatingWork": "A mis à jour un long travail",
         "withdrawingRequest": "A retiré une demande",
+        "releasingAgent": "A libéré un agent en attente",
         "schedulingAction": "A préparé une action pour plus tard",
         "updatingDashboard": "A travaillé sur un tableau de bord",
         "readingDashboards": "A regardé les tableaux de bord",
@@ -14472,6 +14321,7 @@
       "startingWork": "début d'un long travail",
       "updatingWork": "mise à jour d'un long travail",
       "withdrawingRequest": "retrait d'une demande",
+      "releasingAgent": "libération d'un agent en attente",
       "schedulingAction": "préparation d'une action pour plus tard",
       "updatingDashboard": "travail sur un tableau de bord",
       "readingDashboards": "consultation des tableaux de bord",
@@ -16656,9 +16506,8 @@
     "firstTask": {
       "suggestion": "suggestion",
       "lead": "Une tâche courte par agent, pour voir chacun au travail aujourd'hui.",
-      "heldLead": "Une tâche courte par agent. Complétez la phrase et envoyez-la. Ils démarrent dès que le workspace a un abonnement agentes.chat.",
-      "example": "Exemple de ce que {{name}} livre",
       "open": "Ouvrir avec la tâche",
+      "finish": "Complétez la phrase et envoyez-la",
       "invite": "Inviter {{names}}",
       "later": "Plus tard"
     },
@@ -16812,7 +16661,7 @@
     },
     "software": {
       "name": "Logiciels et apps",
-      "sub": "Support, facturation et code",
+      "sub": "Service client, paiements et code",
       "desc": "Pour une entreprise qui vend un logiciel et s'occupe de ses propres clients."
     },
     "support": {
@@ -16825,60 +16674,75 @@
       "sub": "Comptabilité, droit, conseil",
       "desc": "Pour un cabinet qui prend les rendez-vous, envoie des propositions et facture."
     },
+    "hello": {
+      "lodi": {
+        "starting": "Abonnement actif ! Mon ordinateur démarre. Au travail !",
+        "ready": "Abonnement actif ! Au travail !",
+        "created": "L'équipe est là ! Au travail !"
+      },
+      "lodiNoAi": {
+        "starting": "Abonnement actif ! Mon ordinateur démarre. Connectez une IA et on se met au travail.",
+        "ready": "Abonnement actif ! Connectez une IA et on se met au travail.",
+        "created": "L'équipe est là ! Connectez une IA et on se met au travail."
+      }
+    },
     "agents": {
       "iara": {
         "role": "Service client",
         "line": "Répond aux clients sur WhatsApp et par e-mail. T'appelle quand elle ne sait pas.",
         "routine": "Résumer ce qui est resté sans réponse",
-        "task": "Écris une réponse à ce message client :"
+        "task": "Écris une réponse à ce message client :",
+        "hello": "Bonjour {{first}} ! Je m'occupe de ceux qui écrivent sur WhatsApp."
       },
       "caio": {
         "role": "Facturation",
         "line": "Relance les retards de paiement et envoie la relance après ton accord.",
         "routine": "Lister qui a un paiement en retard",
-        "task": "Écris un rappel de paiement aimable pour :"
+        "task": "Écris un rappel de paiement aimable pour :",
+        "hello": "Bonjour ! Je gère les paiements et j'envoie un rappel seulement après votre accord."
       },
       "ada": {
         "role": "Dev",
         "line": "Corrige les bugs signalés par les clients et ouvre la PR.",
         "routine": "Lister les nouveaux bugs",
-        "task": "Dis-moi par où commencer pour enquêter sur ce bug :"
+        "task": "Dis-moi par où commencer pour enquêter sur ce bug :",
+        "hello": "Salut ! Envoyez-moi les bugs qui arrivent, j'enquête et j'ouvre la PR."
       },
       "lia": {
         "role": "Contenu",
         "line": "Écrit posts et scripts dans le ton de l'entreprise et les programme après ton accord.",
         "routine": "Proposer les posts de la semaine",
-        "task": "Propose trois posts pour cette semaine sur :"
+        "task": "Propose trois posts pour cette semaine sur :",
+        "hello": "Bonjour à tous ! Les posts de la semaine, c'est pour moi."
       },
       "theo": {
         "role": "Ventes",
         "line": "Relance toutes les personnes qui ont demandé un devis et rédige les propositions.",
         "routine": "Lister qui a demandé un devis sans réponse",
-        "task": "Écris un devis court pour cette demande :"
+        "task": "Écris un devis court pour cette demande :",
+        "hello": "Bonjour {{first}} ! Personne qui demande un devis ne restera sans réponse."
       },
       "nina": {
         "role": "Agenda",
         "line": "Prend, confirme et déplace les rendez-vous, et rappelle les clients la veille.",
         "routine": "Confirmer les rendez-vous de demain",
-        "task": "Organise ces horaires de demain :"
+        "task": "Organise ces horaires de demain :",
+        "hello": "Bonjour ! Je m'occupe de l'agenda et je rappelle les clients la veille."
       },
       "otto": {
         "role": "Commandes",
         "line": "Suit les commandes et le stock et prévient de ce qui manque bientôt.",
         "routine": "Prévenir de ce qui manque bientôt en stock",
-        "task": "Liste ce qu'il reste à faire sur ces commandes :"
+        "task": "Liste ce qu'il reste à faire sur ces commandes :",
+        "hello": "Me voilà. Je surveille les commandes et je préviens si le stock baisse."
       },
       "bia": {
         "role": "Base de réponses",
         "line": "Tient la base de réponses à jour avec ce que l'équipe répond.",
         "routine": "Mettre à jour la base avec les réponses de la semaine",
-        "task": "Écris les réponses à ces questions de clients :"
+        "task": "Écris les réponses à ces questions de clients :",
+        "hello": "Salut ! Je tiens la base de réponses à jour avec ce que répond l'équipe."
       }
-    },
-    "example": {
-      "iara": "Bonjour Marina. Votre commande est partie hier et arrive d'ici vendredi. Le numéro de suivi est juste en dessous. Si vendredi ne convient pas, je trouve une autre date.",
-      "lia": "1. Trois erreurs fréquentes en choisissant une agence. 2. Les coulisses d'un projet qui a failli mal tourner. 3. Une question pour vos abonnés : que voulez-vous voir ici ?",
-      "nina": "Demain : 9h Carla, 10h30 Pedro, 14h libre. Pedro n'a pas encore confirmé. Je lui écris ?"
     },
     "channels": {
       "iara": "support",

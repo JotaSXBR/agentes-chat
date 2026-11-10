@@ -193,7 +193,7 @@ export async function createAgent(
   input: AgentInput & {
     autonomy?: CommandApproval;
     audienceMode?: Agent["audienceMode"];
-    /** The ready-made role it starts from, for its setup checklist's suggestions (ADR 0155 §2); null: none. */
+    /** The ready-made role it starts from, which the right hand's first run suggests apps by (ADR 0155); null: none. */
     setup?: { role: string | null };
   },
   defaults: { model: string },
@@ -246,10 +246,13 @@ export async function createAgent(
         machineId: home?.id ?? null,
         orgId,
         ownerUserId,
-        // Every new agent starts with its setup checklist, whichever way it was made (ADR 0155 §2).
+        // Every new agent keeps the role it was made from, whichever way it was made (ADR 0155).
         setup: newSetup(setup?.role),
         ...(autonomy ? { missionCommandApproval: autonomy } : {}),
         audienceMode: audience,
+        // The moment of this insert, not its transaction's start (`now()`): agents made together (a template team)
+        // keep the order they were made in, which the agents' list and every screen after it follow.
+        createdAt: sql`clock_timestamp()`,
       })
       .returning();
     if (!agent) throw new Error("agent insert returned nothing");
@@ -535,11 +538,12 @@ export async function unarchiveAgent(
 
 export async function listAgents(db: Database, actorId: string, orgId: string): Promise<Agent[]> {
   await requirePermission(db, actorId, orgId, "read");
+  // As they were made. A team made before each insert had its own time shares one: by name among them.
   return db
     .select()
     .from(agents)
     .where(and(eq(agents.orgId, orgId), isNull(agents.archivedAt)))
-    .orderBy(asc(agents.createdAt));
+    .orderBy(asc(agents.createdAt), asc(agents.name));
 }
 
 /** An agent, archived or not; null for a deleted one (its tombstone only names what it left, `listFormerAgents`). */
@@ -597,7 +601,7 @@ export const agentView = (a: Agent) => ({
   builtin: a.builtin ?? null,
   /** "Responde a" (ADR 0148 addendum): the agent it reports to; null = its owner, else its setor's lead. */
   reportsToAgentId: a.reportsToAgentId ?? null,
-  /** Its setup checklist (ADR 0155 §2): the role it started from and the steps confirmed; null = none. */
+  /** What it started with (ADR 0155): the role it was made from and the steps confirmed; null = none. */
   setup: setupOf(a.setup),
   /** Its autonomy brakes (ADR 0131), with the defaults filled in. */
   brakes: autonomySettings(a.autonomyBrakes),

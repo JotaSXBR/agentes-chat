@@ -201,7 +201,6 @@
       "timezone.group.Oceania",
       "toolReview.ok",
       "usageViews.tokens",
-      "webPushAsk.minutes",
       "wiki.editor.link",
       "wiki.form.tags",
       "wiki.import.stat.links",
@@ -400,7 +399,6 @@
       "timezone.group.Asia",
       "toolReview.ok",
       "usageViews.tokens",
-      "webPushAsk.minutes",
       "wiki.audienceRoles",
       "wiki.legend.obsidian",
       "wiki.markdown",
@@ -721,7 +719,6 @@
       "threads.tabs.missions",
       "timezone.group.Europe",
       "toolReview.ok",
-      "webPushAsk.minutes",
       "wiki.ask.agent",
       "wiki.audienceAgentDetail",
       "wiki.audienceAgents",
@@ -795,7 +792,6 @@
       "routines.setup.github.type",
       "routines.setup.github.url",
       "routines.setup.sentry.url",
-      "agentSetup.how.instructions",
       "share.agent"
     ],
     "de": [
@@ -1422,7 +1418,6 @@
       "toolReview.ok",
       "usageQueue.routine",
       "usageQueue.thread",
-      "webPushAsk.minutes",
       "wiki.editor.link",
       "wiki.home",
       "wiki.import.stat.links",
@@ -1892,7 +1887,6 @@
       "toolReview.ok",
       "toolReview.subjectCount",
       "usageViews.tokens",
-      "webPushAsk.minutes",
       "wiki.ask.agent",
       "wiki.audienceAgentDetail",
       "wiki.audienceAgents",
@@ -1981,7 +1975,6 @@
       "team.chart.supervisor",
       "team.map.band",
       "team.sectors.supervisor",
-      "agentSetup.how.model",
       "share.agent"
     ],
     "ja": [
@@ -2109,7 +2102,8 @@
       "routines.setup.github.secret",
       "routines.setup.github.type",
       "routines.setup.github.url",
-      "routines.setup.sentry.url"
+      "routines.setup.sentry.url",
+      "agentSetup.firstRun.people.email"
     ],
     "ko": [
       "chat.wait.said",
@@ -2233,7 +2227,8 @@
       "routines.setup.github.secret",
       "routines.setup.github.type",
       "routines.setup.github.url",
-      "routines.setup.sentry.url"
+      "routines.setup.sentry.url",
+      "agentSetup.firstRun.people.email"
     ],
     "zh-Hans": [
       "chat.wait.said",
@@ -2348,7 +2343,8 @@
       "routines.setup.github.secret",
       "routines.setup.github.type",
       "routines.setup.github.url",
-      "routines.setup.sentry.url"
+      "routines.setup.sentry.url",
+      "agentSetup.firstRun.people.email"
     ],
     "id": [
       "chat.wait.said",
@@ -2583,7 +2579,6 @@
       "browser.live.emulated.desktop",
       "team.chart.supervisor",
       "team.sectors.supervisor",
-      "agentSetup.how.model",
       "share.fileRef"
     ],
     "tr": [
@@ -2722,8 +2717,7 @@
       "routines.setup.github.type",
       "routines.setup.github.url",
       "routines.setup.sentry.url",
-      "browser.live.emulated.tablet",
-      "agentSetup.how.model"
+      "browser.live.emulated.tablet"
     ],
     "pl": [
       "deleteAccount.agentCount",
@@ -2909,7 +2903,6 @@
       "threads.panel.agent",
       "timezone.group.Oceania",
       "toolReview.ok",
-      "webPushAsk.minutes",
       "wiki.ask.agent",
       "wiki.audienceAgentDetail",
       "wiki.editor.link",
@@ -2952,7 +2945,6 @@
       "routines.setup.github.url",
       "routines.setup.sentry.url",
       "browser.live.emulated.tablet",
-      "agentSetup.how.model",
       "share.agent"
     ],
     "ru": [
@@ -3068,7 +3060,8 @@
       "routines.setup.github.secret",
       "routines.setup.github.type",
       "routines.setup.github.url",
-      "routines.setup.sentry.url"
+      "routines.setup.sentry.url",
+      "agentSetup.firstRun.people.email"
     ]
   },
   "mobile-base": {

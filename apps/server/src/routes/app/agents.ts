@@ -693,6 +693,9 @@ export function agentRoutes(deps: AppDeps) {
                   ])
                   .optional(),
                 own: z.enum(["claude_code", "codex", "cursor", "opencode", "grok", "antigravity"]).optional(),
+                provider: z.string().optional().openapi({
+                  description: "Ready on an API key with Automático: the maker of the key it thinks with.",
+                }),
               }),
             ),
             routing: z.object({
@@ -728,7 +731,7 @@ export function agentRoutes(deps: AppDeps) {
       security,
       summary: "Each agent's presence (online, busy, away, out of office, offline) and what it says it is doing",
       description:
-        "From its work (ADR 0084): `busy` on a routine, a task, a run going for over 2 minutes or one rated heavy, or when it said so; `online` while answering, waiting on an answer or active in the last 30 minutes; `away` after that; `out` (out of office, §12) while its plan is at its limit with no model to fall back on or its monthly budget is spent, with an `out_of_plan`/`out_of_budget` line whose `until` says when it is back, and the router leaves it out of messages nobody mentioned it in; `offline` when held. An agent with no AI is drawn offline by the apps (`ai-status`). `status`: its own words (`set_status`), a line picked for its run (`kind` + `subject`), or what its run waits on; gone when the run ends unless it set `until`. Refreshed on `agent.status` events and every 30 seconds while open.",
+        "From its work (ADR 0084): `busy` on a routine, a task, a run going for over 2 minutes or one rated heavy, or when it said so; `online` while answering, waiting on an answer or active in the last 30 minutes (one never active, in the 30 minutes since it was made; the right hand always); `away` after that; `out` (out of office, §12) while its plan is at its limit with no model to fall back on or its monthly budget is spent, with an `out_of_plan`/`out_of_budget` line whose `until` says when it is back, and the router leaves it out of messages nobody mentioned it in; `offline` when held. An agent with no AI is drawn offline by the apps (`ai-status`). `status`: its own words (`set_status`), a line picked for its run (`kind` + `subject`), or what its run waits on; gone when the run ends unless it set `until`. Refreshed on `agent.status` events and every 30 seconds while open.",
       request: { params: OrgParams },
       responses: {
         200: json(
@@ -922,7 +925,7 @@ export function agentRoutes(deps: AppDeps) {
               .optional()
               .openapi({
                 description:
-                  "The ready-made role it starts from (`support`), for its setup checklist's suggestions (ADR 0155 §2). Every new agent gets the checklist; without it, no role.",
+                  "The ready-made role it starts from (`support`), which the right hand's first run suggests apps by (ADR 0155 §6). Without it, no role.",
               }),
           }),
         ),
@@ -1497,9 +1500,9 @@ export function agentRoutes(deps: AppDeps) {
       path: "/organizations/{orgId}/agents/{agentId}/setup/{step}",
       tags,
       security,
-      summary: "Confirm a step of a new agent's setup checklist",
+      summary: "Confirm a step of an agent's setup",
       description:
-        "Its owner or whoever manages agents chose (or skipped) one step of the checklist at the top of its chat (ADR 0155 §2). Confirming twice changes nothing; an agent with no checklist keeps none.",
+        "Who may change the agent confirms or skips one step. On the right hand it is a first-run row skipped (`apps`, `people`, ADR 0155 §6). On another agent it is one of its own steps (§2), which the apps neither show nor send. Confirming twice changes nothing, and an agent with no setup keeps none.",
       request: { params: AgentParams.extend({ step: SetupStep }) },
       responses: { 200: json(Agent), ...errors },
     }),

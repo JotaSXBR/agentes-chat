@@ -1,59 +1,37 @@
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
-import { type SetupRowFacts, setupRow, setupSteps } from "@agenteschat/client/lib/setup-checklist";
-import { agent, translator } from "./fixtures";
+import { firstRunSteps } from "@agenteschat/client/lib/setup-checklist";
+import { agent } from "./fixtures";
 
-// A new agent's setup checklist on the phone (ADR 0155 §2): the web's words and rules, its own screens.
+// One setup place on the phone, as on the web: the right hand's first run in its own DM (ADR 0155 §6). Any other
+// agent, however new, shows no checklist in its DM nor on its screen.
 
 const src = (f: string) => readFileSync(new URL(`../../src/features/${f}`, import.meta.url), "utf8");
 
-const facts: SetupRowFacts = {
-  org: "Acme",
-  role: "support",
-  granted: null,
-  suggested: null,
-  channels: null,
-  firstChannel: "#suporte",
-  audience: "everyone",
-  otherOwner: null,
-  onPlan: false,
-};
-
-test("its rows say what the web's say, in the agent's voice", async () => {
-  const t = await translator("pt-BR");
-  expect(setupRow(t, "ai", false, facts).title).toBe("Conectar uma IA");
-  expect(setupRow(t, "where", false, facts).title).toBe("Entrar em #suporte");
-  expect(setupRow(t, "who", true, { ...facts, audience: "owner" }).title).toBe("Falo só com você");
-  const en = await translator("en");
-  expect(setupRow(en, "where", false, facts).title).toBe("Join #suporte");
-});
-
-test("who sees it on the phone: who manages agents every step, its owner theirs, the right hand none", () => {
-  const leo = agent({ id: "a-leo", name: "Leo", ownerUserId: "u-owner", setup: { role: "sales", done: [] } });
-  expect(setupSteps(leo, { meId: "u-admin", admin: true })).toEqual(["ai", "apps", "where", "who", "how"]);
-  expect(setupSteps(leo, { meId: "u-owner", admin: false })).toEqual(["ai", "where", "who"]);
-  expect(setupSteps({ ...leo, builtin: "right_hand" }, { meId: "u-admin", admin: true })).toEqual([]);
-  expect(setupSteps({ ...leo, setup: null }, { meId: "u-admin", admin: true })).toEqual([]);
-});
-
-test("the DM draws the checklist on top for whoever sets it up, not the first day nor the no-AI line", () => {
+test("an agent's DM never shows a setup checklist: its first day, and the no-AI line as in every DM", () => {
   const chat = src("chat/ChatScreen.tsx");
-  expect(chat).toContain("const setupIntro = useSetupSteps(dmAgent).length > 0 && !rightHand && !isThread;");
-  // No no-AI line over it (nor over the plan hold's).
-  expect(chat).toContain("member && !rightHand && !planHeld && !setupIntro");
-  expect(chat.match(/<AgentSetupIntro agent=\{dmAgent\} channelId=\{channelId\} \/>/g)?.length).toBe(2);
-  // Its screen shows the same card while something is left.
-  expect(src("agents/AgentProfileScreen.tsx")).toContain('<AgentSetupCard agent={agent} place="profile" />');
+  for (const gone of ["AgentSetupIntro", "AgentSetupCard", "useSetupSteps", "setupIntro"]) {
+    expect(chat).not.toContain(gone);
+  }
+  // Before anyone wrote, the app's hello in its voice with three starts.
+  expect(chat).toContain(
+    "<FirstDay agent={dmAgent} bottomInset={composerHeight} keyboardLift={lift} onAsk={onSend} />",
+  );
+  // Only the right hand's greeting sits over a conversation, with the one card inside it.
+  expect(chat).toContain("atStart && (hasPins || (dmAgent && rightHand))");
+  expect(chat).toContain("member && !rightHand && !planHeld\n");
+  expect(src("agents/AgentProfileScreen.tsx")).not.toContain("SetupCard");
 });
 
-test("each step but thinking is a pushed screen, registered in the stack; thinking opens Connect AI", () => {
-  const card = src("agents/setup/SetupCard.tsx");
-  expect(card).toContain('if (step === "ai") openConnectAi({ agentId: agent.id });');
-  expect(card).toContain("else openSetupStep(agent.id, step);");
+test("the one checklist is the right hand's: a new agent has no rows, for its owners either", () => {
+  const owner = { owner: true, connectAi: true, pay: true, connectors: true, invite: true };
+  const leo = agent({ id: "a-leo", name: "Leo", setup: { role: "sales", done: [] } });
+  expect(firstRunSteps(leo, owner)).toEqual([]);
+  expect(firstRunSteps({ ...leo, builtin: "right_hand" }, owner)).toEqual(["ai", "apps", "people"]);
+  // Its apps row is the one pushed screen, registered in the stack.
   const layout = readFileSync(new URL("../../app/(app)/_layout.tsx", import.meta.url), "utf8");
   expect(layout).toContain('<Stack.Screen name="agent-step/[id]" options={{ ...pushed, ...scrollUnder }} />');
-  const steps = src("agents/setup/SetupStepScreen.tsx");
-  // Nothing saves until its word on the bar; then the step is confirmed and the screen goes back.
-  expect(steps).toContain("await confirm.mutateAsync(step);");
-  expect(steps).toContain("goBack();");
+  expect(src("agents/setup/SetupStepScreen.tsx")).toContain(
+    'if (!agent?.setup || !isRightHand(agent) || step !== "apps")',
+  );
 });

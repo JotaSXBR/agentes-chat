@@ -291,7 +291,13 @@ describe("the Cloud's plan gate tells the truth", () => {
 
   test("on the phone a hold closes keys in words, with the same way out", () => {
     const t = ((key: string, o?: { a: string; b: string }) => (o ? `${o.a} ${o.b}` : key)) as unknown as TFunction;
-    expect(planHoldPhoneLine(t, true, true)).toBe("connectAi.key.closed connectAi.billingWeb");
+    expect(planHoldPhoneLine(t, true, "keys")).toBe("connectAi.key.closed connectAi.billingWeb");
+  });
+
+  test("on the phone the onboarding's team waits for its plan in words, with the same way out", () => {
+    const t = ((key: string, o?: { a: string; b: string }) => (o ? `${o.a} ${o.b}` : key)) as unknown as TFunction;
+    expect(planHoldPhoneLine(t, true, "team")).toBe("standing.billing.teamReady connectAi.billingWeb");
+    expect(planHoldPhoneLine(t, false, "team")).toBe("standing.billing.teamReady standing.billing.askAdmin");
   });
 
   test("a CLI missing from a computer ready just now may still be coming; past that it never reads as installing", () => {

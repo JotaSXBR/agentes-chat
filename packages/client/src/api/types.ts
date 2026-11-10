@@ -647,25 +647,25 @@ export interface Agent {
   /** Its autonomy brakes (ADR 0131); absent from an older server (the defaults). */
   brakes?: AgentBrakes;
   /**
-   * Its setup checklist at the top of its chat (ADR 0155 §2): the ready-made role it started from and the steps a
-   * person confirmed. Null or absent: an agent made before it (none shows).
+   * What it started with (ADR 0155): the ready-made role, which the right hand's first run suggests apps by, and on the
+   * right hand the rows skipped. Null or absent: an agent made before it.
    */
   setup?: AgentSetupChecklist | null;
 }
 
 /**
- * A step of a new agent's setup checklist (ADR 0155 §2), in `SETUP_STEPS`' order, or of the right hand's first run
- * (§6: `about`, `team`, `ai`, `apps`, `people`, in `FIRST_RUN_STEPS`' order). Both in lib/setup-checklist.
+ * A step the server keeps: a new agent's (ADR 0155 §2, withdrawn: the apps send none) or the right hand's first run
+ * (§6, in `FIRST_RUN_STEPS`' order in lib/setup-checklist).
  */
 export type SetupStep = AgentSetupStep | "about" | "team" | "people";
 /** A new agent's own steps (ADR 0155 §2). */
 export type AgentSetupStep = "ai" | "apps" | "where" | "who" | "how";
 
-/** A new agent's setup checklist (ADR 0155 §2). */
+/** What an agent started with (ADR 0155). */
 export interface AgentSetupChecklist {
   /** The ready-made role it started from (a `RoleId`, "support"); null: from scratch or made elsewhere. */
   role: string | null;
-  /** The steps a person confirmed (chose in its dialog, or skipped). */
+  /** The steps a person confirmed or skipped. */
   done: SetupStep[];
 }
 
@@ -825,7 +825,7 @@ export interface AgentInput {
   autonomy?: CommandApproval;
   /** Editing only: its autonomy brakes (ADR 0131); the fields given change. */
   brakes?: Partial<AgentBrakes>;
-  /** Creating only: the ready-made role it starts from, for its setup checklist (ADR 0155 §2). */
+  /** Creating only: the ready-made role it starts from, which the right hand's first run suggests apps by. */
   setup?: { role: RoleId | null };
 }
 
@@ -924,8 +924,6 @@ export interface TeamPlan {
   /** People named as working there, invited after. */
   invite: string[];
   template?: string;
-  /** On a billing hold, from a template: what its first agent delivers, shown labelled and never posted. */
-  example?: string;
 }
 
 /** The right hand's team card (`meta.actionCard`): several agents created in one click ("Criar o time"). */
@@ -1327,6 +1325,8 @@ export interface AiStatus {
       | "plan_not_shared"
       | "runner_outdated"
       | "plan_tools";
+    /** Ready on an API key with Automático: the maker of the key it thinks with (`aiNameOf`). */
+    provider?: string;
   }[];
 }
 

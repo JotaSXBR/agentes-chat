@@ -6,12 +6,14 @@ import {
   ANSWER_NUDGE,
   createAgent,
   createAgentRuns,
+  createIssue,
   createPassToolSource,
   drainOutbox,
   insertMessage,
   listMessages,
   loadReplyPolicy,
   openDm,
+  openTaskConversation,
   postPersonMessage,
   queueOnRun,
   resolveBrain,
@@ -485,5 +487,70 @@ describe("a reply held for another try is owed: a try that ends saying nothing p
     await routed("o que está rodando no notebook da Rita?");
     expect(await agentMessages()).toEqual(["Conferi: a tarefa veio do pedido da Rita de ontem."]);
     expect(await heldSteps()).toEqual([]);
+  });
+});
+
+describe("a task's own conversation is addressed to its agent (ADR 0145)", () => {
+  const ana = () => ({ type: "person" as const, userId: f.owner.id });
+  /** Ana's task for @dev and its conversation; a message there the router gives `agentId`, written by `author`. */
+  async function inTask(body: string, options: { agentId?: string; authorAgentId?: string } = {}) {
+    const issue = await createIssue({ db: f.db, pubsub: f.pubsub }, ana(), f.org.id, {
+      title: "Migrar os acessos do notebook da Rita",
+      assignee: { type: "agent", id: f.agent.id },
+    });
+    const at = await openTaskConversation(f.db, ana(), f.org.id, issue.id);
+    const message = await insertMessage(f.db, {
+      orgId: f.org.id,
+      channelId: at.channelId,
+      threadId: at.rootId,
+      author: options.authorAgentId
+        ? { type: "agent", agentId: options.authorAgentId, runId: crypto.randomUUID(), hop: 1 }
+        : { type: "person", userId: f.owner.id },
+      body,
+    });
+    const [run] = await f.db.transaction((tx) =>
+      createAgentRuns(tx, message, [options.agentId ?? f.agent.id], "router"),
+    );
+    if (!run) throw new Error("no run");
+    return { at, run };
+  }
+
+  test("a person's message there the router gives the task's agent can't be passed on: the held answer comes", async () => {
+    let verdicts = 0;
+    const HELD = "Não uso nada no notebook da Rita: essa tarefa veio da lista que ela colou de manhã.";
+    f = await setup({
+      toolSources: [createPassToolSource()],
+      judge: (kind) => (kind === "follow_through" ? (++verdicts === 1 ? "untried" : "done") : undefined),
+      reply: (_req, n) => ({ chunks: [n === 1 ? HELD : "NO_REPLY"] }),
+    });
+    const { at, run } = await inTask("quem pediu essa tarefa? ela mexe no notebook da Rita?");
+    const events = f.listen(at.channelId);
+    expect(await loadReplyPolicy(f.db, f.org.id, run.id)).toMatchObject({ mayPass: false, listsPass: false });
+    await drainOutbox(f.db, f.handlers);
+
+    const first = f.provider.calls[0]?.request as ModelRequest;
+    expect(first.tools?.map((t) => t.name) ?? []).not.toContain("pass");
+    expect(systemText(first.system)).not.toContain("# Why you were called");
+    const said = (await f.db.select().from(schema.messages).where(eq(schema.messages.channelId, at.channelId))).filter(
+      (m) => m.authorType === "agent",
+    );
+    expect(said.map((m) => m.body)).toEqual([HELD]);
+    await Bun.sleep(5);
+    expect(events.some((e) => e.type === "agent.passed")).toBe(false);
+  });
+
+  test("another agent the router brings in there, or an agent's message there, may still be passed on", async () => {
+    f = await setup({ toolSources: [createPassToolSource()] });
+    const qa = await createAgent(
+      f.db,
+      f.owner.id,
+      f.org.id,
+      { name: "QA", handle: "qa", role: "QA", instructions: "", credentialId: f.credential.id },
+      { model: "claude-sonnet-5-5" },
+    );
+    const other = await inTask("alguém revisa o texto?", { agentId: qa.id });
+    expect(await loadReplyPolicy(f.db, f.org.id, other.run.id)).toMatchObject({ mayPass: true, listsPass: true });
+    const byAgent = await inTask("Revisei o texto: tudo certo.", { authorAgentId: qa.id });
+    expect(await loadReplyPolicy(f.db, f.org.id, byAgent.run.id)).toMatchObject({ mayPass: true, listsPass: true });
   });
 });

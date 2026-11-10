@@ -255,7 +255,7 @@ import {
   pauseLead,
   repliesAfterTrigger,
   replyPolicyFor,
-  routedAsFollowUp,
+  routedAddressed,
   stripSentinel,
   visibleText,
 } from "./reply-policy";
@@ -1750,7 +1750,7 @@ async function executeRunInner(
    * cut mid-work still reads what it missed, but owes what it started. */
   const catchUpMayPass = catchUpSince !== undefined && !atClaim?.executedCalls && !atClaim?.interruptedTurn;
   const policy = replyPolicyFor(run, triggerMessage, {
-    followUp: await routedAsFollowUp(db, run).catch(() => false),
+    ...(await routedAddressed(db, run).catch(() => ({ followUp: false, ownTask: false }))),
     answerOwed: Boolean(atClaim?.answerOwed),
     catchUp: catchUpMayPass,
     moot: Boolean(atClaim?.requestMoot),

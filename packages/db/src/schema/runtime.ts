@@ -564,7 +564,7 @@ export const approvals = pgTable(
      * "Aprovar sempre", decided by the Tool Gateway when it asked: the kind a decider may approve for good (the
      * server's own tool name and the actions it wraps, `approval_rules`). Null = not offered.
      */
-    approveAlways: jsonb().$type<{ tool: string; actions: string[]; routineId?: string }>(),
+    approveAlways: jsonb().$type<{ tool: string; actions: string[]; routineId?: string; repo?: string }>(),
     /**
      * Approved ahead (ADR 0015 addendum, 2026-10-31): the routine whose run at `run_at` (that run's slot) this exact
      * action is for. Once approved, that run does it without asking until `run_at` plus a short grace. Both null for
@@ -861,6 +861,11 @@ export const agentQuestions = pgTable(
     requestedForUserId: text(),
     status: agentQuestionStatusEnum().notNull().default("open"),
     answer: text(),
+    /**
+     * What the run goes on with when nobody answers by `expires_at` (one of `choices`): the question then expires with it
+     * (`defaulted` on the card). Null: it waits the whole day and the run decides then.
+     */
+    defaultAnswer: text(),
     answeredByUserId: text(),
     answeredAt: timestamp({ withTimezone: true }),
     expiresAt: timestamp({ withTimezone: true }).notNull(),

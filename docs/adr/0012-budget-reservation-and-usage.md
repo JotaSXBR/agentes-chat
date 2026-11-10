@@ -32,3 +32,7 @@ After the call (success or failure) one transaction writes the usage record, del
 - A call near the end of a budget gets a smaller output cap instead of overshooting.
 - `agentSpendThisMonth` (sum of records) and the counter agree because the gateway is the only writer of both.
 - Prices live in `MODEL_CATALOG`; they were checked against the official list on 2026-10-14.
+
+## Addendum (2026-11-10): no budgets where every AI is a plan
+
+A workspace whose AI is all subscriptions (plans) and has no API key of its own pays nothing per call, so an agent's monthly budget would only count what the plans or this server's own key pay for. There (`budgetsApply`: no provider key that isn't revoked) the Model Gateway reserves nothing against an agent's budget and never refuses for it, so no budget notice, email, wait or long-work pause card is made; an agent isn't out of office for a budget, the right hand says nothing about budgets, and the week's check offers no budget raise. Adding a key brings budgets back (the check is cached with the workspace's keys). The server's own key keeps the workspace's platform limit (ADR 0079).

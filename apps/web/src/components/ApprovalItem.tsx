@@ -163,7 +163,7 @@ export function ApproveAlways({
       >
         {approveAlwaysLabel(t, approval)}
       </Button>
-      <p className="small muted ap-always" title={kind?.actions.join(", ") || kind?.tool}>
+      <p className="small muted ap-always" title={kind?.repo ?? (kind?.actions.join(", ") || kind?.tool)}>
         {approveAlwaysHint(t, approval, g.name)}
       </p>
     </>

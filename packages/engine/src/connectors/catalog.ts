@@ -32,6 +32,25 @@ export interface ConnectorTool {
    * (`always`: an empty one too), a commit `message` the person's credit.
    */
   sign?: { field: "body" | "message"; always?: true };
+  /**
+   * A sensitive tool whose calls of one kind may still be approved for good: that kind (`ToolDefinition.rememberTarget`),
+   * or null for a call that must ask every time. Without it a sensitive tool is never approved for good.
+   */
+  rememberKind?(input: Record<string, unknown>): string | null;
+}
+
+/** The one kind of `pull_request_review_write` "Aprovar sempre" keeps: a review that doesn't approve. */
+export const REVIEW_NO_APPROVAL = "no_approval";
+
+/**
+ * A review that comments, asks for changes or is a draft (no event yet) is that kind; one that approves, or any other
+ * method (deleting a draft), asks every time: an approval can be what lets a pull request merge.
+ */
+export function reviewKind(input: Record<string, unknown>): string | null {
+  const { method, event } = input;
+  if (method !== "create" && method !== "submit_pending") return null;
+  if (event === undefined || event === null || event === "") return method === "create" ? REVIEW_NO_APPROVAL : null;
+  return event === "COMMENT" || event === "REQUEST_CHANGES" ? REVIEW_NO_APPROVAL : null;
 }
 
 /** Catalog groups (the app translates them, `connectors.category.*`): development, product, docs, data (analytics), payments, sales, support, marketing, automation. */
@@ -148,12 +167,14 @@ export const CONNECTOR_CATALOG: Record<string, ConnectorDefinition> = {
       update_pull_request_branch: { scope: "pr.write" },
       add_comment_to_pending_review: { scope: "pr.write" },
       add_reply_to_pull_request_comment: { scope: "pr.write", sign: { field: "body" } },
-      // Its `submit_pending` and `create` methods can approve a pull request: never approved for good.
+      // Its `submit_pending` and `create` methods can approve a pull request: an approving review is never approved
+      // for good (`reviewKind`).
       pull_request_review_write: {
         scope: "pr.write",
         sensitive: true,
         sign: { field: "body" },
         title: "Review PR #{pullNumber} in {owner}/{repo}",
+        rememberKind: reviewKind,
       },
       merge_pull_request: {
         scope: "pr.merge",

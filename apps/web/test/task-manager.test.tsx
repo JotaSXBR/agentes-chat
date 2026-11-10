@@ -17,6 +17,7 @@ import type {
   WorkingRun,
 } from "@agenteschat/client";
 import { keys, TASK_MANAGER_POLL_MS } from "@agenteschat/client";
+import { clockAt } from "@agenteschat/client/lib/format";
 import { usageWhenShort } from "@agenteschat/client/lib/plan-usage";
 import { act, cleanup, fireEvent, within } from "@testing-library/react";
 import { ADA_ID, ATLAS_ID, createFakeApi, ENG_ID, type FakeState, fakeMachinesOf, ORG_ID, seedState } from "./fake-api";
@@ -1107,6 +1108,48 @@ describe("why a task waits", () => {
     const line = document.querySelector(".tm-waitline") as HTMLElement;
     expect(line.textContent).toContain("2 rotinas pausadas");
     expect(within(line).queryByRole("button")).toBeNull();
+  });
+
+  test("a wait on a person names who, and a question's default says what it goes on with and when", async () => {
+    const at = in_(30);
+    const asks = (kind: "question" | "secret", forUserId: string, defaultAnswer: string | null = null) => ({
+      asks: { kind, forUserId, defaultAnswer, decideAt: defaultAnswer ? at : null },
+    });
+    await open(
+      seedState({
+        taskManager: view([
+          waiting("r1", "Escolher o ambiente", null, null, asks("question", "u-joao", "staging")),
+          waiting("r2", "Escolher a cor", null, null, asks("question", "u-walter")),
+          waiting("r3", "Pegar a chave", null, null, asks("secret", "u-joao")),
+        ]),
+      }),
+      "task-manager",
+    );
+    expect(stateOf(rowOf("Escolher o ambiente"))).toEqual([
+      "Espera João responder",
+      `Segue com staging às ${clockAt("pt-BR", at)}`,
+    ]);
+    expect(stateOf(rowOf("Escolher a cor"))).toEqual(["Espera sua resposta", "Segue quando alguém responder"]);
+    expect(stateOf(rowOf("Pegar a chave"))).toEqual(["Espera uma chave de João", "Segue quando alguém responder"]);
+  });
+
+  test("a free agent with tasks to do gets its card: how many, and why they haven't started", async () => {
+    const until = in_(120);
+    await open(
+      seedState({
+        taskManager: {
+          ...view([]),
+          backlog: {
+            [ADA_ID]: { todo: 15, out: null },
+            [ATLAS_ID]: { todo: 2, out: { reason: "plan", until } },
+          },
+        },
+      }),
+      "task-manager",
+    );
+    const line = (name: string) => cardOf(name).querySelector(".tm-card__text small")?.textContent;
+    expect(line("Ada")).toBe("Livre · 15 a fazer · começa quando houver espaço");
+    expect(line("Atlas")).toBe(`Livre · 2 a fazer · plano até ${clockAt("pt-BR", until)}`);
   });
 });
 

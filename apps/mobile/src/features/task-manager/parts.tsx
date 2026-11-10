@@ -31,7 +31,7 @@ import {
 import { useCallLogo } from "../chat/ToolCalls";
 import { useFailed } from "../routines/hooks";
 import { AgentFace } from "../shared/Face";
-import { useColors, useDirectory, useOrgId } from "../shared/hooks";
+import { useColors, useDirectory, useMeId, useOrgId } from "../shared/hooks";
 import { agentLook } from "../shared/logic";
 import { isHeld, type RowState, taskStateWords, usingNow } from "./logic";
 
@@ -78,7 +78,12 @@ export function StateLine({ task, state, now }: { task: ManagedTask; state: RowS
   const c = useColors();
   const color = useAgentColor(task.agentId);
   const waits = state === "ok" || state === "answer";
-  const words = taskStateWords(t, i18n.language, task, state, now);
+  const dir = useDirectory();
+  const meId = useMeId();
+  const words = taskStateWords(t, i18n.language, task, state, now, {
+    meId,
+    nameOf: (id) => dir.memberById.get(id)?.name,
+  });
   const line = (
     <View style={styles.row}>
       <TaskMark state={state} color={color} />

@@ -179,3 +179,60 @@ test("a task with no title of its own is called by its place, said once", () => 
   expect(taskPlace(t, { ...base, label: null })).toBeNull();
   expect(taskPlace(t, { ...base, label: "Release 8 na loja" })).toBe("#eng");
 });
+
+test("a free agent with tasks to do says how many and why they haven't started; a busy one adds the count", () => {
+  const board = (out: { reason: "plan" | "budget"; until: string | null } | null) => ({
+    backlog: { todo: 15, out },
+    locale: "en",
+    now,
+  });
+  expect(agentCardLine(t, 0, 0, board(null))).toBe(
+    'taskManager.free · taskManager.todo {"count":15} · taskManager.idle.room',
+  );
+  const at = new Date(2026, 10, 5, 14, 0).toISOString();
+  expect(agentCardLine(t, 0, 0, board({ reason: "plan", until: at }))).toMatch(
+    /^taskManager\.free · taskManager\.todo \{"count":15\} · taskManager\.idle\.plan \{"when":"2:00\s?PM"\}$/,
+  );
+  expect(agentCardLine(t, 0, 0, board({ reason: "plan", until: null }))).toContain("taskManager.idle.planLimit");
+  expect(agentCardLine(t, 2, 0, board(null))).toBe('taskManager.tasks {"count":2} · taskManager.todo {"count":15}');
+  expect(agentCardLine(t, 0, 0, { backlog: { todo: 0, out: null }, locale: "en" })).toBe("taskManager.free");
+});
+
+test("a task waiting on a person names who, and a question's default says what it goes on with and when", () => {
+  const people = { meId: "me", nameOf: (id: string) => (id === "ana" ? "Ana" : undefined) };
+  const asking = (asks: ManagedTask["asks"]) => task(null, null, { asks });
+  const at = new Date(2026, 10, 5, 10, 30).toISOString();
+  const question = { kind: "question" as const, forUserId: "ana", defaultAnswer: null, decideAt: null };
+  expect(taskWaitWords(t, "en", asking(question), now, people)).toEqual({
+    state: 'taskManager.wait.question {"name":"Ana"}',
+    next: "taskManager.wait.answerNext",
+  });
+  const withDefault = taskWaitWords(
+    t,
+    "en",
+    asking({ ...question, defaultAnswer: "staging", decideAt: at }),
+    now,
+    people,
+  );
+  expect(withDefault?.next).toMatch(/^taskManager\.wait\.defaultNext \{"answer":"staging","time":"10:30\s?AM"\}$/);
+  expect(taskWaitWords(t, "en", asking({ ...question, forUserId: "me" }), now, people)?.state).toBe(
+    "taskManager.wait.questionYou",
+  );
+  expect(taskWaitWords(t, "en", asking({ ...question, kind: "secret" }), now, people)?.state).toBe(
+    'taskManager.wait.secret {"name":"Ana"}',
+  );
+  expect(taskWaitWords(t, "en", asking({ ...question, kind: "screen", forUserId: "me" }), now, people)?.state).toBe(
+    "taskManager.wait.screenYou",
+  );
+  expect(taskWaitWords(t, "en", asking({ ...question, kind: "decision", forUserId: null }), now, people)?.state).toBe(
+    "taskManager.wait.decision",
+  );
+  // Nobody named, someone unknown, or no directory: the plain words.
+  expect(taskWaitWords(t, "en", asking({ ...question, forUserId: null }), now, people)?.state).toBe(
+    "taskManager.state.answer",
+  );
+  expect(taskWaitWords(t, "en", asking({ ...question, forUserId: "zed" }), now, people)?.state).toBe(
+    "taskManager.state.answer",
+  );
+  expect(taskWaitWords(t, "en", asking(question), now)?.state).toBe("taskManager.state.answer");
+});

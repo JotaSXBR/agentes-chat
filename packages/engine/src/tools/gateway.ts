@@ -22,7 +22,7 @@ import { recordOutcome } from "../context/outcomes";
 import { sha256 } from "../crypto";
 import { provenReadOnly } from "../databases/guard";
 import { cutMarked, cutText, pgSafeJson, pgSafeText } from "../format";
-import { mergeReposOfCall, recordMergeDone, reposOfGithubCall } from "../git/repos";
+import { mergeReposOfCall, mergeRepoToOffer, recordMergeDone, reposOfGithubCall } from "../git/repos";
 import type { Judge } from "../judge";
 import { recordRead } from "../outbound";
 import { codeWrites, envSecretsNamed, isRunCode, storedKeysOf, toCustomer } from "../outside-sends";
@@ -139,14 +139,24 @@ export const highRisk = (tool: string, scope: string) =>
   !MAIL_QUIET.has(scope) && (alwaysAsks(tool) || ALWAYS_SENSITIVE.test(scope) || RISKY_WORDS.test(`${tool} ${scope}`));
 
 /**
+ * Nothing the call names is high risk (`highRisk`: its tool, its scope, each action it runs): a comment, a pull
+ * request's update, a review that doesn't approve. Only such a kind is approved for good on a run whose policy makes
+ * every connected-app write ask (a run a routine's reading woke, ADR 0053 §4), and only such a call may skip its card
+ * at an agent's approval level (`ApprovalLevel`).
+ */
+export const lowRisk = (tool: Pick<ToolDefinition, "name" | "scope">, actions: readonly string[] = []) =>
+  !highRisk(tool.name, tool.scope) && !actions.some((a) => highRisk(a, ""));
+
+/**
  * The kind "Aprovar sempre" would cover for this call (`approval_rules`), or null when it is never offered: only
- * on a run that isn't a routine's, whose policy didn't make the call ask, for a tool its source lets be
- * remembered (`rememberAs`), whose wrapped actions, when it runs others, are a shape we know with none sensitive,
- * and with nothing in its names that always asks (merge, deploy, rollback and the rest above, GraphQL, SQL, a raw
- * request). A tool that names one exact target per call (`rememberTarget`) is remembered by that target, without
- * the name checks: they read connector actions, and a branch named release-x is still only that branch. A tool that
- * runs one shell command on the agent's computer (`rememberCommand`) is remembered by the command's kind
- * (`commandKind`, which never offers the deny list, pushes or anything sensitive), for that agent alone.
+ * on a run that isn't a routine's, for a tool its source lets be remembered (`rememberAs`), whose wrapped actions,
+ * when it runs others, are a shape we know with none sensitive, and with nothing in its names that always asks
+ * (merge, deploy, rollback and the rest above, GraphQL, SQL, a raw request). Where the run's policy made the call ask
+ * (a run a routine's reading woke), only a kind that isn't high risk (`lowRisk`). A tool that names one exact target or
+ * kind per call (`rememberTarget`) is remembered by it, without the name checks: they read connector actions, and a
+ * branch named release-x is still only that branch. A tool that runs one shell command on the agent's computer
+ * (`rememberCommand`) is remembered by the command's kind (`commandKind`, which never offers the deny list, pushes or
+ * anything sensitive), for that agent alone.
  */
 export function rememberable(
   tool: ToolDefinition,
@@ -154,22 +164,33 @@ export function rememberable(
   authority: RunAuthority | null,
   decision: PolicyDecision,
 ): RememberedKind | null {
-  if (!authority || authority.kind === "routine" || decision.action === "approve") return null;
+  if (!authority || authority.kind === "routine") return null;
+  const forced = decision.action === "approve";
   if (tool.rememberCommand && !tool.connectionId) {
-    const command = tool.rememberCommand(input);
+    const command = forced ? null : tool.rememberCommand(input);
     const kind = command ? commandKind(command) : null;
     return kind ? { tool: COMMAND_RULE_TOOL, actions: [kind] } : null;
   }
   if (tool.rememberTarget && tool.connectionId) {
     const target = tool.rememberTarget(input);
-    return target ? { tool: tool.name, actions: [target] } : null;
+    if (!target || (forced && !lowRisk(tool))) return null;
+    return { tool: tool.rememberAs ?? tool.name, actions: [target] };
   }
   if (!tool.rememberAs || !tool.connectionId) return null;
   const actions = tool.actions ? tool.actions(input) : [];
   if (!actions || actions.some((a) => actionLevel(a) === "sensitive")) return null;
   if ([tool.name, tool.rememberAs, tool.scope, ...actions].some(alwaysAsks)) return null;
+  if (forced && !lowRisk(tool, actions)) return null;
   return { tool: tool.rememberAs, actions };
 }
+
+/**
+ * How much an agent asks before acting, pending the owner's answer (ask always, ask on risky, never ask): no setting
+ * yet, so the gateway asks as the run's policy and the tools say. `risky`, the one level a hook may return now: a call
+ * of a kind a person could approve for good (`rememberable`) that isn't high risk (`lowRisk`) runs without a card;
+ * merges, deploys, rollbacks, publishing and raw requests ask at every level (`alwaysAsks`).
+ */
+export type ApprovalLevel = "risky";
 
 /**
  * Names of deletions, money and a pull request's approval, which "Sempre nesta rotina" never covers; a routine's send
@@ -181,6 +202,19 @@ const neverInRoutine = (name: string) => nameWords(name).some((w) => NEVER_IN_RO
 
 /** The scope of the GitHub connector's `merge_pull_request`. */
 const GITHUB_MERGE_SCOPE = "github:pr.merge";
+
+/**
+ * The one repository a merge names: the GitHub connector's call, or a lone `gh pr merge` that names it (`-R`, a pull
+ * request's URL). Null for anything else, and for a merge whose repository only the computer's folder says.
+ */
+function mergeRepoOf(tool: ToolDefinition, input: Record<string, unknown>): string | null {
+  if (tool.connectionId) {
+    const [repo, ...others] = tool.scope === GITHUB_MERGE_SCOPE ? (reposOfGithubCall(input) ?? []) : [];
+    return repo && others.length === 0 ? repo : null;
+  }
+  const script = tool.rememberCommand?.(input);
+  return (script && loneMerge(script)?.repo) || null;
+}
 
 /**
  * The kind "Aprovar sempre leituras" covers for a call of a tool that runs SQL (`sqlReads`), or null: the same runs
@@ -445,6 +479,8 @@ export type InvokeResult =
       requestedForUserId: string | null;
       why: string;
       forWhy?: string;
+      /** One of `choices`: what the run goes on with when nobody answers in time. */
+      default?: string;
     }
   /** `request_secret`: the executor posts the card and suspends the run. */
   | { type: "secret"; requestId: string };
@@ -483,6 +519,8 @@ export function createToolGateway(deps: {
   pubsub?: PubSub;
   /** Reads whether a write reaches a customer (`asksFirst`). None: only the tools' own rules ask. */
   judge?: Judge | null;
+  /** The agent's approval level (`ApprovalLevel`); none: every call asks as the policy and the tools say. */
+  approvalLevel?: (ctx: ToolContext) => Promise<ApprovalLevel | null>;
 }) {
   const now = deps.now ?? (() => new Date());
 
@@ -1234,6 +1272,11 @@ export function createToolGateway(deps: {
           };
         }
       }
+      const levelLets =
+        approves && remember && deps.approvalLevel && lowRisk(tool, tool.rememberAs ? remember.actions : [])
+          ? (await deps.approvalLevel(ctx)) === "risky"
+          : false;
+      if (levelLets) approves = false;
       // The routine's own job: an action its creator allowed when they set it up runs like an allowed one, every run.
       const ownJob =
         approves && authority?.kind === "routine" && authority.brief
@@ -1261,7 +1304,7 @@ export function createToolGateway(deps: {
       if (ahead?.status === "refused") {
         return finish({ content: AHEAD_REFUSED, isError: true, data: { code: "approval.ahead_refused" } }, "refused");
       }
-      if (whyMissing && !approvedBy && !ahead && !ownJob && !mergeAlone)
+      if (whyMissing && !approvedBy && !levelLets && !ahead && !ownJob && !mergeAlone)
         return finish({
           content: first?.content ?? WHY_REFUSAL,
           isError: true,
@@ -1359,6 +1402,10 @@ export function createToolGateway(deps: {
         if (asked && !asked.ok) return finish({ content: asked.message, isError: true }, "refused");
         const described = tool.describe?.(call.input) ?? { title: `${tool.name}`, detail: canonicalJson(call.input) };
         const connectionId = tool.connectionId ?? null;
+        // A merge card offers "Sempre neste repositório" instead: the repository joins the agent's merge list.
+        const mergeRepo = remember ? null : mergeRepoOf(tool, call.input);
+        const offer = mergeRepo ? await mergeRepoToOffer(ctx, authority, mergeRepo) : null;
+        const kept = remember ?? (offer ? { tool: tool.name, actions: [], repo: offer } : null);
         const [approval] = await ctx.db
           .insert(approvals)
           .values({
@@ -1380,7 +1427,7 @@ export function createToolGateway(deps: {
             origin: authority ? approvalOrigin(authority) : null,
             ownerUserId: owner,
             expiresAt: new Date(now().getTime() + APPROVAL_TTL_MS),
-            approveAlways: remember,
+            approveAlways: kept,
             approvers: asked?.approvers ?? null,
             requestedByUserId: authority ? (authority.personId ?? routineCreatorOf(authority)) : null,
             highRisk: highRisk(tool.name, tool.scope),

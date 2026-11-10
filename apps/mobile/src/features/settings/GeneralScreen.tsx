@@ -7,7 +7,9 @@ import {
   useSettings,
   useUpdateSettings,
 } from "@agenteschat/client";
+import { DEFAULT_QUESTION_WAIT, QUESTION_WAITS } from "@agenteschat/client/lib/agent-questions";
 import { can } from "@agenteschat/client/lib/permissions";
+import { formatDuration } from "@agenteschat/client/lib/work";
 import { useQueryClient } from "@tanstack/react-query";
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
@@ -40,6 +42,7 @@ import { ZoneList } from "../me/AccountPage";
 import { PHOTO_MAX_BASE64, photoContentType } from "../me/logic";
 import { useColors } from "../shared/hooks";
 import { OrgAvatar } from "../shared/OrgAvatar";
+import { pickOne } from "../shared/PickerSheet";
 import { errorHaptic, goBack, MONO, successHaptic } from "../shared/parts";
 import { TextArea } from "../shared/TextArea";
 import { missingIdeas, nameOnLeave, withIdea, zoneLabel } from "./logic";
@@ -88,6 +91,7 @@ export function GeneralScreen() {
   const settings = useSettings(orgId);
   const update = useUpdateSettings(orgId);
   const editable = can(org, "configure");
+  const questionWait = settings.data?.questionWaitMinutes ?? DEFAULT_QUESTION_WAIT;
   const [name, setName] = useState("");
   const [context, setContext] = useState("");
   const [timezone, setTimezone] = useState("");
@@ -330,6 +334,25 @@ export function GeneralScreen() {
           toggle={settings.data?.taskPump ?? true}
           disabled={!editable || !settings.data}
           onPress={() => save({ taskPump: !(settings.data?.taskPump ?? true) })}
+        />
+        <GroupedRow
+          label={t("settings.questionWait")}
+          labelLines={2}
+          hint={{
+            name: t("common.about", { label: t("settings.questionWait") }),
+            text: t("settings.questionWaitHelp"),
+          }}
+          value={formatDuration(t, questionWait * 60_000)}
+          disabled={!editable || !settings.data}
+          onPress={() =>
+            void pickOne({
+              title: t("settings.questionWait"),
+              value: String(questionWait),
+              options: QUESTION_WAITS.map((m) => ({ key: String(m), label: formatDuration(t, m * 60_000) })),
+            }).then((key) => {
+              if (key && Number(key) !== questionWait) save({ questionWaitMinutes: Number(key) });
+            })
+          }
         />
       </GroupedList>
 

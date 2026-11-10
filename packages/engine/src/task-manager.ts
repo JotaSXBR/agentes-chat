@@ -1,6 +1,6 @@
-import { and, type Database, eq, inArray, rowsOf, schema, sql } from "@agenteschat/db";
+import { and, type Database, eq, inArray, isNull, rowsOf, schema, sql } from "@agenteschat/db";
 import { planOf as codingPlan, PLAN_IDS, planModel } from "@agenteschat/providers/plans";
-import { runAuthorityById } from "./authority";
+import { runAuthorityById, UUID } from "./authority";
 import type { ModelScope } from "./brains/select";
 import { TtlCache } from "./cache";
 import { computerQueue as lineOfComputer, seesRunSql } from "./computer-queue";
@@ -8,8 +8,10 @@ import { isAgentOnlyDm } from "./dms";
 import { NotFoundError } from "./errors";
 import { replyExcerpt } from "./messages";
 import { can, requireActiveMembership } from "./organizations";
+import { outOfOffice } from "./out-of-office";
 import { pendingIds } from "./recovery";
 import { personStopOf, shownStatusSql } from "./runs";
+import { taskSeenSql } from "./task-access";
 import { mayContinuePause } from "./usage-pause";
 
 /**
@@ -143,6 +145,26 @@ export interface ManagedTask {
   } | null;
   /** Why a `waiting_input` run waits on no person's answer yet; null for any other run. */
   wait: TaskWait | null;
+  /** What a run waiting on a person waits on, from its open requests; null for any other run. */
+  asks: TaskAsk | null;
+}
+
+/** A person's step a waiting task needs: an approval, an answer, a key, help on its screen, a mission's decision. */
+export interface TaskAsk {
+  kind: "approval" | "question" | "secret" | "screen" | "decision";
+  /** The one person it waits on; null: anyone in the conversation, or whoever decides an approval. */
+  forUserId: string | null;
+  /** A question's default (`ask_user`'s `default`) and when the run goes on with it. */
+  defaultAnswer: string | null;
+  decideAt: string | null;
+}
+
+/** An agent's board: its tasks to do, and while it is free, what keeps them from starting. */
+export interface AgentBacklog {
+  /** Tasks assigned to it still to do (`todo`), the caller's to see. */
+  todo: number;
+  /** Out of office (`outOfOffice`): its plan or budget is spent until `until` (null: the plan didn't say). */
+  out: { reason: "plan" | "budget"; until: string | null } | null;
 }
 
 /** A computer with work on it or a line for its room: the task manager's computers row and "Ver fila". */
@@ -191,6 +213,8 @@ export interface TaskManagerView {
   computers: ComputerSummary[];
   /** Per agent with work in the last hour: tool calls per minute, `ACTIVITY_MINUTES` points, oldest first. */
   activity: Record<string, number[]>;
+  /** Per agent with tasks to do on the board: how many, and what keeps them waiting while it is free. */
+  backlog: Record<string, AgentBacklog>;
 }
 
 type Row = {
@@ -436,6 +460,135 @@ function waitOf(r: Row): TaskWait | null {
   };
 }
 
+/** A pending call of a run's transcript (`Transcript.pending`): the request it waits on, until it has a result. */
+type PendingCall = {
+  approvalId?: string;
+  questionId?: string;
+  secretRequestId?: string;
+  waitId?: string;
+  result?: unknown;
+};
+
+/**
+ * What each of these runs waiting on a person waits on: its first pending call whose request is still open. A wait
+ * that isn't a hand-off of its screen is a mission's (a decision, a review).
+ */
+async function asksOf(db: Database, orgId: string, runIds: string[]): Promise<Map<string, TaskAsk>> {
+  const out = new Map<string, TaskAsk>();
+  if (runIds.length === 0) return out;
+  const rows = await db
+    .select({
+      id: agentRuns.id,
+      calls: sql<PendingCall[] | string | null>`${agentRuns.transcript}->'pending'->'calls'`,
+    })
+    .from(agentRuns)
+    .where(and(eq(agentRuns.orgId, orgId), inArray(agentRuns.id, runIds)));
+  const open = rows.flatMap((r) =>
+    (parsed(r.calls) ?? []).filter((c) => !c.result).map((call) => ({ run: r.id, call })),
+  );
+  const idsOf = (key: "questionId" | "secretRequestId" | "waitId") =>
+    open.flatMap(({ call }) => (typeof call[key] === "string" ? [call[key] as string] : []));
+  const [questionIds, secretIds, waitIds] = [idsOf("questionId"), idsOf("secretRequestId"), idsOf("waitId")];
+  const { agentQuestions, browserHandoffs, secretRequests } = schema;
+  const [questions, secrets, screens] = await Promise.all([
+    questionIds.length
+      ? db
+          .select({
+            id: agentQuestions.id,
+            forUserId: agentQuestions.requestedForUserId,
+            defaultAnswer: agentQuestions.defaultAnswer,
+            expiresAt: agentQuestions.expiresAt,
+          })
+          .from(agentQuestions)
+          .where(and(inArray(agentQuestions.id, questionIds), eq(agentQuestions.status, "open")))
+      : [],
+    secretIds.length
+      ? db
+          .select({ id: secretRequests.id, forUserId: secretRequests.requestedForUserId })
+          .from(secretRequests)
+          .where(and(inArray(secretRequests.id, secretIds), eq(secretRequests.status, "pending")))
+      : [],
+    waitIds.filter((id) => UUID.test(id)).length
+      ? db
+          .select({ id: browserHandoffs.id, forUserId: browserHandoffs.requestedForUserId })
+          .from(browserHandoffs)
+          .where(
+            and(
+              inArray(
+                browserHandoffs.id,
+                waitIds.filter((id) => UUID.test(id)),
+              ),
+              inArray(browserHandoffs.status, ["pending", "active"]),
+            ),
+          )
+      : [],
+  ]);
+  const ask = (kind: TaskAsk["kind"], forUserId: string | null = null): TaskAsk => ({
+    kind,
+    forUserId,
+    defaultAnswer: null,
+    decideAt: null,
+  });
+  for (const { run, call } of open) {
+    if (out.has(run)) continue;
+    const question = call.questionId ? questions.find((q) => q.id === call.questionId) : undefined;
+    const secret = call.secretRequestId ? secrets.find((r) => r.id === call.secretRequestId) : undefined;
+    const screen = call.waitId ? screens.find((h) => h.id === call.waitId) : undefined;
+    if (call.approvalId) out.set(run, ask("approval"));
+    else if (question)
+      out.set(run, {
+        ...ask("question", question.forUserId),
+        defaultAnswer: question.defaultAnswer,
+        decideAt: question.defaultAnswer ? question.expiresAt.toISOString() : null,
+      });
+    else if (secret) out.set(run, ask("secret", secret.forUserId));
+    else if (screen) out.set(run, ask("screen", screen.forUserId));
+    else if (call.waitId) out.set(run, ask("decision"));
+  }
+  return out;
+}
+
+/**
+ * Each agent's tasks to do on the board that the caller sees, and for one with any, whether it is out of office
+ * (`outOfOffice`: its plan or its budget spent until a reset), the reason they don't start while it is free.
+ */
+async function backlogOf(db: Database, orgId: string, userId: string, now: Date) {
+  const rows = rowsOf<{ agent_id: string; n: number | string }>(
+    await db.execute(sql`select i.assignee_id as agent_id, count(*) as n from ${schema.issues} i
+      where i.org_id = ${orgId}::uuid and i.assignee_type = 'agent' and i.status = 'todo'
+        and ${taskSeenSql("i", sql`${userId}`)}
+      group by i.assignee_id`),
+  );
+  const ids = rows.map((r) => r.agent_id).filter((id) => UUID.test(id));
+  if (ids.length === 0) return {};
+  const list = await db
+    .select({
+      id: agents.id,
+      orgId: agents.orgId,
+      model: agents.model,
+      credentialId: agents.credentialId,
+      brain: agents.brain,
+      brainAccountId: agents.brainAccountId,
+      machineId: agents.machineId,
+      monthlyBudgetNanoUsd: agents.monthlyBudgetNanoUsd,
+    })
+    .from(agents)
+    .where(and(eq(agents.orgId, orgId), inArray(agents.id, ids), isNull(agents.archivedAt)));
+  const away = await outOfOffice(db, orgId, list, { now });
+  return Object.fromEntries(
+    list.map((a): [string, AgentBacklog] => {
+      const out = away.get(a.id);
+      return [
+        a.id,
+        {
+          todo: Number(rows.find((r) => r.agent_id === a.id)?.n ?? 0),
+          out: out ? { reason: out.reason, until: out.until?.toISOString() ?? null } : null,
+        },
+      ];
+    }),
+  );
+}
+
 const planOf = (raw: { state: string }[] | string | null) => {
   const plan = typeof raw === "string" ? (JSON.parse(raw) as { state: string }[]) : (raw ?? []);
   return plan.length ? { done: plan.filter((p) => p.state === "done").length, total: plan.length } : null;
@@ -514,7 +667,16 @@ export async function taskManager(
     held: heldOf(r),
     line: null,
     wait: waitOf(r),
+    asks: null,
   }));
+  const onPeople = await asksOf(
+    db,
+    orgId,
+    tasks
+      .filter((task) => task.status === "waiting_approval" || (task.status === "waiting_input" && !task.held))
+      .map((task) => task.runId),
+  );
+  for (const task of tasks) task.asks = onPeople.get(task.runId) ?? null;
   await Promise.all(
     active.map(async (r, i) => {
       const wait = tasks[i]?.wait;
@@ -558,7 +720,8 @@ export async function taskManager(
         : null,
     };
   });
-  return { tasks, ended: endedTasks, hidden, computers, activity: await agentActivity(db, orgId, now) };
+  const [activity, backlog] = await Promise.all([agentActivity(db, orgId, now), backlogOf(db, orgId, userId, now)]);
+  return { tasks, ended: endedTasks, hidden, computers, activity, backlog };
 }
 
 const IN_LINE = sql`r.waiting_machine_id is not null and (r.status = 'running'

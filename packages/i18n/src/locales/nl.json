@@ -3624,7 +3624,9 @@
     "skip": "Overslaan",
     "skipFailed": "De vraag kon niet worden overgeslagen. Probeer het opnieuw.",
     "dismissed": "{{name}} heeft deze vraag overgeslagen.",
-    "dismissedByYou": "Je hebt deze vraag overgeslagen."
+    "dismissedByYou": "Je hebt deze vraag overgeslagen.",
+    "defaultNote": "Als niemand voor {{time}} antwoordt, ga ik verder met: {{answer}}",
+    "defaulted": "Niemand antwoordde op tijd. Ik ben verdergegaan met: {{answer}}"
   },
   "ask": {
     "kindOther": {
@@ -3711,6 +3713,9 @@
       "noteReadsAll": "Geldt vanaf nu alleen voor lezen door {{actions}} via deze verbinding. Wat gegevens wijzigt, blijft om goedkeuring vragen. Ongedaan maken: Tools en toegang, op de pagina van {{name}}.",
       "readsRule": "Lezen door {{tool}}",
       "pushTo": "pushen naar {{branch}} in {{repo}}",
+      "reviews": "beoordelingen die geen PR goedkeuren",
+      "repo": "Altijd in deze repository",
+      "noteRepo": "{{name}} merget vanaf nu zonder te vragen in {{repo}}. Andere repositories en deploys blijven vragen. Ongedaan maken: Tools en toegang, op de pagina van {{name}}.",
       "done": "Goedgekeurd. {{name}} vraagt hier niet meer om.",
       "undoHere": "Ongedaan maken kan bij Tools en toegang, op de pagina van {{name}}.",
       "undoHere_female": "Ongedaan maken kan bij Tools en toegang, op de pagina van {{name}}.",
@@ -13072,6 +13077,8 @@
     "taskPumpHelp": "Elke agent begint aan de volgende taak die iemand hem gaf zodra er ruimte is, en gaat verder met een taak die half af is. Elke agent heeft ook een eigen schakelaar.",
     "actionCheck": "Agents checken wat het team al deed",
     "actionCheckHelp": "Voor een e-mail, bericht of pull request checkt de agent of iemand in het team dat in de afgelopen 30 dagen al bij dezelfde persoon of plek deed, en herhaalt het niet.",
+    "questionWait": "Hoe lang wachten op een antwoord",
+    "questionWaitHelp": "Als een agent iets vraagt en zegt wat hij zou doen, gaat hij daarmee verder als niemand binnen deze tijd antwoordt, en meldt dat. Meteen als de gevraagde persoon afwezig is. Goedkeuringen wachten altijd op een mens.",
     "telemetry": {
       "title": "Gebruiksstatistieken",
       "label": "Anonieme gebruiksstatistieken naar agentes.chat sturen",
@@ -15442,6 +15449,14 @@
     "tasks_one": "{{count}} taak",
     "tasks_other": "{{count}} taken",
     "free": "Vrij",
+    "todo_one": "{{count}} te doen",
+    "todo_other": "{{count}} te doen",
+    "idle": {
+      "room": "begint als er ruimte is",
+      "plan": "abonnement tot {{when}}",
+      "planLimit": "abonnement op de limiet",
+      "budget": "budget tot {{when}}"
+    },
     "hiddenTasks_one": "{{count}} taak die je niet ziet",
     "hiddenTasks_other": "{{count}} taken die je niet ziet",
     "hiddenLine_one": "Nog {{count}} taak in gesprekken die je niet ziet.",
@@ -15499,6 +15514,14 @@
       "computerBusyNext": "Begint als er ruimte is",
       "okNext": "Gaat verder zodra iemand goedkeurt",
       "answerNext": "Gaat verder zodra iemand antwoordt",
+      "question": "Wacht op het antwoord van {{name}}",
+      "questionYou": "Wacht op jouw antwoord",
+      "secret": "Wacht op een sleutel van {{name}}",
+      "secretYou": "Wacht op een sleutel van jou",
+      "screen": "Wacht op {{name}} op het scherm",
+      "screenYou": "Wacht op jou op het scherm",
+      "decision": "Wacht op een besluit",
+      "defaultNext": "Gaat om {{time}} verder met {{answer}}",
       "back": "Gaat {{when}} verder",
       "whenRenews": "na de vernieuwing",
       "whenSoon": "zo meteen"

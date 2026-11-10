@@ -3490,7 +3490,9 @@
     "skip": "跳过",
     "skipFailed": "无法跳过此问题，请重试。",
     "dismissed": "{{name}}跳过了此问题。",
-    "dismissedByYou": "你跳过了此问题。"
+    "dismissedByYou": "你跳过了此问题。",
+    "defaultNote": "如果到 {{time}} 还没人回答，我会按这个继续：{{answer}}",
+    "defaulted": "没有人及时回答，我按这个继续了：{{answer}}"
   },
   "ask": {
     "kindOther": {
@@ -3573,6 +3575,9 @@
       "noteReadsAll": "从现在起仅涵盖 {{actions}} 在此连接中的读取。会更改数据的操作仍需批准。如需撤销：{{name}} 页面的“工具和权限”。",
       "readsRule": "{{tool}} 的读取",
       "pushTo": "推送到 {{repo}} 的 {{branch}}",
+      "reviews": "不批准 PR 的审查",
+      "repo": "在此仓库中始终批准",
+      "noteRepo": "从现在起，{{name}}在 {{repo}} 中合并无需询问。其他仓库和部署仍会询问。如需撤销：{{name}} 页面的“工具和权限”。",
       "done": "已批准。{{name}} 不会再询问这项操作。",
       "undoHere": "如需撤销，请前往 {{name}} 页面的“工具和权限”。",
       "undoHere_female": "如需撤销，请前往 {{name}} 页面的“工具和权限”。",
@@ -12584,6 +12589,8 @@
     "taskPumpHelp": "每个智能体一有空位就开始别人交给它的下一项任务，也会回到做了一半的任务。每个智能体也有自己的开关。",
     "actionCheck": "智能体会检查团队已经做过的事",
     "actionCheckHelp": "在发送邮件、消息或 Pull Request 之前，智能体会检查过去 30 天内团队中是否已有人对同一个人或同一个地方做过同样的事，避免重复。",
+    "questionWait": "等待回答的时长",
+    "questionWaitHelp": "当智能体提问并说明自己会怎么做时，如果在这段时间内没人回答，它会按此继续并告知大家。被提问的人不在时，立即继续。审批总是等待人来决定。",
     "telemetry": {
       "title": "使用统计",
       "label": "向 agentes.chat 发送匿名使用统计",
@@ -14914,6 +14921,13 @@
     "agentTasks": "{{name}} 的任务",
     "tasks_other": "{{count}} 个任务",
     "free": "空闲",
+    "todo_other": "{{count}} 个待办",
+    "idle": {
+      "room": "有空位时开始",
+      "plan": "套餐限额到 {{when}}",
+      "planLimit": "套餐已达限额",
+      "budget": "预算到 {{when}} 前已用完"
+    },
     "hiddenTasks_other": "{{count}} 个你看不到的任务",
     "hiddenLine_other": "你看不到的对话里还有 {{count}} 个任务。",
     "helpers_other": "{{count}} 个协助者",
@@ -14968,6 +14982,14 @@
       "computerBusyNext": "有空位时开始",
       "okNext": "有人审批后继续",
       "answerNext": "有人回答后继续",
+      "question": "等待 {{name}} 回答",
+      "questionYou": "等待你的回答",
+      "secret": "等待 {{name}} 提供密钥",
+      "secretYou": "等待你提供密钥",
+      "screen": "等待 {{name}} 在屏幕上操作",
+      "screenYou": "等待你在屏幕上操作",
+      "decision": "等待决定",
+      "defaultNext": "{{time}} 按 {{answer}} 继续",
       "back": "{{when}}继续",
       "whenRenews": "重置后",
       "whenSoon": "马上"

@@ -28,6 +28,11 @@ export interface RememberedKind {
    * never as a rule of the agent.
    */
   routineId?: string;
+  /**
+   * "Sempre neste repositório" on a merge card: kept in the agent's merge list (`addAgentMergeRepository`,
+   * `agents.merge_repos`), never as a rule. `actions` is empty.
+   */
+  repo?: string;
 }
 
 /** How many connected-app actions a routine may do on its own. */
@@ -67,7 +72,12 @@ export function rememberedKindOf(value: unknown): RememberedKind | null {
   const v = value as Partial<RememberedKind> | null | undefined;
   if (!v || typeof v.tool !== "string" || !v.tool || !Array.isArray(v.actions)) return null;
   if (!v.actions.every((a) => typeof a === "string" && a)) return null;
-  return { tool: v.tool, actions: v.actions, ...(typeof v.routineId === "string" ? { routineId: v.routineId } : {}) };
+  return {
+    tool: v.tool,
+    actions: v.actions,
+    ...(typeof v.routineId === "string" ? { routineId: v.routineId } : {}),
+    ...(typeof v.repo === "string" && v.repo ? { repo: v.repo } : {}),
+  };
 }
 
 /** Whether `userId` decides an agent's approvals: its owner, or who holds `approve_actions`. */

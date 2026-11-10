@@ -1,4 +1,4 @@
-import type { ComputerSummary, EndedTask, ManagedTask } from "@agenteschat/client";
+import type { AgentBacklog, ComputerSummary, EndedTask, ManagedTask } from "@agenteschat/client";
 import { useTaskManager } from "@agenteschat/client";
 import { listsAgent } from "@agenteschat/client/lib/audience";
 import {
@@ -91,7 +91,7 @@ export function TaskManagerPage({
   /** `task`'s panel closed: the address forgets it, so a row of the line opens it again. */
   onTaskClosed?: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { org, me } = useOrg();
   const dir = useDirectory(org.id);
   const look = useRightHandLook();
@@ -142,6 +142,7 @@ export function TaskManagerPage({
   const grouped = groupTasks(shown, stopping);
   const summary = agentSummary(all);
   const hidden = view.data?.hidden;
+  const backlog = view.data?.backlog ?? {};
 
   // The cards: who has tasks, in the table's order, then who worked in the last hour; the chosen one stays.
   const lines = useMemo(() => {
@@ -162,6 +163,8 @@ export function TaskManagerPage({
     .map(([id]) => id)
     .sort((a, b) => nameOf(a).localeCompare(nameOf(b)));
   for (const id of worked) addCard(id);
+  // A free agent with tasks to do on the board gets its card too: it says why they haven't started.
+  for (const id of Object.keys(backlog)) addCard(id);
   if (card) addCard(card);
 
   const selTask = all.find((task) => task.runId === selected);
@@ -339,6 +342,7 @@ export function TaskManagerPage({
               name={nameOf(id)}
               tasks={tasksOf(all, id)}
               hidden={hiddenCount(hidden, id)}
+              backlog={backlog[id]}
               line={lines.get(id) ?? quiet}
               color={colorOf(dir.anyAgent(id))}
               lineLabel={t("taskManager.activityOf", { name: nameOf(id) })}
@@ -416,7 +420,9 @@ export function TaskManagerPage({
                   <ul className="tm-list">{tasksOf(shown, card).map((task) => row(task, "agent"))}</ul>
                 </>
               ) : (
-                <p className="tm-none">{agentCardLine(t, 0, hiddenCount(hidden, card))}</p>
+                <p className="tm-none">
+                  {agentCardLine(t, 0, hiddenCount(hidden, card), { backlog: backlog[card], locale: i18n.language })}
+                </p>
               )}
             </TaskTable>
           ) : (
@@ -809,6 +815,7 @@ function AgentCard({
   name,
   tasks,
   hidden,
+  backlog,
   line,
   color,
   lineLabel,
@@ -821,13 +828,15 @@ function AgentCard({
   tasks: ManagedTask[];
   /** Its tasks the viewer may not see. */
   hidden: number;
+  /** Its tasks to do on the board. */
+  backlog?: AgentBacklog;
   line: number[];
   color: AgentColor;
   lineLabel: string;
   pressed: boolean;
   onPress: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { waiting } = agentSummary(tasks);
   return (
     <div className="tm-card ac-card ac-card--interactive" data-pressed={pressed || undefined}>
@@ -849,7 +858,7 @@ function AgentCard({
           onClick={onPress}
         >
           <b>{name}</b>
-          <small>{agentCardLine(t, tasks.length, hidden)}</small>
+          <small>{agentCardLine(t, tasks.length, hidden, { backlog, locale: i18n.language })}</small>
         </button>
         {waiting > 0 && (
           <Chip

@@ -3871,7 +3871,9 @@
     "skip": "Pomiń",
     "skipFailed": "Nie udało się pominąć pytania. Spróbuj ponownie.",
     "dismissed": "Pytanie pominięte przez: {{name}}.",
-    "dismissedByYou": "Pominięto to pytanie."
+    "dismissedByYou": "Pominięto to pytanie.",
+    "defaultNote": "Jeśli nikt nie odpowie do {{time}}, idę dalej z: {{answer}}",
+    "defaulted": "Nikt nie odpowiedział na czas. Przyjęto: {{answer}}"
   },
   "ask": {
     "kindOther": {
@@ -3966,6 +3968,9 @@
       "noteReadsAll": "Obejmuje od teraz tylko odczyty przez {{actions}} w tym połączeniu. To, co zmienia dane, nadal wymaga zgody. Aby cofnąć: Narzędzia i dostęp na stronie agenta {{name}}.",
       "readsRule": "Odczyty przez {{tool}}",
       "pushTo": "push do {{branch}} w {{repo}}",
+      "reviews": "przeglądy, które nie zatwierdzają PR",
+      "repo": "Zawsze w tym repozytorium",
+      "noteRepo": "{{name}} od teraz robi merge w {{repo}} bez pytania. Inne repozytoria i wdrożenia nadal pytają. Aby cofnąć: Narzędzia i dostęp na stronie agenta {{name}}.",
       "done": "Zatwierdzono. {{name}} już nie będzie o to pytać.",
       "undoHere": "Aby to cofnąć, przejdź do sekcji Narzędzia i dostęp na stronie agenta {{name}}.",
       "undoHere_female": "Aby to cofnąć, przejdź do sekcji Narzędzia i dostęp na stronie agentki {{name}}.",
@@ -13922,6 +13927,8 @@
     "taskPumpHelp": "Każdy agent zaczyna następne zadanie, które dała mu osoba, gdy tylko ma miejsce, i wraca do zadania zostawionego w połowie. Każdy agent ma też własny przełącznik.",
     "actionCheck": "Agenci sprawdzają, co zespół już zrobił",
     "actionCheckHelp": "Przed e-mailem, wiadomością lub pull requestem agent sprawdza, czy ktoś z zespołu nie zrobił już tego samego wobec tej samej osoby lub miejsca w ciągu ostatnich 30 dni, i tego nie powtarza.",
+    "questionWait": "Jak długo czekać na odpowiedź",
+    "questionWaitHelp": "Gdy agent o coś pyta i mówi, co by zrobił, idzie dalej z tym, jeśli nikt nie odpowie w tym czasie, i o tym informuje. Od razu, gdy pytana osoba jest poza biurem. Zatwierdzenia zawsze czekają na człowieka.",
     "telemetry": {
       "title": "Statystyki użycia",
       "label": "Wysyłaj anonimowe statystyki użycia do agentes.chat",
@@ -16331,6 +16338,16 @@
     "tasks_many": "{{count}} zadań",
     "tasks_other": "{{count}} zadania",
     "free": "Bez zadań",
+    "todo_one": "{{count}} do zrobienia",
+    "todo_few": "{{count}} do zrobienia",
+    "todo_many": "{{count}} do zrobienia",
+    "todo_other": "{{count}} do zrobienia",
+    "idle": {
+      "room": "zacznie się, gdy będzie miejsce",
+      "plan": "plan do {{when}}",
+      "planLimit": "plan na limicie",
+      "budget": "budżet do {{when}}"
+    },
     "hiddenTasks_one": "{{count}} zadanie, którego nie widzisz",
     "hiddenTasks_few": "{{count}} zadania, których nie widzisz",
     "hiddenTasks_many": "{{count}} zadań, których nie widzisz",
@@ -16394,6 +16411,14 @@
       "computerBusyNext": "Zacznie się, gdy będzie miejsce",
       "okNext": "Wznowi, gdy ktoś zatwierdzi",
       "answerNext": "Wznowi, gdy ktoś odpowie",
+      "question": "Czeka na odpowiedź od {{name}}",
+      "questionYou": "Czeka na twoją odpowiedź",
+      "secret": "Czeka na klucz od {{name}}",
+      "secretYou": "Czeka na klucz od ciebie",
+      "screen": "Czeka na {{name}} na ekranie",
+      "screenYou": "Czeka na ciebie na ekranie",
+      "decision": "Czeka na decyzję",
+      "defaultNext": "Idzie dalej z {{answer}} o {{time}}",
       "back": "Wznowi {{when}}",
       "whenRenews": "po odnowieniu",
       "whenSoon": "za chwilę"

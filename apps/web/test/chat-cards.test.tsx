@@ -4,6 +4,7 @@ import { setupDom } from "@agenteschat/ui/testing/dom";
 setupDom();
 
 import type { AgentAction, LiveWork, Message, Run } from "@agenteschat/client";
+import { clockAt } from "@agenteschat/client/lib/format";
 import { act, cleanup, fireEvent, within } from "@testing-library/react";
 import { useState } from "react";
 import { LiveTools, SavedTools } from "@/components/ToolCalls";
@@ -455,6 +456,23 @@ describe("a question for one person", () => {
     // Back with the room (the person left): the reason no longer holds.
     await openChannel(() => [card(null, why)]);
     expect(document.querySelector(".rq .rq__note")).toBeNull();
+  });
+
+  test("with a default: what it goes on with and when while it waits, what it went on with once nobody answered", async () => {
+    const decideAt = inMs(40 * 60_000);
+    const withDefault = (over: object) => {
+      const m = card(null);
+      const question = { ...(m.meta?.question as object), defaultAnswer: "10h", decideAt, ...over };
+      return { ...m, meta: { ...m.meta, question } } as Message;
+    };
+    await openChannel(() => [withDefault({})]);
+    expect(document.querySelector(".rq .rq__note")?.textContent).toBe(
+      `Se ninguém responder até ${clockAt("pt-BR", decideAt)}, sigo com: 10h`,
+    );
+    cleanup();
+    await openChannel(() => [withDefault({ status: "answered", defaulted: true })]);
+    expect(document.body.textContent).toContain("Ninguém respondeu a tempo. Segui com: 10h");
+    expect(screen().queryByRole("button", { name: "10h" })).toBeNull();
   });
 });
 

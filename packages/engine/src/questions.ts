@@ -8,17 +8,50 @@ import { isAgentOnlyDm } from "./dms";
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "./errors";
 import { publishChannelEvent } from "./events";
 import type { ResourcefulDeps } from "./hand-off";
+import { availabilityNow } from "./member-status";
 import { notifyQuestion, resolveQuestionNotifications } from "./notification-producers";
 import { enqueue } from "./outbox";
 import { personBehindCall } from "./requester";
 import type { ToolDefinition, ToolSource } from "./tools/types";
 
-const { agentQuestions, channelMembers, messages, notifications, organizationMembers, users } = schema;
+const { agentQuestions, channelMembers, messages, notifications, organizationMembers, organizationSettings, users } =
+  schema;
 
 export type AgentQuestionRow = typeof agentQuestions.$inferSelect;
 
 /** How long a question waits for an answer before the run goes on without one. */
 export const QUESTION_TTL_MS = 24 * 3600_000;
+/** "Quanto esperar por uma resposta" (`organization_settings.question_wait_minutes`): its choices, in minutes. */
+export const QUESTION_WAIT_MINUTES = [10, 30, 60, 240] as const;
+export const DEFAULT_QUESTION_WAIT_MINUTES = 30;
+
+/**
+ * When a question closes: one with a default after the workspace's wait, at once while the person it is for is out of
+ * office (nobody is there to answer); one without, after a day.
+ */
+export async function questionExpiry(
+  db: Executor,
+  orgId: string,
+  forUserId: string | null,
+  hasDefault: boolean,
+  now = new Date(),
+): Promise<Date> {
+  if (!hasDefault) return new Date(now.getTime() + QUESTION_TTL_MS);
+  const [[settings], [person]] = await Promise.all([
+    db
+      .select({ minutes: organizationSettings.questionWaitMinutes })
+      .from(organizationSettings)
+      .where(eq(organizationSettings.orgId, orgId)),
+    forUserId
+      ? db
+          .select({ availability: organizationMembers.availability, statusUntil: organizationMembers.statusUntil })
+          .from(organizationMembers)
+          .where(and(eq(organizationMembers.orgId, orgId), eq(organizationMembers.userId, forUserId)))
+      : [],
+  ]);
+  if (person && availabilityNow(person, now) === "out") return now;
+  return new Date(now.getTime() + (settings?.minutes ?? DEFAULT_QUESTION_WAIT_MINUTES) * 60_000);
+}
 export const ASK_USER_TOOL = "ask_user";
 /** A question card holds one short question: never a whole reply, and never one cut to fit. */
 export const QUESTION_MAX_CHARS = 300;
@@ -47,6 +80,11 @@ export interface AgentQuestion {
   dismissed?: true;
   /** Why it is for `requestedForUserId` and not who asked the agent: its card's line (`meta.question` only). */
   forWhy?: string;
+  /** One of `choices`: what the agent goes on with if nobody answers by `decideAt` ("Se ninguém responder até…"). */
+  defaultAnswer?: string;
+  decideAt?: string;
+  /** Nobody answered in time: the agent went on with `defaultAnswer`. */
+  defaulted?: true;
 }
 
 export function questionView(q: AgentQuestionRow): AgentQuestion {
@@ -65,6 +103,8 @@ export function questionView(q: AgentQuestionRow): AgentQuestion {
     answer: q.answer,
     answeredByUserId: q.answeredByUserId,
     ...(q.status === "dismissed" ? { dismissed: true as const } : {}),
+    ...(q.defaultAnswer ? { defaultAnswer: q.defaultAnswer, decideAt: q.expiresAt.toISOString() } : {}),
+    ...(q.defaultAnswer && q.status === "expired" ? { defaulted: true as const } : {}),
   };
 }
 
@@ -92,7 +132,7 @@ export function createAskUserToolSource(deps: ResourcefulDeps = {}): ToolSource 
   const tool: ToolDefinition = {
     name: ASK_USER_TOOL,
     description:
-      "Ask the person one short question and wait for the answer, only when you can't go on without it: the request is still ambiguous after you looked with your tools, a decision is really theirs, or a sensitive or irreversible action is next. Never a status note or an offer of optional extra work: those go in your reply, nobody waits on them. A way to do what was asked is never optional: do it, handing the person their step with its own request. Don't ask before what you can just do and undo: issues, memories, routines, a form you fill and save before submitting. Not for choosing between fixes: recommend one. `question` is the question alone, at most 300 characters: anything longer goes in your text before the call, posted above the card. The card shows the choices and your `why`: never write them in your text; after calling, write nothing else and end your turn. Offer 2 to 4 short choices when the answer is one of a few options.",
+      "Ask the person one short question and wait for the answer, only when you can't go on without it: the request is still ambiguous after you looked with your tools, a decision is really theirs, or a sensitive or irreversible action is next. Never a status note or an offer of optional extra work: those go in your reply, nobody waits on them. A way to do what was asked is never optional: do it, handing the person their step with its own request. Don't ask before what you can just do and undo: issues, memories, routines, a form you fill and save before submitting. Not for choosing between fixes: recommend one. `question` is the question alone, at most 300 characters: anything longer goes in your text before the call, posted above the card. The card shows the choices and your `why`: never write them in your text; after calling, write nothing else and end your turn. Offer 2 to 4 short choices when the answer is one of a few options; when one of them is a safe guess you can undo, give it as `default`: the card shows it and you go on with it if nobody answers in time.",
     scope: "",
     inputSchema: {
       type: "object",
@@ -110,6 +150,12 @@ export function createAskUserToolSource(deps: ResourcefulDeps = {}): ToolSource 
           type: "string",
           maxLength: 120,
           description: "Why them, one short line in the people's language, shown on the card.",
+        },
+        default: {
+          type: "string",
+          maxLength: 200,
+          description:
+            "One of your choices, written the same way: the one you go on with if nobody answers in time (the card says it). Leave it out when the decision is really theirs or the next step can't be undone. It only answers this question: anything that asks for approval still waits for a person.",
         },
       },
       required: ["question"],
@@ -157,19 +203,29 @@ export function createAskUserToolSource(deps: ResourcefulDeps = {}): ToolSource 
       }
       const text = typeof input.question === "string" ? input.question.trim() : "";
       if (text.length > QUESTION_MAX_CHARS) return { content: questionTooLong(text.length), isError: true };
+      const listed = Array.isArray(input.choices)
+        ? [...new Set((input.choices as unknown[]).map((c) => String(c).trim()).filter(Boolean))]
+        : [];
+      const choices = listed.length >= 2 ? listed.slice(0, 4) : null;
+      const fallback = typeof input.default === "string" ? input.default.trim() : "";
+      if (fallback && !choices?.includes(fallback)) {
+        return {
+          content:
+            "Not asked: `default` must be one of your `choices`, written the same way. Add it to them, or leave it out.",
+          isError: true,
+        };
+      }
       // Loaded here: the check pulls in the controller, which imports most of the engine.
       const held = await (await import("./hand-off")).holdAsk(deps, ctx, text);
       if (held) return { content: held, data: { held: true } };
-      const choices = Array.isArray(input.choices)
-        ? [...new Set((input.choices as unknown[]).map((c) => String(c).trim()).filter(Boolean))]
-        : [];
       return {
         content: "",
         waitForAnswer: {
           text,
-          choices: choices.length >= 2 ? choices.slice(0, 4) : null,
+          choices,
           requestedForUserId,
           ...(forWhy ? { forWhy } : {}),
+          ...(fallback ? { default: fallback } : {}),
         },
       };
     },
@@ -243,6 +299,10 @@ export function questionResult(q: AgentQuestionRow | undefined): { content: stri
     return {
       content:
         "The person skipped this question: go on without an answer, with your best judgement if it is safe, or say what you still need.",
+    };
+  if (q?.status === "expired" && q.defaultAnswer)
+    return {
+      content: `Nobody answered in time: go on with your default, ${q.defaultAnswer}. Say in a line that you went with it and that they can still tell you otherwise. It answers only this question: anything that asks for approval still waits for a person.`,
     };
   return {
     content:

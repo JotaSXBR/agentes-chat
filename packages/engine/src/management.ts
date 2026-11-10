@@ -29,6 +29,7 @@ import {
   mediaSettingsFrom,
 } from "./media";
 import { can, lockOrgMembers, requireActiveMembership, requirePermission } from "./organizations";
+import { DEFAULT_QUESTION_WAIT_MINUTES, QUESTION_WAIT_MINUTES } from "./questions";
 import { isRightHand, rightHandPermanent } from "./right-hand";
 import {
   agentBudgetsThisMonth,
@@ -85,6 +86,8 @@ export interface OrgSettings extends MediaSettings {
   newAgentAudience: NewAgentAudience;
   /** Agents take the tasks people gave them by themselves as room frees (`task-pump.ts`). On by default. */
   taskPump: boolean;
+  /** "Quanto esperar por uma resposta" (`QUESTION_WAIT_MINUTES`): a question with a default waits this long, in minutes. */
+  questionWaitMinutes: number;
 }
 
 export const TEAM_SIZES = ["solo", "small", "medium", "large"] as const;
@@ -110,6 +113,7 @@ export async function getOrgSettings(db: Database, actorId: string, orgId: strin
     autoModels: (s?.autoModels ?? {}) as AutoModels,
     newAgentAudience: s?.newAgentAudience ?? "everyone",
     taskPump: s?.taskPump ?? true,
+    questionWaitMinutes: s?.questionWaitMinutes ?? DEFAULT_QUESTION_WAIT_MINUTES,
     ...mediaSettingsFrom(s),
   };
 }
@@ -163,6 +167,11 @@ export async function updateOrgSettings(
     throw new ValidationError(`agentMedia must be one of ${AGENT_MEDIA_LEVELS.join(", ")}`);
   if (input.newAgentAudience !== undefined && !NEW_AGENT_AUDIENCES.includes(input.newAgentAudience))
     throw new ValidationError(`newAgentAudience must be one of ${NEW_AGENT_AUDIENCES.join(", ")}`);
+  if (
+    input.questionWaitMinutes !== undefined &&
+    !QUESTION_WAIT_MINUTES.includes(input.questionWaitMinutes as (typeof QUESTION_WAIT_MINUTES)[number])
+  )
+    throw new ValidationError(`questionWaitMinutes must be one of ${QUESTION_WAIT_MINUTES.join(", ")}`);
   for (const [provider, id] of Object.entries(input.defaultCredentialIds ?? {})) {
     if (!id) continue;
     const [cred] = await db
@@ -233,6 +242,7 @@ export async function updateOrgSettings(
       ...(input.agentMedia !== undefined ? { agentMedia: input.agentMedia } : {}),
       ...(input.newAgentAudience !== undefined ? { newAgentAudience: input.newAgentAudience } : {}),
       ...(input.taskPump !== undefined ? { taskPump: input.taskPump } : {}),
+      ...(input.questionWaitMinutes !== undefined ? { questionWaitMinutes: input.questionWaitMinutes } : {}),
       ...(input.autoModels !== undefined
         ? { autoModels: mergeAutoModels(await storedAutoModels(), input.autoModels) }
         : {}),

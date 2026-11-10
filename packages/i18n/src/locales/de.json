@@ -3626,7 +3626,9 @@
     "skip": "Überspringen",
     "skipFailed": "Die Frage konnte nicht übersprungen werden. Versuch es noch einmal.",
     "dismissed": "{{name}} hat diese Frage übersprungen.",
-    "dismissedByYou": "Du hast diese Frage übersprungen."
+    "dismissedByYou": "Du hast diese Frage übersprungen.",
+    "defaultNote": "Wenn bis {{time}} niemand antwortet, mache ich weiter mit: {{answer}}",
+    "defaulted": "Niemand hat rechtzeitig geantwortet. Ich habe weitergemacht mit: {{answer}}"
   },
   "ask": {
     "kindOther": {
@@ -3713,6 +3715,9 @@
       "noteReadsAll": "Gilt ab jetzt nur für Lesezugriffe von {{actions}} über diese Verbindung. Was Daten ändert, fragt weiter nach. Rückgängig: Tools und Zugriff, auf der Seite von {{name}}.",
       "readsRule": "Lesezugriffe von {{tool}}",
       "pushTo": "Push auf {{branch}} in {{repo}}",
+      "reviews": "Reviews, die keinen PR freigeben",
+      "repo": "Immer in diesem Repository",
+      "noteRepo": "{{name}} merged ab jetzt ohne Nachfrage in {{repo}}. Andere Repositories und Deploys fragen weiter. Rückgängig: Tools und Zugriff, auf der Seite von {{name}}.",
       "done": "Freigegeben. {{name}} fragt dafür nicht mehr nach.",
       "undoHere": "Zum Rückgängigmachen geh auf der Seite von {{name}} zu Tools und Zugriff.",
       "open": "Öffnen",
@@ -13018,6 +13023,8 @@
     "taskPumpHelp": "Jeder Agent beginnt die nächste Aufgabe, die eine Person ihm gegeben hat, sobald Platz ist, und kehrt zu einer unfertigen zurück. Jeder Agent hat auch einen eigenen Schalter.",
     "actionCheck": "Agenten prüfen, was das Team schon getan hat",
     "actionCheckHelp": "Vor einer E-Mail, einer Nachricht oder einem Pull Request prüft der Agent, ob jemand im Team das in den letzten 30 Tagen schon bei derselben Person oder am selben Ort getan hat, und wiederholt es nicht.",
+    "questionWait": "Wie lange auf eine Antwort warten",
+    "questionWaitHelp": "Wenn ein Agent etwas fragt und sagt, was er tun würde, macht er damit weiter, wenn in dieser Zeit niemand antwortet, und sagt es. Sofort, wenn die gefragte Person abwesend ist. Freigaben warten immer auf einen Menschen.",
     "telemetry": {
       "title": "Nutzungsstatistiken",
       "label": "Anonyme Nutzungsstatistiken an agentes.chat senden",
@@ -15274,6 +15281,14 @@
     "tasks_one": "{{count}} Aufgabe",
     "tasks_other": "{{count}} Aufgaben",
     "free": "Frei",
+    "todo_one": "{{count}} offen",
+    "todo_other": "{{count}} offen",
+    "idle": {
+      "room": "startet, wenn Platz frei ist",
+      "plan": "Abo bis {{when}}",
+      "planLimit": "Abo am Limit",
+      "budget": "Budget bis {{when}}"
+    },
     "hiddenTasks_one": "{{count}} Aufgabe, die du nicht siehst",
     "hiddenTasks_other": "{{count}} Aufgaben, die du nicht siehst",
     "hiddenLine_one": "{{count}} weitere Aufgabe in Gesprächen, die du nicht siehst.",
@@ -15331,6 +15346,14 @@
       "computerBusyNext": "Startet, wenn Platz frei ist",
       "okNext": "Geht weiter, sobald jemand freigibt",
       "answerNext": "Geht weiter, sobald jemand antwortet",
+      "question": "Wartet auf die Antwort von {{name}}",
+      "questionYou": "Wartet auf deine Antwort",
+      "secret": "Wartet auf einen Schlüssel von {{name}}",
+      "secretYou": "Wartet auf einen Schlüssel von dir",
+      "screen": "Wartet auf {{name}} am Bildschirm",
+      "screenYou": "Wartet am Bildschirm auf dich",
+      "decision": "Wartet auf eine Entscheidung",
+      "defaultNext": "Macht um {{time}} mit {{answer}} weiter",
       "back": "Geht {{when}} weiter",
       "whenRenews": "nach der Erneuerung",
       "whenSoon": "gleich"

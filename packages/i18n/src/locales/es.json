@@ -3728,7 +3728,9 @@
     "skip": "Omitir",
     "skipFailed": "No se pudo omitir la pregunta. Inténtalo de nuevo.",
     "dismissed": "{{name}} omitió esta pregunta.",
-    "dismissedByYou": "Omitiste esta pregunta."
+    "dismissedByYou": "Omitiste esta pregunta.",
+    "defaultNote": "Si nadie responde antes de las {{time}}, sigo con: {{answer}}",
+    "defaulted": "Nadie respondió a tiempo. Seguí con: {{answer}}"
   },
   "ask": {
     "kindOther": {
@@ -3819,6 +3821,9 @@
       "noteReadsAll": "Cubre solo las lecturas de {{actions}} en esta conexión de ahora en adelante. Lo que cambia datos sigue pidiendo. Para deshacerlo: Herramientas y acceso, en la página de {{name}}.",
       "readsRule": "Lecturas de {{tool}}",
       "pushTo": "push a {{branch}} en {{repo}}",
+      "reviews": "revisiones que no aprueban un PR",
+      "repo": "Siempre en este repositorio",
+      "noteRepo": "{{name}} hace merge en {{repo}} sin preguntar a partir de ahora. Otros repositorios y los deploys siguen preguntando. Para deshacerlo: Herramientas y acceso, en la página de {{name}}.",
       "done": "Aprobado. {{name}} no volverá a pedir esto.",
       "undoHere": "Para deshacerlo, ve a Herramientas y acceso, en la página de {{name}}.",
       "open": "Abrir",
@@ -13397,6 +13402,8 @@
     "taskPumpHelp": "Cada agente empieza la próxima tarea que una persona le dio en cuanto tiene espacio, y vuelve a una que dejó a medias. Cada agente también tiene su propio interruptor.",
     "actionCheck": "Los agentes revisan lo que el equipo ya hizo",
     "actionCheckHelp": "Antes de enviar un correo, un mensaje o un pull request, el agente revisa si alguien del equipo ya lo hizo con la misma persona o en el mismo lugar en los últimos 30 días, y no lo repite.",
+    "questionWait": "Cuánto esperar una respuesta",
+    "questionWaitHelp": "Cuando un agente pregunta algo y dice qué haría, sigue con eso si nadie responde en este tiempo, y lo avisa. De inmediato si la persona a quien preguntó está fuera de la oficina. Las aprobaciones siempre esperan a una persona.",
     "telemetry": {
       "title": "Estadísticas de uso",
       "label": "Enviar estadísticas de uso anónimas a agentes.chat",
@@ -15741,6 +15748,15 @@
     "tasks_many": "{{count}} tareas",
     "tasks_other": "{{count}} tareas",
     "free": "Libre",
+    "todo_one": "{{count}} pendiente",
+    "todo_many": "{{count}} pendientes",
+    "todo_other": "{{count}} pendientes",
+    "idle": {
+      "room": "empieza cuando haya lugar",
+      "plan": "plan hasta {{when}}",
+      "planLimit": "plan en su límite",
+      "budget": "presupuesto hasta {{when}}"
+    },
     "hiddenTasks_one": "{{count}} tarea que no ves",
     "hiddenTasks_many": "{{count}} tareas que no ves",
     "hiddenTasks_other": "{{count}} tareas que no ves",
@@ -15801,6 +15817,14 @@
       "computerBusyNext": "Empieza cuando haya lugar",
       "okNext": "Sigue cuando alguien apruebe",
       "answerNext": "Sigue cuando alguien responda",
+      "question": "Espera que {{name}} responda",
+      "questionYou": "Espera tu respuesta",
+      "secret": "Espera una clave de {{name}}",
+      "secretYou": "Espera una clave tuya",
+      "screen": "Espera a {{name}} en su pantalla",
+      "screenYou": "Te espera en su pantalla",
+      "decision": "Espera una decisión",
+      "defaultNext": "Sigue con {{answer}} a las {{time}}",
       "back": "Vuelve {{when}}",
       "whenRenews": "cuando se renueve",
       "whenSoon": "en un momento"

@@ -375,6 +375,11 @@ export const organizationSettings = pgTable("organization_settings", {
    * assigned task waiting until someone asks the agent to do it. Each agent has its own switch too.
    */
   taskPump: boolean().notNull().default(true),
+  /**
+   * "Quanto esperar por uma resposta": how long a question an agent asked with a default (`ask_user`'s `default`) waits
+   * before the run goes on with that default, in minutes. At once while the person it is for is out of office.
+   */
+  questionWaitMinutes: integer().notNull().default(30),
   updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 });
 

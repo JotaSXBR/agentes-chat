@@ -3501,7 +3501,9 @@
     "skip": "Lewati",
     "skipFailed": "Tidak dapat melewati pertanyaan. Coba lagi.",
     "dismissed": "{{name}} melewati pertanyaan ini.",
-    "dismissedByYou": "Kamu melewati pertanyaan ini."
+    "dismissedByYou": "Kamu melewati pertanyaan ini.",
+    "defaultNote": "Kalau tidak ada yang menjawab sampai {{time}}, saya lanjut dengan: {{answer}}",
+    "defaulted": "Tidak ada yang menjawab tepat waktu. Saya lanjut dengan: {{answer}}"
   },
   "ask": {
     "kindOther": {
@@ -3584,6 +3586,9 @@
       "noteReadsAll": "Hanya mencakup pembacaan oleh {{actions}} di koneksi ini mulai sekarang. Yang mengubah data tetap meminta persetujuan. Untuk membatalkan: Alat dan akses, di halaman {{name}}.",
       "readsRule": "Pembacaan oleh {{tool}}",
       "pushTo": "push ke {{branch}} di {{repo}}",
+      "reviews": "tinjauan yang tidak menyetujui PR",
+      "repo": "Selalu di repositori ini",
+      "noteRepo": "{{name}} melakukan merge di {{repo}} tanpa bertanya mulai sekarang. Repositori lain dan deploy tetap bertanya. Untuk membatalkan: Alat dan akses, di halaman {{name}}.",
       "done": "Disetujui. {{name}} tidak akan meminta ini lagi.",
       "undoHere": "Untuk membatalkannya, buka Alat dan akses di halaman {{name}}.",
       "open": "Buka",
@@ -12582,6 +12587,8 @@
     "taskPumpHelp": "Setiap agen memulai tugas berikutnya yang diberikan seseorang begitu ada ruang, dan kembali ke tugas yang belum selesai. Setiap agen juga punya tombolnya sendiri.",
     "actionCheck": "Agen memeriksa apa yang sudah dilakukan tim",
     "actionCheckHelp": "Sebelum mengirim email, pesan, atau pull request, agen memeriksa apakah ada anggota tim yang sudah melakukannya ke orang atau tempat yang sama dalam 30 hari terakhir, dan tidak mengulanginya.",
+    "questionWait": "Berapa lama menunggu jawaban",
+    "questionWaitHelp": "Saat agen menanyakan sesuatu dan bilang apa yang akan ia lakukan, ia lanjut dengan itu kalau tidak ada yang menjawab dalam waktu ini, lalu memberi tahu. Langsung kalau orang yang ditanya sedang tidak di tempat. Persetujuan selalu menunggu orang.",
     "telemetry": {
       "title": "Statistik pemakaian",
       "label": "Kirim statistik pemakaian anonim ke agentes.chat",
@@ -14846,6 +14853,13 @@
     "agentTasks": "Tugas {{name}}",
     "tasks_other": "{{count}} tugas",
     "free": "Luang",
+    "todo_other": "{{count}} belum dikerjakan",
+    "idle": {
+      "room": "mulai saat ada tempat",
+      "plan": "paket sampai {{when}}",
+      "planLimit": "paket mencapai batas",
+      "budget": "anggaran sampai {{when}}"
+    },
     "hiddenTasks_other": "{{count}} tugas yang tidak kamu lihat",
     "hiddenLine_other": "{{count}} tugas lagi di percakapan yang tidak kamu lihat.",
     "helpers_other": "{{count}} pembantu",
@@ -14900,6 +14914,14 @@
       "computerBusyNext": "Mulai saat ada tempat",
       "okNext": "Lanjut saat ada yang menyetujui",
       "answerNext": "Lanjut saat ada yang menjawab",
+      "question": "Menunggu jawaban {{name}}",
+      "questionYou": "Menunggu jawabanmu",
+      "secret": "Menunggu kunci dari {{name}}",
+      "secretYou": "Menunggu kunci darimu",
+      "screen": "Menunggu {{name}} di layarnya",
+      "screenYou": "Menunggumu di layarnya",
+      "decision": "Menunggu keputusan",
+      "defaultNext": "Lanjut dengan {{answer}} pukul {{time}}",
       "back": "Lanjut {{when}}",
       "whenRenews": "saat diperbarui",
       "whenSoon": "sebentar lagi"

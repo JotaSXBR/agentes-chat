@@ -43,7 +43,7 @@ import { maySql, type RolePermission } from "./permissions";
 import { addPersonSpend, assertPersonUnderLimit, personSpendAdded } from "./person-usage";
 import { assertCanWork, standingRefusal } from "./standing";
 import { redactCredentials } from "./tool-detail";
-import { budgetPercent, monthStartUtc, withEffectiveBudget } from "./usage";
+import { budgetPercent, budgetsApply, monthStartUtc, withEffectiveBudget } from "./usage";
 
 const {
   usageRecords,
@@ -706,8 +706,10 @@ export function createModelGateway(deps: ModelGatewayDeps) {
           ? call.agent
           : await getAgent(db, call.orgId, call.agentId);
       if (!row || row.archivedAt) throw new NotFoundError("Agent not found");
-      // Every agent has a budget: its own, else the organization's default.
-      const agent = await withEffectiveBudget(db, row);
+      // Every agent has a budget: its own, else the organization's default; none where the workspace has no API key.
+      const agent = (await budgetsApply(db, row.orgId))
+        ? await withEffectiveBudget(db, row)
+        : { ...row, monthlyBudgetNanoUsd: null };
       const providerId = modelProvider(agent.model);
       if (!providerId) throw new ValidationError(`Model ${agent.model} is not in the catalog`);
       const provider = providerFor(providerId);

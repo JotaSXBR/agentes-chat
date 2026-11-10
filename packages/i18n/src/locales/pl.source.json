@@ -8874,6 +8874,12 @@
   "question.dismissedByYou": {
     "value": "You skipped this question."
   },
+  "question.defaultNote": {
+    "value": "If nobody answers by {{time}}, I'll go with: {{answer}}"
+  },
+  "question.defaulted": {
+    "value": "Nobody answered in time. I went with: {{answer}}"
+  },
   "ask.kindOther.approval": {
     "value": "Asks for approval"
   },
@@ -9074,6 +9080,15 @@
   },
   "approval.always.pushTo": {
     "value": "push to {{branch}} in {{repo}}"
+  },
+  "approval.always.reviews": {
+    "value": "reviews that don't approve a PR"
+  },
+  "approval.always.repo": {
+    "value": "Always in this repository"
+  },
+  "approval.always.noteRepo": {
+    "value": "{{name}} merges in {{repo}} without asking from now on. Other repositories and deploys still ask. To undo: Tools and access, on {{name}}'s page."
   },
   "approval.always.done": {
     "value": "Approved. {{name}} won't ask for this again."
@@ -31661,6 +31676,12 @@
   "settings.actionCheckHelp": {
     "value": "Before an email, a message or a pull request, the agent checks whether anyone on the team already did it to the same person or place in the last 30 days, and doesn't repeat it."
   },
+  "settings.questionWait": {
+    "value": "How long to wait for an answer"
+  },
+  "settings.questionWaitHelp": {
+    "value": "When an agent asks something and says what it would do, it goes on with that if nobody answers in this time, and says so. At once when the person asked is out of office. Approvals always wait for a person."
+  },
   "settings.telemetry.title": {
     "value": "Usage statistics"
   },
@@ -36993,6 +37014,24 @@
   "taskManager.free": {
     "value": "Free"
   },
+  "taskManager.todo": {
+    "value": {
+      "one": "{{count}} to do",
+      "other": "{{count}} to do"
+    }
+  },
+  "taskManager.idle.room": {
+    "value": "starts when there's room"
+  },
+  "taskManager.idle.plan": {
+    "value": "plan until {{when}}"
+  },
+  "taskManager.idle.planLimit": {
+    "value": "plan at its limit"
+  },
+  "taskManager.idle.budget": {
+    "value": "budget until {{when}}"
+  },
   "taskManager.hiddenTasks": {
     "value": {
       "one": "{{count}} task you can't see",
@@ -37136,6 +37175,30 @@
   },
   "taskManager.wait.answerNext": {
     "value": "Goes on once someone answers"
+  },
+  "taskManager.wait.question": {
+    "value": "Waits for {{name}} to answer"
+  },
+  "taskManager.wait.questionYou": {
+    "value": "Waits for your answer"
+  },
+  "taskManager.wait.secret": {
+    "value": "Waits for a key from {{name}}"
+  },
+  "taskManager.wait.secretYou": {
+    "value": "Waits for a key from you"
+  },
+  "taskManager.wait.screen": {
+    "value": "Waits for {{name}} on its screen"
+  },
+  "taskManager.wait.screenYou": {
+    "value": "Waits for you on its screen"
+  },
+  "taskManager.wait.decision": {
+    "value": "Waits for a decision"
+  },
+  "taskManager.wait.defaultNext": {
+    "value": "Goes on with {{answer}} at {{time}}"
   },
   "taskManager.wait.back": {
     "value": "Back {{when}}"

@@ -196,6 +196,10 @@ const Settings = z
       description:
         "Who can talk to a new agent whoever made it didn't choose for (an import, a team proposal, the API): `everyone` (the default) or `owner`, only the person responsible for it. Criar agente starts its own choice here.",
     }),
+    questionWaitMinutes: z.number().int().openapi({
+      description:
+        '"Quanto esperar por uma resposta": a question an agent asked with a default waits this long (minutes: 10, 30, the default, 60 or 240), then the agent goes on with its default and says so. At once while the person it is for is out of office. Never an approval.',
+    }),
     voiceAvailable: z.boolean().openapi({
       description: "Read only: this server has a speech engine now, from its environment or from its owner's Settings.",
     }),
@@ -469,6 +473,18 @@ const ManagedTask = z
         description:
           "Why a `waiting_input` run waits: its code, the plan or budget (`key` groups the runs on the same one), how far a pause got, when the limit resets, and whether you may press Continuar agora.",
       }),
+    asks: z
+      .object({
+        kind: z.enum(["approval", "question", "secret", "screen", "decision"]),
+        forUserId: z.string().nullable(),
+        defaultAnswer: z.string().nullable(),
+        decideAt: z.string().nullable(),
+      })
+      .nullable()
+      .openapi({
+        description:
+          "What a run waiting on a person waits on: an approval, an answer (for whom, and a question's default with when it applies), a key, help on its screen, or a mission's decision.",
+      }),
   })
   .openapi("ManagedTask");
 const EndedTask = z
@@ -509,6 +525,18 @@ const TaskManagerView = z
     activity: z
       .record(z.string(), z.array(z.number().int()))
       .openapi({ description: "Per agent: tool calls per minute over the last 60 minutes, oldest first." }),
+    backlog: z
+      .record(
+        z.string(),
+        z.object({
+          todo: z.number().int(),
+          out: z.object({ reason: z.enum(["plan", "budget"]), until: z.string().nullable() }).nullable(),
+        }),
+      )
+      .openapi({
+        description:
+          "Per agent with tasks to do on the board you see: how many, and whether its plan or budget is spent until a reset (else they start when there's room).",
+      }),
   })
   .openapi("TaskManagerView");
 
@@ -587,6 +615,7 @@ export function managementRoutes(deps: AppDeps) {
             taskPump: z.boolean().optional().openapi({
               description: "Agents take the tasks people gave them by themselves as room frees.",
             }),
+            questionWaitMinutes: z.number().int().optional().openapi({ description: "10, 30, 60 or 240." }),
           }),
         ),
       },

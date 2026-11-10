@@ -463,6 +463,10 @@ export function createConnectorToolSource(
             service: def.id,
             toolPrefix: prefix,
             sensitive: mapped.sensitive === true,
+            // Approved for good by its own name: a write that asks only where the run's policy makes it (ADR 0053 §4),
+            // and a sensitive one only for the calls its `rememberKind` names.
+            ...(!mapped.sensitive || mapped.rememberKind ? { rememberAs: tool.name } : {}),
+            ...(mapped.rememberKind ? { rememberTarget: mapped.rememberKind } : {}),
             ahead: true,
             external: true, // whatever the server returns is third-party text
             describe: (input) => ({

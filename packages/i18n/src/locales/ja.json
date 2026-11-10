@@ -3492,7 +3492,9 @@
     "skip": "スキップ",
     "skipFailed": "質問をスキップできませんでした。もう一度お試しください。",
     "dismissed": "{{name}}がこの質問をスキップしました。",
-    "dismissedByYou": "この質問をスキップしました。"
+    "dismissedByYou": "この質問をスキップしました。",
+    "defaultNote": "{{time}}までに回答がなければ、次で進めます：{{answer}}",
+    "defaulted": "時間内に回答がなかったため、次で進めました：{{answer}}"
   },
   "ask": {
     "kindOther": {
@@ -3575,6 +3577,9 @@
       "noteReadsAll": "この接続での{{actions}}の読み取りだけを、今後対象にします。データを変更するものは引き続き確認します。取り消すには{{name}}のページの「ツールとアクセス」へ。",
       "readsRule": "{{tool}}の読み取り",
       "pushTo": "{{repo}}の{{branch}}へのプッシュ",
+      "reviews": "PRを承認しないレビュー",
+      "repo": "このリポジトリでは常に承認",
+      "noteRepo": "今後、{{name}}は{{repo}}で確認なしにマージします。ほかのリポジトリとデプロイは引き続き確認します。取り消すには{{name}}のページの「ツールとアクセス」へ。",
       "done": "承認しました。{{name}}は今後これについて確認しません。",
       "undoHere": "取り消すには、{{name}}のページの「ツールとアクセス」を開いてください。",
       "open": "開く",
@@ -12530,6 +12535,8 @@
     "taskPumpHelp": "各エージェントは、人から任されたタスクに空きができしだい取りかかり、途中のタスクにも戻ります。エージェントごとの設定もあります。",
     "actionCheck": "エージェントがチームの過去の対応を確認する",
     "actionCheckHelp": "メール、メッセージ、プルリクエストの前に、過去30日以内にチームの誰かが同じ相手や場所に同じことをしていないかを確認し、重複を避けます。",
+    "questionWait": "回答を待つ時間",
+    "questionWaitHelp": "エージェントが質問し、自分ならどうするかを示した場合、この時間内に回答がなければその内容で進め、そのことを伝えます。質問相手が不在なら、すぐに進めます。承認は必ず人を待ちます。",
     "telemetry": {
       "title": "利用統計",
       "label": "匿名の利用統計をagentes.chatに送信する",
@@ -14746,6 +14753,13 @@
     "agentTasks": "{{name}}のタスク",
     "tasks_other": "{{count}}件のタスク",
     "free": "対応可能",
+    "todo_other": "未着手{{count}}件",
+    "idle": {
+      "room": "空きができたら始まります",
+      "plan": "プランは{{when}}まで上限",
+      "planLimit": "プランが上限です",
+      "budget": "予算は{{when}}まで上限"
+    },
     "hiddenTasks_other": "表示できないタスク{{count}}件",
     "hiddenLine_other": "表示できない会話に、ほかに{{count}}件のタスクがあります。",
     "helpers_other": "手伝い{{count}}件",
@@ -14800,6 +14814,14 @@
       "computerBusyNext": "空きができたら始まります",
       "okNext": "誰かが承認すると続きます",
       "answerNext": "誰かが回答すると続きます",
+      "question": "{{name}}さんの回答待ち",
+      "questionYou": "あなたの回答待ち",
+      "secret": "{{name}}さんからのキー待ち",
+      "secretYou": "あなたからのキー待ち",
+      "screen": "画面で{{name}}さんを待っています",
+      "screenYou": "画面であなたを待っています",
+      "decision": "判断待ち",
+      "defaultNext": "{{time}}に「{{answer}}」で進めます",
       "back": "再開: {{when}}",
       "whenRenews": "リセット後",
       "whenSoon": "まもなく"

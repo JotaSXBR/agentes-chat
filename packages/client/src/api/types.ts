@@ -1860,9 +1860,11 @@ export interface Approval {
   trail?: { text: string; at: string }[];
   /**
    * "Aprovar sempre" is offered: approving with `always` lets the agent run this server tool (each of these wrapped
-   * actions; none: the tool itself) without asking again, with any values. Null or absent: not offered.
+   * actions; none: the tool itself) without asking again, with any values; `routineId`: that routine only ("Sempre nesta
+   * rotina"); `repo`: a merge, the repository joins the agent's merge list ("Sempre neste repositório"). Null or absent:
+   * not offered.
    */
-  approveAlways?: { tool: string; actions: string[]; routineId?: string } | null;
+  approveAlways?: { tool: string; actions: string[]; routineId?: string; repo?: string } | null;
   /** Approved ahead (`schedule_action`): when the routine's run does it by itself; null: it runs once approved. */
   runAt?: string | null;
   /** The routine whose run at `runAt` it is for. */
@@ -2233,6 +2235,11 @@ export interface OrgSettings {
    * default; absent on older servers.
    */
   taskPump?: boolean;
+  /**
+   * "Quanto esperar por uma resposta": a question an agent asked with a default waits this long (minutes), then it goes
+   * on with its default. Absent on older servers: 30.
+   */
+  questionWaitMinutes?: number;
   /** Read only: this server has a speech engine. */
   voiceAvailable: boolean;
   /** Read only: this server can search GIFs (it has a GIF provider). */
@@ -3117,6 +3124,11 @@ export interface AgentQuestion {
   dismissed?: true;
   /** Why it is for `requestedForUserId` and not who asked the agent, in the agent's words (on its card only). */
   forWhy?: string;
+  /** One of `choices`: what the agent goes on with if nobody answers by `decideAt` (ISO). */
+  defaultAnswer?: string;
+  decideAt?: string;
+  /** Nobody answered in time: the agent went on with `defaultAnswer`. */
+  defaulted?: true;
 }
 
 /**
@@ -6707,6 +6719,25 @@ export interface ManagedTask {
   } | null;
   /** Why a `waiting_input` run waits (absent on an older server). */
   wait?: TaskWait | null;
+  /** What a task waiting on a person waits on (absent on an older server). */
+  asks?: TaskAsk | null;
+}
+
+/** A person's step a waiting task needs: an approval, an answer, a key, help on its screen, a mission's decision. */
+export interface TaskAsk {
+  kind: "approval" | "question" | "secret" | "screen" | "decision";
+  /** The one person it waits on; null: anyone in the conversation, or whoever decides an approval. */
+  forUserId: string | null;
+  /** A question's default and when the run goes on with it. */
+  defaultAnswer: string | null;
+  decideAt: string | null;
+}
+
+/** An agent's board: its tasks to do, and while it is free, what keeps them from starting. */
+export interface AgentBacklog {
+  todo: number;
+  /** Its plan or budget is spent until `until` (null: unknown). Null: they start when there's room. */
+  out: { reason: "plan" | "budget"; until: string | null } | null;
 }
 
 /** What a task waits on, in the words the apps need to say why. */
@@ -6780,6 +6811,8 @@ export interface TaskManagerView {
   computers?: ComputerSummary[];
   /** Per agent with work in the last hour: tool calls per minute, 60 points, oldest first. */
   activity: Record<string, number[]>;
+  /** Per agent with tasks to do on the board (absent on an older server). */
+  backlog?: Record<string, AgentBacklog>;
 }
 
 /** A one-off reminder in a conversation (`reminders.*`; also a routine in Rotinas). */

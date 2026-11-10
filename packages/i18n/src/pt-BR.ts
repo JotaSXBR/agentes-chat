@@ -3713,6 +3713,9 @@ export const ptBR = {
     skipFailed: "Não foi possível pular a pergunta. Tente de novo.",
     dismissed: "{{name}} pulou esta pergunta.",
     dismissedByYou: "Você pulou esta pergunta.",
+    /** In the agent's voice, on its card: `time` when it goes on, `answer` the choice it goes on with. */
+    defaultNote: "Se ninguém responder até {{time}}, sigo com: {{answer}}",
+    defaulted: "Ninguém respondeu a tempo. Segui com: {{answer}}",
   },
   /** A request in the conversation (approval, secret, question, help in the agent's screen, proposal): one card for all. */
   ask: {
@@ -3822,6 +3825,14 @@ export const ptBR = {
       /** A remembered SQL reads rule in Tools and access. */
       readsRule: "Leituras de {{tool}}",
       pushTo: "enviar para {{branch}} em {{repo}}",
+      /** GitHub reviews that comment or ask for changes: one that approves a pull request always asks. */
+      reviews: "revisões que não aprovam um PR",
+      /** On a merge's card: the repository joins the agent's list of where it merges without asking. */
+      repo: "Sempre neste repositório",
+      noteRepo:
+        "{{name}} faz merge em {{repo}} sem perguntar, de agora em diante. Outros repositórios e deploys continuam pedindo. Para desfazer: Ferramentas e acesso, na página do {{name}}.",
+      noteRepo_female:
+        "{{name}} faz merge em {{repo}} sem perguntar, de agora em diante. Outros repositórios e deploys continuam pedindo. Para desfazer: Ferramentas e acesso, na página da {{name}}.",
       done: "Aprovado. {{name}} não pede mais para isso.",
       undoHere: "Para desfazer, vá em Ferramentas e acesso, na página do {{name}}.",
       undoHere_female: "Para desfazer, vá em Ferramentas e acesso, na página da {{name}}.",
@@ -12922,6 +12933,10 @@ export const ptBR = {
     actionCheck: "Agentes conferem o que o time já fez",
     actionCheckHelp:
       "Antes de mandar e-mail, mensagem ou abrir PR, o agente vê se alguém do time já fez isso com a mesma pessoa ou lugar nos últimos 30 dias, e não repete.",
+    /** A question an agent asked with what it would do: how long it waits before going on with that. */
+    questionWait: "Quanto esperar por uma resposta",
+    questionWaitHelp:
+      "Quando um agente pergunta algo e diz o que faria, ele segue com isso se ninguém responder nesse tempo, e avisa. Na hora, se quem foi perguntado está ausente. Aprovações sempre esperam uma pessoa.",
     telemetry: {
       title: "Estatísticas de uso",
       label: "Enviar estatísticas de uso anônimas ao agentes.chat",
@@ -15447,6 +15462,16 @@ export const ptBR = {
     tasks_one: "{{count}} tarefa",
     tasks_other: "{{count}} tarefas",
     free: "Livre",
+    /** An agent's card: its tasks on the board still to do. */
+    todo_one: "{{count}} a fazer",
+    todo_other: "{{count}} a fazer",
+    /** After "Livre · 15 a fazer": why they haven't started. `when`: a time, or a day and a time. */
+    idle: {
+      room: "começa quando houver espaço",
+      plan: "plano até {{when}}",
+      planLimit: "plano no limite",
+      budget: "orçamento até {{when}}",
+    },
     /** An agent's card: its tasks the viewer may not see, counted. */
     hiddenTasks_one: "{{count}} tarefa que você não vê",
     hiddenTasks_other: "{{count}} tarefas que você não vê",
@@ -15503,6 +15528,16 @@ export const ptBR = {
       computerBusyNext: "Começa quando tiver espaço",
       okNext: "Segue quando alguém aprovar",
       answerNext: "Segue quando alguém responder",
+      /** A task waiting on a person, named: an answer, a key, help on its screen, a mission's decision. */
+      question: "Espera {{name}} responder",
+      questionYou: "Espera sua resposta",
+      secret: "Espera uma chave de {{name}}",
+      secretYou: "Espera uma chave sua",
+      screen: "Espera {{name}} na tela",
+      screenYou: "Espera você na tela",
+      decision: "Espera uma decisão",
+      /** A question with a default: `answer` is what it goes on with, `time` when. */
+      defaultNext: "Segue com {{answer}} às {{time}}",
       back: "Volta {{when}}",
       whenRenews: "quando renovar",
       whenSoon: "em instantes",

@@ -144,8 +144,13 @@ export function SayWhy({
  */
 function WaitState({ task }: { task: ManagedTask }) {
   const { t, i18n } = useTranslation();
+  const { org, me } = useOrg();
+  const dir = useDirectory(org.id);
   const now = useNow(30_000);
-  const words = taskWaitWords(t, i18n.language, task, now);
+  const words = taskWaitWords(t, i18n.language, task, now, {
+    meId: me.user.id,
+    nameOf: (id) => dir.memberById.get(id)?.name,
+  });
   if (!words) return null;
   const person = waitsOnPerson(task);
   return (

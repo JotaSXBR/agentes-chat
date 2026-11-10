@@ -3732,7 +3732,9 @@
     "skip": "Passer",
     "skipFailed": "Impossible de passer la question. Réessayez.",
     "dismissed": "{{name}} a passé cette question.",
-    "dismissedByYou": "Vous avez passé cette question."
+    "dismissedByYou": "Vous avez passé cette question.",
+    "defaultNote": "Si personne ne répond avant {{time}}, je continue avec : {{answer}}",
+    "defaulted": "Personne n'a répondu à temps. J'ai continué avec : {{answer}}"
   },
   "ask": {
     "kindOther": {
@@ -3823,6 +3825,9 @@
       "noteReadsAll": "Couvre seulement les lectures de {{actions}} sur cette connexion à partir de maintenant. Ce qui modifie des données demande toujours. Pour l'annuler : Outils et accès, sur la page de {{name}}.",
       "readsRule": "Lectures de {{tool}}",
       "pushTo": "push vers {{branch}} dans {{repo}}",
+      "reviews": "relectures qui n'approuvent pas une PR",
+      "repo": "Toujours dans ce dépôt",
+      "noteRepo": "{{name}} fait les merges dans {{repo}} sans demander à partir de maintenant. Les autres dépôts et les déploiements demandent toujours. Pour l'annuler : Outils et accès, sur la page de {{name}}.",
       "done": "Approuvé. {{name}} ne demandera plus pour ceci.",
       "undoHere": "Pour l'annuler, allez dans Outils et accès, sur la page de {{name}}.",
       "undoHere_female": "Pour l'annuler, allez dans Outils et accès, sur la page de {{name}}.",
@@ -13461,6 +13466,8 @@
     "taskPumpHelp": "Chaque agent commence la prochaine tâche qu'une personne lui a donnée dès qu'il a de la place, et revient à une tâche laissée en cours. Chaque agent a aussi son propre interrupteur.",
     "actionCheck": "Les agents vérifient ce que l'équipe a déjà fait",
     "actionCheckHelp": "Avant un e-mail, un message ou une pull request, l'agent vérifie si quelqu'un de l'équipe l'a déjà fait pour la même personne ou au même endroit dans les 30 derniers jours, et ne le refait pas.",
+    "questionWait": "Combien de temps attendre une réponse",
+    "questionWaitHelp": "Quand un agent pose une question et dit ce qu'il ferait, il continue avec ça si personne ne répond dans ce délai, et le signale. Tout de suite si la personne interrogée est absente. Les approbations attendent toujours une personne.",
     "telemetry": {
       "title": "Statistiques d'utilisation",
       "label": "Envoyer des statistiques d'utilisation anonymes à agentes.chat",
@@ -15877,6 +15884,15 @@
     "tasks_many": "{{count}} tâches",
     "tasks_other": "{{count}} tâches",
     "free": "Libre",
+    "todo_one": "{{count}} à faire",
+    "todo_many": "{{count}} à faire",
+    "todo_other": "{{count}} à faire",
+    "idle": {
+      "room": "commence quand il y a de la place",
+      "plan": "abonnement jusqu'à {{when}}",
+      "planLimit": "abonnement à sa limite",
+      "budget": "budget jusqu'à {{when}}"
+    },
     "hiddenTasks_one": "{{count}} tâche que vous ne voyez pas",
     "hiddenTasks_many": "{{count}} tâches que vous ne voyez pas",
     "hiddenTasks_other": "{{count}} tâches que vous ne voyez pas",
@@ -15937,6 +15953,14 @@
       "computerBusyNext": "Commence quand il y a de la place",
       "okNext": "Continue dès que quelqu'un approuve",
       "answerNext": "Continue dès que quelqu'un répond",
+      "question": "Attend la réponse de {{name}}",
+      "questionYou": "Attend votre réponse",
+      "secret": "Attend une clé de {{name}}",
+      "secretYou": "Attend une clé de votre part",
+      "screen": "Attend {{name}} sur son écran",
+      "screenYou": "Vous attend sur son écran",
+      "decision": "Attend une décision",
+      "defaultNext": "Continue avec {{answer}} à {{time}}",
       "back": "Reprend {{when}}",
       "whenRenews": "au renouvellement",
       "whenSoon": "dans un instant"

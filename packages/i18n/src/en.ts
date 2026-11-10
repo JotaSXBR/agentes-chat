@@ -3727,6 +3727,9 @@ export const en = {
     skipFailed: "Couldn't skip the question. Try again.",
     dismissed: "{{name}} skipped this question.",
     dismissedByYou: "You skipped this question.",
+    /** In the agent's voice, on its card: `time` when it goes on, `answer` the choice it goes on with. */
+    defaultNote: "If nobody answers by {{time}}, I'll go with: {{answer}}",
+    defaulted: "Nobody answered in time. I went with: {{answer}}",
   },
   /** A request in the conversation (approval, secret, question, help in the agent's screen, proposal): one card for all. */
   ask: {
@@ -3828,6 +3831,12 @@ export const en = {
       /** A remembered SQL reads rule in Tools and access. */
       readsRule: "Reads by {{tool}}",
       pushTo: "push to {{branch}} in {{repo}}",
+      /** GitHub reviews that comment or ask for changes: one that approves a pull request always asks. */
+      reviews: "reviews that don't approve a PR",
+      /** On a merge's card: the repository joins the agent's list of where it merges without asking. */
+      repo: "Always in this repository",
+      noteRepo:
+        "{{name}} merges in {{repo}} without asking from now on. Other repositories and deploys still ask. To undo: Tools and access, on {{name}}'s page.",
       done: "Approved. {{name}} won't ask for this again.",
       undoHere: "To undo it, go to Tools and access, on {{name}}'s page.",
       open: "Open",
@@ -12835,6 +12844,10 @@ export const en = {
     actionCheck: "Agents check what the team already did",
     actionCheckHelp:
       "Before an email, a message or a pull request, the agent checks whether anyone on the team already did it to the same person or place in the last 30 days, and doesn't repeat it.",
+    /** A question an agent asked with what it would do: how long it waits before going on with that. */
+    questionWait: "How long to wait for an answer",
+    questionWaitHelp:
+      "When an agent asks something and says what it would do, it goes on with that if nobody answers in this time, and says so. At once when the person asked is out of office. Approvals always wait for a person.",
     telemetry: {
       title: "Usage statistics",
       label: "Send anonymous usage statistics to agentes.chat",
@@ -15235,6 +15248,16 @@ export const en = {
     tasks_one: "{{count}} task",
     tasks_other: "{{count}} tasks",
     free: "Free",
+    /** An agent's card: its tasks on the board still to do. */
+    todo_one: "{{count}} to do",
+    todo_other: "{{count}} to do",
+    /** After "Free · 15 to do": why they haven't started. `when`: a time, or a day and a time. */
+    idle: {
+      room: "starts when there's room",
+      plan: "plan until {{when}}",
+      planLimit: "plan at its limit",
+      budget: "budget until {{when}}",
+    },
     /** An agent's card: its tasks the viewer may not see, counted. */
     hiddenTasks_one: "{{count}} task you can't see",
     hiddenTasks_other: "{{count}} tasks you can't see",
@@ -15291,6 +15314,16 @@ export const en = {
       computerBusyNext: "Starts when there's room",
       okNext: "Goes on once someone approves",
       answerNext: "Goes on once someone answers",
+      /** A task waiting on a person, named: an answer, a key, help on its screen, a mission's decision. */
+      question: "Waits for {{name}} to answer",
+      questionYou: "Waits for your answer",
+      secret: "Waits for a key from {{name}}",
+      secretYou: "Waits for a key from you",
+      screen: "Waits for {{name}} on its screen",
+      screenYou: "Waits for you on its screen",
+      decision: "Waits for a decision",
+      /** A question with a default: `answer` is what it goes on with, `time` when. */
+      defaultNext: "Goes on with {{answer}} at {{time}}",
       back: "Back {{when}}",
       whenRenews: "when it renews",
       whenSoon: "in a moment",

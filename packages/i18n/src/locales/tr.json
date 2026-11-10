@@ -3612,7 +3612,9 @@
     "skip": "Atla",
     "skipFailed": "Soru atlanamadı. Tekrar deneyin.",
     "dismissed": "{{name}} bu soruyu atladı.",
-    "dismissedByYou": "Bu soruyu atladınız."
+    "dismissedByYou": "Bu soruyu atladınız.",
+    "defaultNote": "{{time}} saatine kadar kimse cevap vermezse şununla devam edeceğim: {{answer}}",
+    "defaulted": "Kimse zamanında cevap vermedi. Şununla devam ettim: {{answer}}"
   },
   "ask": {
     "kindOther": {
@@ -3699,6 +3701,9 @@
       "noteReadsAll": "Bundan sonra yalnızca bu bağlantıda {{actions}} ile yapılan okumalar için geçerli. Veriyi değiştiren her şey yine onay ister. Geri almak için: {{name}} sayfasındaki Araçlar ve erişim.",
       "readsRule": "{{tool}} okumaları",
       "pushTo": "{{repo}} içinde {{branch}} dalına gönder",
+      "reviews": "PR'ı onaylamayan incelemeler",
+      "repo": "Bu depoda her zaman",
+      "noteRepo": "{{name}} bundan sonra {{repo}} içinde sormadan merge yapar. Diğer depolar ve deploy işlemleri sormaya devam eder. Geri almak için: {{name}} sayfasındaki Araçlar ve erişim.",
       "done": "Onaylandı. {{name}} bunu bir daha sormayacak.",
       "undoHere": "Geri almak için {{name}} sayfasındaki Araçlar ve erişim bölümüne gidin.",
       "open": "Aç",
@@ -12954,6 +12959,8 @@
     "taskPumpHelp": "Her ajan, bir kişinin ona verdiği sıradaki görevi yer açılır açılmaz başlatır ve yarım kalan bir göreve geri döner. Her ajanın kendi anahtarı da vardır.",
     "actionCheck": "Ajanlar ekibin zaten yaptıklarını kontrol eder",
     "actionCheckHelp": "Bir e-posta, mesaj ya da pull request'ten önce ajan, son 30 günde ekipten birinin aynı kişiye ya da yere bunu zaten yapıp yapmadığını kontrol eder ve tekrarlamaz.",
+    "questionWait": "Cevap için ne kadar beklensin",
+    "questionWaitHelp": "Bir ajan bir şey sorup ne yapacağını söylediğinde, bu süre içinde kimse cevap vermezse onunla devam eder ve bunu söyler. Sorulan kişi ofis dışındaysa hemen devam eder. Onaylar her zaman bir kişiyi bekler.",
     "telemetry": {
       "title": "Kullanım istatistikleri",
       "label": "agentes.chat'e anonim kullanım istatistikleri gönder",
@@ -15204,6 +15211,14 @@
     "tasks_one": "{{count}} görev",
     "tasks_other": "{{count}} görev",
     "free": "Boşta",
+    "todo_one": "{{count}} yapılacak",
+    "todo_other": "{{count}} yapılacak",
+    "idle": {
+      "room": "yer açılınca başlar",
+      "plan": "plan {{when}} saatine kadar sınırda",
+      "planLimit": "plan sınırda",
+      "budget": "bütçe {{when}} tarihine kadar bitti"
+    },
     "hiddenTasks_one": "göremediğiniz {{count}} görev",
     "hiddenTasks_other": "göremediğiniz {{count}} görev",
     "hiddenLine_one": "Göremediğiniz konuşmalarda {{count}} görev daha var.",
@@ -15261,6 +15276,14 @@
       "computerBusyNext": "Yer açılınca başlar",
       "okNext": "Biri onaylayınca devam eder",
       "answerNext": "Biri yanıtlayınca devam eder",
+      "question": "{{name}} yanıtını bekliyor",
+      "questionYou": "Yanıtını bekliyor",
+      "secret": "{{name}} kişisinden anahtar bekliyor",
+      "secretYou": "Senden anahtar bekliyor",
+      "screen": "Ekranında {{name}} kişisini bekliyor",
+      "screenYou": "Ekranında seni bekliyor",
+      "decision": "Karar bekliyor",
+      "defaultNext": "{{time}} itibarıyla {{answer}} ile devam eder",
       "back": "{{when}} devam eder",
       "whenRenews": "sıfırlanınca",
       "whenSoon": "birazdan"

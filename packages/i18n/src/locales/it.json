@@ -3731,7 +3731,9 @@
     "skip": "Salta",
     "skipFailed": "Impossibile saltare la domanda. Riprova.",
     "dismissed": "{{name}} ha saltato questa domanda.",
-    "dismissedByYou": "Hai saltato questa domanda."
+    "dismissedByYou": "Hai saltato questa domanda.",
+    "defaultNote": "Se nessuno risponde entro le {{time}}, vado avanti con: {{answer}}",
+    "defaulted": "Nessuno ha risposto in tempo. Ho proseguito con: {{answer}}"
   },
   "ask": {
     "kindOther": {
@@ -3822,6 +3824,9 @@
       "noteReadsAll": "Copre solo le letture di {{actions}} su questa connessione da ora in poi. Ciò che modifica i dati continua a chiedere. Per annullarlo: Strumenti e accesso, nella pagina di {{name}}.",
       "readsRule": "Letture di {{tool}}",
       "pushTo": "push su {{branch}} in {{repo}}",
+      "reviews": "revisioni che non approvano una PR",
+      "repo": "Sempre in questo repository",
+      "noteRepo": "{{name}} fa il merge in {{repo}} senza chiedere d'ora in poi. Gli altri repository e i deploy chiedono ancora. Per annullarlo: Strumenti e accesso, nella pagina di {{name}}.",
       "done": "Approvato. {{name}} non lo chiederà più.",
       "undoHere": "Per annullarlo, vai in Strumenti e accesso, nella pagina di {{name}}.",
       "undoHere_female": "Per annullarlo, vai in Strumenti e accesso, nella pagina di {{name}}.",
@@ -13470,6 +13475,8 @@
     "taskPumpHelp": "Ogni agente inizia il prossimo compito che una persona gli ha dato appena ha spazio, e torna a uno lasciato a metà. Ogni agente ha anche un suo interruttore.",
     "actionCheck": "Gli agenti controllano cosa ha già fatto il team",
     "actionCheckHelp": "Prima di un'email, un messaggio o una pull request, l'agente controlla se qualcuno del team l'ha già fatto alla stessa persona o nello stesso posto negli ultimi 30 giorni, e non lo ripete.",
+    "questionWait": "Quanto aspettare una risposta",
+    "questionWaitHelp": "Quando un agente chiede qualcosa e dice cosa farebbe, va avanti con quello se nessuno risponde in questo tempo, e lo dice. Subito se la persona a cui ha chiesto è fuori ufficio. Le approvazioni aspettano sempre una persona.",
     "telemetry": {
       "title": "Statistiche di utilizzo",
       "label": "Invia statistiche di utilizzo anonime ad agentes.chat",
@@ -15880,6 +15887,15 @@
     "tasks_many": "{{count}} attività",
     "tasks_other": "{{count}} attività",
     "free": "Disponibile",
+    "todo_one": "{{count}} da fare",
+    "todo_many": "{{count}} da fare",
+    "todo_other": "{{count}} da fare",
+    "idle": {
+      "room": "inizia quando c'è spazio",
+      "plan": "piano fino a {{when}}",
+      "planLimit": "piano al limite",
+      "budget": "budget fino a {{when}}"
+    },
     "hiddenTasks_one": "{{count}} attività che non vedi",
     "hiddenTasks_many": "{{count}} attività che non vedi",
     "hiddenTasks_other": "{{count}} attività che non vedi",
@@ -15940,6 +15956,14 @@
       "computerBusyNext": "Inizia quando c'è spazio",
       "okNext": "Continua quando qualcuno approva",
       "answerNext": "Continua quando qualcuno risponde",
+      "question": "Aspetta la risposta di {{name}}",
+      "questionYou": "Aspetta la tua risposta",
+      "secret": "Aspetta una chiave da {{name}}",
+      "secretYou": "Aspetta una tua chiave",
+      "screen": "Aspetta {{name}} sul suo schermo",
+      "screenYou": "Ti aspetta sul suo schermo",
+      "decision": "Aspetta una decisione",
+      "defaultNext": "Va avanti con {{answer}} alle {{time}}",
       "back": "Riprende {{when}}",
       "whenRenews": "quando si rinnova",
       "whenSoon": "tra un attimo"

@@ -131,6 +131,22 @@ describe("Aprovar sempre in words", () => {
     );
   });
 
+  test("a merge card's repository and a review that doesn't approve, in their own words", () => {
+    const say = ((key: string, o?: Record<string, unknown>) =>
+      `${key} ${JSON.stringify(o ?? {})}`) as unknown as TFunction;
+    const merge = { approveAlways: { tool: "github_merge_pull_request", actions: [], repo: "acme/app" } };
+    expect(approveAlwaysLabel(say, merge)).toBe("approval.always.repo {}");
+    expect(approveAlwaysWords(say, merge)).toBe("acme/app");
+    expect(approveAlwaysHint(say, merge, "Ada")).toBe(
+      'approval.always.noteRepo {"name":"Ada","context":"female","repo":"acme/app"}',
+    );
+    const review = { approveAlways: { tool: "pull_request_review_write", actions: ["no_approval"] } };
+    expect(approveAlwaysWords(say, review)).toBe("approval.always.reviews {}");
+    expect(approvalRuleWords(say, { tool: "pull_request_review_write", action: "no_approval", toolLabel: "x" })).toBe(
+      "approval.always.reviews {}",
+    );
+  });
+
   test("where it isn't offered, the refusal in the person's words", () => {
     const refusal = new ApiError(409, "approval.always_unavailable", "This request can't be approved for good");
     expect(knownErrorText(t, refusal)).toBe("errors.approval.alwaysUnavailable");

@@ -286,29 +286,36 @@ function pushWords(t: TFunction, target: string) {
 /** A command rule's tool (no connection, its action the command's kind); mirrors engine `approval-rules.ts` `COMMAND_RULE_TOOL`. */
 export const COMMAND_RULE_TOOL = "command";
 
+/** The kind of GitHub review "Aprovar sempre" keeps; mirrors engine `connectors/catalog.ts` `REVIEW_NO_APPROVAL`. */
+const REVIEW_NO_APPROVAL = "no_approval";
+
 /** What "Aprovar sempre" covers on a card, in words: each action the tool runs, else the tool itself. */
 export function approveAlwaysWords(t: TFunction, approval: Pick<Approval, "approveAlways">) {
   const kind = approval.approveAlways;
   if (!kind) return "";
+  if (kind.repo) return kind.repo;
   if (kind.routineId) return kind.actions.map((name) => ownActionName(t, name)).join(", ");
   if (kind.tool === COMMAND_RULE_TOOL) return kind.actions.join(", ");
   if (kind.tool === BRANCH_PUSH) return kind.actions.map((target) => pushWords(t, target)).join(", ");
+  if (kind.actions[0] === REVIEW_NO_APPROVAL) return t("approval.always.reviews");
   const tool = toolName(t, partsOf(kind.tool), kind.tool);
   if (sqlReadsTarget(kind.actions[0]) !== null) return tool;
   return kind.actions.length > 0 ? kind.actions.map((slug) => actionName(t, slug)).join(", ") : tool;
 }
 
 /**
- * "Aprovar sempre", "Aprovar sempre leituras" where only the SQL reads of one project would be covered, or "Sempre
- * nesta rotina" on a routine's card.
+ * "Aprovar sempre", "Aprovar sempre leituras" where only the SQL reads of one project would be covered, "Sempre
+ * nesta rotina" on a routine's card, or "Sempre neste repositório" on a merge's.
  */
 export const approveAlwaysLabel = (t: TFunction, approval: Pick<Approval, "approveAlways">) =>
   t(
-    approval.approveAlways?.routineId
-      ? "approval.always.routine"
-      : sqlReadsTarget(approval.approveAlways?.actions[0]) === null
-        ? "approval.always.button"
-        : "approval.always.reads",
+    approval.approveAlways?.repo
+      ? "approval.always.repo"
+      : approval.approveAlways?.routineId
+        ? "approval.always.routine"
+        : sqlReadsTarget(approval.approveAlways?.actions[0]) === null
+          ? "approval.always.button"
+          : "approval.always.reads",
   );
 
 /** The name of the routine "Sempre nesta rotina" keeps a kind for; null on any other card. */
@@ -329,6 +336,8 @@ export function approveAlwaysHint(
 ) {
   const routine = alwaysRoutineName(t, { origin: null, ...approval });
   if (routine) return t("approval.always.noteRoutine", { routine, actions: approveAlwaysWords(t, approval) });
+  const repo = approval.approveAlways?.repo;
+  if (repo) return t("approval.always.noteRepo", { ...agentGrammar(agentName), repo });
   const target = sqlReadsTarget(approval.approveAlways?.actions[0]);
   const key =
     target !== null
@@ -359,6 +368,7 @@ export function approvalRuleWords(
   }
   if (rule.tool === BRANCH_PUSH && rule.action) return pushWords(t, rule.action);
   if (rule.tool === COMMAND_RULE_TOOL && !rule.connectionId) return rule.action;
+  if (rule.action === REVIEW_NO_APPROVAL) return t("approval.always.reviews");
   if (rule.action) return actionName(t, rule.action);
   return labelIsName(rule.toolLabel, rule.tool) ? toolName(t, partsOf(rule.tool), rule.tool) : rule.toolLabel;
 }

@@ -219,3 +219,11 @@ The owner decided on 2026-10-31 that a routine a person asked for posts and mess
 - **Not covered.** Background tasks (`start_task`): a shell task's merge is held at its start and asks; inside a Claude Code or Codex task the deny list refuses it and tells the task to report, and the agent can merge when it wakes. Composio's GitHub actions keep their card. A run a routine's report woke asks, like every write of such a run (§4), and so does a mission's task, which has no run to leave a receipt on. A folder whose `gh-resolved` names a repository (`gh repo set-default`, or any `git config`) asks: gh goes by it, whatever the remotes say.
 
 Handing the agent to a new owner clears the list, like its "Aprovar sempre" rules.
+
+## Addendum 2026-11-10: "Sempre neste repositório" on merge cards
+
+Every merge asks on its card, and the merge list (`agents.merge_repos`) was only on the agent's page, so people approved merge after merge in the same repository. A merge card now offers "Sempre neste repositório": approving it adds that repository to the agent's merge list in the decision's transaction (`addAgentMergeRepository`, audited as `agent.merge_repositories_changed` with `via: approval`), and merges there then run without a card as the list says. It is `approvals.approve_always` with a `repo`, never a rule.
+
+- **Offered** for the GitHub connector's merge (`owner` and `repo` name it) and a lone `gh pr merge` that names its repository (`-R`, a pull request's URL; a merge whose repository only the folder's remotes say gets no button), when that repository is one the agent uses and isn't on the list yet, and only on a run the list applies to: never on a run a routine's report woke (§4), where a merge still asks every time.
+- **Who**: whoever may approve for good, the agent's owner or someone who decides every agent's approvals (`approve_actions`), never someone covering (ADR 0139). Undone on the agent's page, in Ferramentas e acesso, like the rest of the list.
+- **Unchanged**: deploys, rollbacks, releases, workflows, publishing and `gh api` always ask, and the right hand stays out of code approvals (ADR 0139 §2).

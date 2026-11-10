@@ -1,7 +1,8 @@
 import type { TFunction } from "i18next";
-import type { EndedTask, HiddenTasks, ManagedTask, TaskNow, TaskWait } from "../api/types";
+import type { AgentBacklog, EndedTask, HiddenTasks, ManagedTask, TaskNow, TaskWait } from "../api/types";
 import { type Activity, toolActivity } from "./activity";
 import { etaMinutes } from "./computer-queue";
+import { clockAt } from "./format";
 import { stopperOf } from "./notices";
 import { usageWhenShort } from "./plan-usage";
 import { usageWindowText } from "./usage-pause";
@@ -69,15 +70,51 @@ function backWhen(t: TFunction, locale: string, resetsAt: string | null, now: nu
 /** A computer's waits that mean it's off; any other (signed out, paused, a program to update, none set) isn't "desligado". */
 const COMPUTER_GONE = new Set(["machine_offline", "machine_dropped"]);
 
+/** Who a task's request waits on, for its row: the viewer, and others by name. */
+export interface WaitPeople {
+  meId: string | null;
+  nameOf: (userId: string) => string | undefined;
+}
+
+/**
+ * What a task waiting on a person's answer says (`ManagedTask.asks`): who it waits on and for what ("Espera Ana
+ * responder", "Espera uma chave sua"), and a question's default with when it applies ("Segue com staging às 14:30").
+ */
+function answerWords(
+  t: TFunction,
+  locale: string,
+  task: Pick<ManagedTask, "asks">,
+  people: WaitPeople | undefined,
+  now: number,
+) {
+  const s = say(t);
+  const ask = task.asks;
+  const next =
+    ask?.defaultAnswer && ask.decideAt
+      ? s("taskManager.wait.defaultNext", {
+          answer: ask.defaultAnswer,
+          time: clockAt(locale, ask.decideAt, new Date(now)),
+        })
+      : s("taskManager.wait.answerNext");
+  if (ask?.kind === "decision") return { state: s("taskManager.wait.decision"), next };
+  const kind = ask?.kind === "secret" || ask?.kind === "screen" ? ask.kind : "question";
+  const who = ask?.forUserId ?? null;
+  if (!who || !people) return { state: s(waitKey("answer")), next };
+  if (who === people.meId) return { state: s(`taskManager.wait.${kind}You`), next };
+  const name = people.nameOf(who);
+  return { state: name ? s(`taskManager.wait.${kind}`, { name }) : s(waitKey("answer")), next };
+}
+
 /**
  * What a waiting task says on its row, whole: what holds it and why ("Pausada: plano a 95% da semana"), and what comes
- * next ("Volta sáb às 18:00"). Null when it isn't waiting.
+ * next ("Volta sáb às 18:00"). Null when it isn't waiting. With `people`, a wait on a person names them.
  */
 export function taskWaitWords(
   t: TFunction,
   locale: string,
-  task: Pick<ManagedTask, "status" | "held" | "line" | "wait">,
+  task: Pick<ManagedTask, "status" | "held" | "line" | "wait"> & Partial<Pick<ManagedTask, "asks">>,
   now = Date.now(),
+  people?: WaitPeople,
 ): { state: string; next: string | null } | null {
   const reason = waitsFor(task);
   if (!reason) return null;
@@ -89,7 +126,7 @@ export function taskWaitWords(
     case "ok":
       return { state: s(waitKey(reason)), next: s("taskManager.wait.okNext") };
     case "answer":
-      return { state: s(waitKey(reason)), next: s("taskManager.wait.answerNext") };
+      return answerWords(t, locale, task, people, now);
     case "computer_busy": {
       const place = linePlace(task);
       return {
@@ -401,10 +438,39 @@ export function delegationText(
 export const hiddenCount = (hidden: HiddenTasks | undefined, agentId: string | null) =>
   (agentId ? hidden?.byAgent[agentId] : hidden?.total) ?? 0;
 
-/** An agent's card line: its tasks, how many it has out of the viewer's sight, or free. */
-export function agentCardLine(t: TFunction, shown: number, hidden: number) {
-  if (shown > 0) return t("taskManager.tasks", { count: shown + hidden });
-  return hidden > 0 ? t("taskManager.hiddenTasks", { count: hidden }) : t("taskManager.free");
+/**
+ * An agent's card line: its tasks, how many it has out of the viewer's sight, or free; then its tasks to do on the
+ * board, and while it is free what they wait on ("Livre · 15 a fazer · começa quando houver espaço", "… · plano até
+ * 14:00").
+ */
+export function agentCardLine(
+  t: TFunction,
+  shown: number,
+  hidden: number,
+  board?: { backlog: AgentBacklog | undefined; locale: string; now?: number },
+) {
+  const head =
+    shown > 0
+      ? t("taskManager.tasks", { count: shown + hidden })
+      : hidden > 0
+        ? t("taskManager.hiddenTasks", { count: hidden })
+        : t("taskManager.free");
+  const backlog = board?.backlog;
+  if (!board || !backlog?.todo) return head;
+  const todo = say(t)("taskManager.todo", { count: backlog.todo });
+  return shown + hidden > 0
+    ? `${head} · ${todo}`
+    : `${head} · ${todo} · ${idleWhy(t, board.locale, backlog, board.now)}`;
+}
+
+/** Why a free agent's tasks to do haven't started: its plan or budget until a reset, else they start when there's room. */
+function idleWhy(t: TFunction, locale: string, backlog: AgentBacklog, now = Date.now()) {
+  const s = say(t);
+  const out = backlog.out;
+  if (!out) return s("taskManager.idle.room");
+  // A budget always comes back with the month; a plan may not have said when.
+  if (!out.until) return s("taskManager.idle.planLimit");
+  return s(`taskManager.idle.${out.reason}`, { when: clockAt(locale, out.until, new Date(now)) });
 }
 
 /** An agent's tasks (its card, the chat's strip): people's first, then its routines', oldest first. */

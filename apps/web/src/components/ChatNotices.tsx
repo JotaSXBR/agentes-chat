@@ -48,6 +48,7 @@ const NOTICE_ICON: Record<string, IconName> = {
   wait_result: "check",
   follow_up: "clock",
   wake_skipped: "alert",
+  task_start: "issues",
 };
 
 /**

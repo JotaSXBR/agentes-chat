@@ -1,13 +1,15 @@
-import { type Message, useIssue } from "@agenteschat/client";
+import { type Message, useIssue, useStartTasks } from "@agenteschat/client";
 import { formatTime } from "@agenteschat/client/lib/format";
 import {
   type HandedTask,
   handedTasksOf,
   type IssueWorkRef,
   issueTakenOf,
+  queueText,
   STATUS_ICON,
+  tasksStartOf,
 } from "@agenteschat/client/lib/issues";
-import { Chip, EventPill, Icon } from "@agenteschat/ui";
+import { Button, Chip, EventPill, Icon } from "@agenteschat/ui";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { AgentAvatar } from "@/components/AgentAvatar";
@@ -16,6 +18,7 @@ import { useInPlace } from "@/components/InPlace";
 import { useOrg } from "@/components/org-context";
 import { useDirectory } from "@/hooks/useDirectory";
 import { inPlaceClick } from "@/lib/navigate";
+import { useToast } from "@/lib/toast";
 import "./issue-work.css";
 
 /**
@@ -103,12 +106,52 @@ export function IssueTakenLine({ message }: { message: Message }) {
 export function HandedTaskChips({ message }: { message: Message }) {
   const tasks = handedTasksOf(message.meta);
   if (tasks.length === 0) return null;
+  const start = tasksStartOf(message.meta);
   return (
     <div className="iw-chips">
       {tasks.map((task) => (
         <HandedTaskChip key={task.issueId} task={task} />
       ))}
+      {start && <TasksStart messageId={message.id} start={start} count={tasks.filter((x) => x.held).length} />}
     </div>
+  );
+}
+
+/**
+ * "Começar estas" under the tasks an agent gave agents in its reply: nobody starts them before a person's go, then
+ * each agent takes them as room frees. Once given, who gave it.
+ */
+function TasksStart({
+  messageId,
+  start,
+  count,
+}: {
+  messageId: string;
+  start: NonNullable<ReturnType<typeof tasksStartOf>>;
+  count: number;
+}) {
+  const { t } = useTranslation();
+  const { org } = useOrg();
+  const dir = useDirectory(org.id);
+  const startTasks = useStartTasks(org.id);
+  const toast = useToast();
+  if (start.state === "started")
+    return (
+      <span className="ac-iconline iw-chips__go small muted">
+        <Icon name="check" size={14} />
+        {t("chat.tasksStart.started", { name: dir.memberById.get(start.by)?.name ?? t("chat.tasksStart.someone") })}
+      </span>
+    );
+  return (
+    <Button
+      size="sm"
+      variant="primary"
+      icon="play"
+      disabled={startTasks.isPending || startTasks.isSuccess}
+      onClick={() => startTasks.mutate(messageId, { onError: () => toast.show(t("chat.tasksStart.failed"), "error") })}
+    >
+      {t("chat.tasksStart.start", { count })}
+    </Button>
   );
 }
 
@@ -146,7 +189,11 @@ function HandedTaskChip({ task }: { task: HandedTask }) {
           {agent.name}
         </span>
       )}
-      <Chip icon={STATUS_ICON[status]}>{t(`issues.status.${status}`)}</Chip>
+      {live?.queue ? (
+        <Chip icon="layers">{queueText(t, live)}</Chip>
+      ) : (
+        <Chip icon={STATUS_ICON[status]}>{t(`issues.status.${status}`)}</Chip>
+      )}
     </Link>
   );
 }

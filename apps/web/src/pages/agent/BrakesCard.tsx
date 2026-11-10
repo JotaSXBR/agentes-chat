@@ -9,6 +9,7 @@ import { CardHead, useAgentEdit } from "./context";
 
 const AT_ONCE = ["1", "2", "3", "5", "10"];
 const PRS = ["0", "1", "2", "3", "5", "10"];
+const TASKS_AT_ONCE = ["1", "2", "3", "5"];
 
 /**
  * Configurações → Autonomia sem pedido (ADR 0131): what the agent may start that nobody asked for directly (costly
@@ -94,6 +95,34 @@ export function BrakesCard() {
           options={PRS.map((n) => ({ value: n, label: n }))}
         />
       </SettingRow>
+      <SettingRow
+        title={t("brakes.tasks")}
+        hint={{ name: t("common.about", { label: t("brakes.tasks") }), text: t("brakes.tasksHelp") }}
+        htmlFor="agp-brakes-tasks"
+      >
+        <Switch
+          id="agp-brakes-tasks"
+          checked={b.tasks}
+          disabled={!editable}
+          onCheckedChange={(tasks) => save({ tasks })}
+        />
+      </SettingRow>
+      {b.tasks && (
+        <SettingRow
+          title={t("brakes.tasksAtOnce")}
+          hint={{ name: t("common.about", { label: t("brakes.tasksAtOnce") }), text: t("brakes.tasksAtOnceHelp") }}
+          htmlFor="agp-brakes-tasks-once"
+        >
+          <Select
+            id="agp-brakes-tasks-once"
+            size="sm"
+            value={String(b.tasksAtOnce)}
+            disabled={!editable}
+            onValueChange={(v) => save({ tasksAtOnce: Number(v) })}
+            options={TASKS_AT_ONCE.map((n) => ({ value: n, label: n }))}
+          />
+        </SettingRow>
+      )}
       <SettingRow
         title={t("brakes.call")}
         hint={{ name: t("common.about", { label: t("brakes.call") }), text: t("brakes.callHelp") }}

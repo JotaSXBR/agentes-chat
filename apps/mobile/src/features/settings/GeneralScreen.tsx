@@ -323,6 +323,14 @@ export function GeneralScreen() {
           disabled={!editable || !settings.data}
           onPress={() => save({ actionCheck: !(settings.data?.actionCheck ?? true) })}
         />
+        <GroupedRow
+          label={t("settings.taskPump")}
+          labelLines={2}
+          hint={{ name: t("common.about", { label: t("settings.taskPump") }), text: t("settings.taskPumpHelp") }}
+          toggle={settings.data?.taskPump ?? true}
+          disabled={!editable || !settings.data}
+          onPress={() => save({ taskPump: !(settings.data?.taskPump ?? true) })}
+        />
       </GroupedList>
 
       <View style={styles.contextHead}>

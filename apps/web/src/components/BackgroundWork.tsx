@@ -1,5 +1,5 @@
 import { type Issue, type Message, useChannels, type WorkView } from "@agenteschat/client";
-import { heldBack } from "@agenteschat/client/lib/issues";
+import { heldBack, queueText } from "@agenteschat/client/lib/issues";
 import { blockedText, workLine, workPlanProgress, workWaitsOnPerson } from "@agenteschat/client/lib/long-work";
 import { can } from "@agenteschat/client/lib/permissions";
 import { Icon, WorkLine, WorkLineAction, WorkPlan } from "@agenteschat/ui";
@@ -190,19 +190,29 @@ function CardBlock({ issue, work }: { issue: Issue; work: WorkView }) {
 }
 
 /**
- * On a board card: the blocked badge, how far its plan is with the step it is on (the full plan is on the task's
- * page) and its last update. While blocked, that step waits too.
+ * On a board card: its place in its agent's queue ("Na fila de Ada · 2º"), the blocked badge, how far its plan is with
+ * the step it is on (the full plan is on the task's page) and its last update. While blocked, that step waits too.
  */
 export function IssueCardWork({ issue }: { issue: Issue }) {
   const { t } = useTranslation();
+  const { org } = useOrg();
+  const dir = useDirectory(org.id);
   const work = issue.backgroundWork;
   const blocked = blockedText(t, issue.blocked);
-  if (!work && !blocked) return null;
+  const agent = issue.assignee?.type === "agent" ? dir.agentById.get(issue.assignee.id) : undefined;
+  const queued = queueText(t, issue, agent?.name);
+  if (!work && !blocked && !queued) return null;
   const progress = work ? workPlanProgress(work) : null;
   const live = work && (work.status === "live" || work.status === "queued");
   const step = live ? (work.plan.find((p) => p.state === "doing") ?? work.plan.find((p) => p.state === "todo")) : null;
   return (
     <span className="issue-card__work">
+      {queued && (
+        <span className="ac-iconline issue-card__queue">
+          <Icon name="layers" size={14} />
+          <span>{queued}</span>
+        </span>
+      )}
       {blocked && (
         <span className="ac-iconline issue-card__blocked">
           <Icon name={issue.blocked?.reason === "failed" ? "alert" : "waiting"} size={14} />

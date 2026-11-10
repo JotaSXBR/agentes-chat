@@ -55,12 +55,14 @@ import { useCardTop } from "./look";
  * history. Optimistic, rolled back with a toast when the server refuses.
  */
 export function Receipts({ message: m }: { message: Message }) {
-  // A task the right hand handed on is its chip (`HandedTaskChips`): its agent is at work on it already.
+  // A task the reply handed on is its chip (`HandedTaskChips`), with the card that starts it.
   const handed = new Set(handedTasksOf(m.meta).map((h) => h.issueId));
   // A workspace change's card says what was applied and has its own Undo.
   const onCard = actionCardOf(m.meta)?.kind === "workspace_action";
   const list = (m.actions ?? []).filter(
-    (a) => !(a.kind === "issue.created" && handed.has(a.target.id)) && !(onCard && a.kind === "workspace.changed"),
+    (a) =>
+      !((a.kind === "issue.created" || a.kind === "issue.assigned") && handed.has(a.target.id)) &&
+      !(onCard && a.kind === "workspace.changed"),
   );
   const layout = receiptLayout(list);
   const now = useTick(layout !== "none" && anyLive(list));

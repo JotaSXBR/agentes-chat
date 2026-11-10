@@ -513,6 +513,11 @@ html:not([data-pointer]) .issue-card:focus-visible {
 .issue-card__blocked > .ac-icon {
   color: var(--warn);
 }
+/* Its place in its agent's queue: the same line as the blocked badge, without its warning tone. */
+.issue-card__queue {
+  gap: 6px;
+  color: var(--ink2);
+}
 .issue-card__plan {
   display: flex;
   flex-direction: column;

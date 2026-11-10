@@ -506,20 +506,21 @@ describe("browser_ask_person", () => {
     expect(await requirePageRead(f.db, ctx)).toBeNull();
   });
 
-  test("while a person is asked (pending), another run's browser call is refused", async () => {
+  test("while a person is only asked (pending), another run uses the browser; once they take it, it is refused", async () => {
     await start();
     await post("@dev sign in please");
     await drainOutbox(f.db, f.handlers);
-    const other = await waitIfPersonInControl(f.db, {
-      orgId: f.org.id,
-      agentId: f.agent.id,
-      runId: "00000000-0000-7000-8000-000000000000",
-    });
-    expect(other).toMatchObject({ isError: true });
-    expect(other?.content).toContain("has been asked to take it");
+    const other = { orgId: f.org.id, agentId: f.agent.id, runId: "00000000-0000-7000-8000-000000000000" };
+    expect(await waitIfPersonInControl(f.db, other)).toBeNull();
+    const [h] = await handoffs();
+    await claimHandoff(deps(), f.owner.id, f.org.id, h?.id ?? "");
+    const refused = await waitIfPersonInControl(f.db, other);
+    expect(refused).toMatchObject({ isError: true });
+    expect(refused?.content).toContain("A person has control of your browser");
+    expect((await handoffs())[0]?.runId).toBe(h?.runId);
   });
 
-  test("a person's message woke the asking run and it ended: the next run's browser call waits on the open help", async () => {
+  test("a person's message woke the asking run and it ended: the next run goes on until someone takes the help, then waits on it", async () => {
     await start();
     const ask = await post("@dev sign in please");
     await drainOutbox(f.db, f.handlers);
@@ -533,9 +534,17 @@ describe("browser_ask_person", () => {
     expect((await runs())[0]?.status).toBe("done");
     expect((await handoffs())[0]?.status).toBe("pending");
 
+    // Nobody took it: the browser is the agent's own, and the request stays where it was.
     await post("@dev probe");
     await drainOutbox(f.db, f.handlers);
-    const next = (await runs()).find((r) => r.id !== h?.runId);
+    const free = (await runs()).find((r) => r.id !== h?.runId);
+    expect(free?.status).toBe("done");
+    expect((await handoffs())[0]).toMatchObject({ status: "pending", runId: h?.runId });
+
+    await claimHandoff(deps(), f.owner.id, f.org.id, h?.id ?? "");
+    await post("@dev probe");
+    await drainOutbox(f.db, f.handlers);
+    const next = (await runs()).find((r) => r.id !== h?.runId && r.id !== free?.id);
     expect(next?.status).toBe("waiting_input");
     expect((await handoffs())[0]?.runId).toBe(next?.id);
     await finishHandoff(deps(), f.owner.id, f.org.id, h?.id ?? "", { result: "done" });

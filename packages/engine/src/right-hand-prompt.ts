@@ -6,7 +6,7 @@ import type { WorkspaceComputer } from "./context";
 import { can, getMembership } from "./organizations";
 import type { RolePermission } from "./permissions";
 import { accountInUse, isBillingHold, orgStanding } from "./standing";
-import { agentBudgetsThisMonth, budgetsApply } from "./usage";
+import { agentBudgetsThisMonth, budgetsShown } from "./usage";
 import { isPersonalWorkspace } from "./workspace-mode";
 
 const {
@@ -103,8 +103,8 @@ export async function rightHandPrompt(
       .orderBy(organizationMembers.createdAt)
       .limit(SNAPSHOT_MAX + 1),
     listChannels(db, personId, orgId),
-    // A workspace with no API key has no budgets: nothing to say about them.
-    budgetsApply(db, orgId).then(
+    // A workspace with no API key of its own hears nothing about budgets (`budgetsShown`).
+    budgetsShown(db, orgId).then(
       (on): Promise<Awaited<ReturnType<typeof agentBudgetsThisMonth>>> =>
         on ? agentBudgetsThisMonth(db, orgId) : Promise.resolve(new Map()),
     ),

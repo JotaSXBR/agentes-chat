@@ -342,7 +342,6 @@ import {
 import { type Approval, type InvokeResult, isSensitive, type ToolGateway } from "./tools/gateway";
 import { grantedScopeKeys, grantKey } from "./tools/scopes";
 import type { ToolContext, ToolDefinition } from "./tools/types";
-import { budgetsApply } from "./usage";
 import {
   budgetUsedPercent,
   continuesPastPlan,
@@ -3741,7 +3740,6 @@ async function executeRunInner(
    */
   const usageReading = async (stored?: PlanUsage | null) => {
     if (plan.kind === "model") {
-      if (!(await budgetsApply(db, run.orgId).catch(() => true))) return null;
       const { spent, held } = await budgetUsedPercent(db, agent).catch(() => ({ spent: 0, held: 0 }));
       // Over the line only with other calls' reservations in flight: they're released in seconds, so it looks again
       // soon instead of waiting for the month.

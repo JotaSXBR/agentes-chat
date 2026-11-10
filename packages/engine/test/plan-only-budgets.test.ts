@@ -3,9 +3,8 @@ import { noPlatformCredentials } from "@agenteschat/adapters";
 import { and, eq, schema } from "@agenteschat/db";
 import {
   BudgetExceededError,
-  budgetsApply,
+  budgetsShown,
   createModelGateway,
-  outOfOfficeIds,
   RIGHT_HAND,
   revokeCredential,
   rightHandPrompt,
@@ -21,8 +20,8 @@ afterEach(async () => {
 
 const PLATFORM = { resolve: async () => ({ apiKey: "platform-key" }) };
 
-/** No API key of the workspace's own: what a workspace whose AI is all plans looks like to the Model Gateway. */
-async function plansOnly() {
+/** No API key of the workspace's own: its agents' API calls run on the server's (platform) key. */
+async function noKeyOfItsOwn() {
   await revokeCredential(f.db, f.owner.id, f.org.id, f.credential.id);
   await f.db.update(schema.agents).set({ credentialId: null }).where(eq(schema.agents.id, f.agent.id));
 }
@@ -51,23 +50,21 @@ const once = (gateway: ReturnType<typeof createModelGateway>) =>
 test("with an API key, a spent budget stops the call and tells its owner", async () => {
   f = await setup({ budgetNanoUsd: 1, platform: PLATFORM });
   const heard: string[] = [];
-  expect(await budgetsApply(f.db, f.org.id)).toBe(true);
+  expect(await budgetsShown(f.db, f.org.id)).toBe(true);
   await expect(once(gatewayHeard(heard))).rejects.toBeInstanceOf(BudgetExceededError);
   expect(heard).toEqual(["exhausted"]);
 });
 
-test("with no API key there are no budgets: no limit, no notice, no budget out of office", async () => {
+test("with no API key of its own, a call on the server's key keeps the agent's budget: nothing else caps it", async () => {
   f = await setup({ budgetNanoUsd: 1, platform: PLATFORM });
-  await plansOnly();
-  expect(await budgetsApply(f.db, f.org.id)).toBe(false);
+  await noKeyOfItsOwn();
+  // Nobody here is told about budgets (the right hand's lines, the week's offers)…
+  expect(await budgetsShown(f.db, f.org.id)).toBe(false);
+  // …yet whoever runs the server pays for this key, and only the agent's budget stops a call on it.
   const heard: string[] = [];
-  await once(gatewayHeard(heard));
-  await once(gatewayHeard(heard));
-  expect(heard).toEqual([]);
-  expect(await f.db.select().from(schema.outbox).where(eq(schema.outbox.kind, "budget.exhausted"))).toEqual([]);
-  expect(f.provider.calls).toHaveLength(2);
-  // Its spend is past the budget, yet it isn't away for a budget nobody has.
-  expect(await outOfOfficeIds(f.db, f.org.id, [f.agent.id])).toEqual(new Set());
+  await expect(once(gatewayHeard(heard))).rejects.toBeInstanceOf(BudgetExceededError);
+  expect(heard).toEqual(["exhausted"]);
+  expect(f.provider.calls).toHaveLength(0);
 });
 
 test("the right hand says nothing about budgets in a workspace without an API key", async () => {
@@ -80,7 +77,7 @@ test("the right hand says nothing about budgets in a workspace without an API ke
   const prompt = () =>
     rightHandPrompt({ db: f.db }, { orgId: f.org.id, agent: lodi, personId: f.owner.id, inDm: true });
   expect(await prompt()).toMatch(/@dev \(Dev\)[^\n]*budget US\$/);
-  await plansOnly();
+  await noKeyOfItsOwn();
   const without = await prompt();
   expect(without).toContain("@dev (Dev)");
   expect(without).not.toMatch(/monthly budget|budget US\$/);

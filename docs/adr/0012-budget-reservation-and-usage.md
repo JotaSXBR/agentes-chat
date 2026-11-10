@@ -33,6 +33,8 @@ After the call (success or failure) one transaction writes the usage record, del
 - `agentSpendThisMonth` (sum of records) and the counter agree because the gateway is the only writer of both.
 - Prices live in `MODEL_CATALOG`; they were checked against the official list on 2026-10-14.
 
-## Addendum (2026-11-10): no budgets where every AI is a plan
+## Addendum (2026-11-10): no budget talk where every AI is a plan
 
-A workspace whose AI is all subscriptions (plans) and has no API key of its own pays nothing per call, so an agent's monthly budget would only count what the plans or this server's own key pay for. There (`budgetsApply`: no provider key that isn't revoked) the Model Gateway reserves nothing against an agent's budget and never refuses for it, so no budget notice, email, wait or long-work pause card is made; an agent isn't out of office for a budget, the right hand says nothing about budgets, and the week's check offers no budget raise. Adding a key brings budgets back (the check is cached with the workspace's keys). The server's own key keeps the workspace's platform limit (ADR 0079).
+A workspace whose AI is all subscriptions (plans) and has no API key of its own pays nothing per call: plan turns record no cost on an agent's budget, so its budgets never fill there. Its people hear nothing about them (`budgetsShown`: no provider key that isn't revoked): the right hand names no agent's budget. Adding a key brings that back (the check is cached with the workspace's keys).
+
+The limits themselves hold everywhere. Without a key of its own, an agent on the API brain thinks with this server's own key (`PLATFORM_ANTHROPIC_API_KEY`), whose calls are recorded as the workspace's own usage (`billed_to = 'org'` with no credential), so no platform limit counts them (ADR 0079 counts only `platform` usage, the judge's and the router's): the agent's monthly budget is the only thing that stops them. So the Model Gateway reserves and refuses for it as for any key, the long-work pause reads it, an agent past it is out of office, and the week's card offers an administrator a raise when an agent waited on it.

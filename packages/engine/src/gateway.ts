@@ -43,7 +43,7 @@ import { maySql, type RolePermission } from "./permissions";
 import { addPersonSpend, assertPersonUnderLimit, personSpendAdded } from "./person-usage";
 import { assertCanWork, standingRefusal } from "./standing";
 import { redactCredentials } from "./tool-detail";
-import { budgetPercent, budgetsApply, monthStartUtc, withEffectiveBudget } from "./usage";
+import { budgetPercent, monthStartUtc, withEffectiveBudget } from "./usage";
 
 const {
   usageRecords,
@@ -706,10 +706,9 @@ export function createModelGateway(deps: ModelGatewayDeps) {
           ? call.agent
           : await getAgent(db, call.orgId, call.agentId);
       if (!row || row.archivedAt) throw new NotFoundError("Agent not found");
-      // Every agent has a budget: its own, else the organization's default; none where the workspace has no API key.
-      const agent = (await budgetsApply(db, row.orgId))
-        ? await withEffectiveBudget(db, row)
-        : { ...row, monthlyBudgetNanoUsd: null };
+      // Every agent has a budget: its own, else the organization's default. A workspace without a key of its own still
+      // pays through the server's (platform) key here, which no other limit counts.
+      const agent = await withEffectiveBudget(db, row);
       const providerId = modelProvider(agent.model);
       if (!providerId) throw new ValidationError(`Model ${agent.model} is not in the catalog`);
       const provider = providerFor(providerId);

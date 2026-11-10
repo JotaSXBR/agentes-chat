@@ -16,7 +16,6 @@ import { createRoutine, type RoutineDeps } from "./routines";
 import { localDate, nextOccurrence, type ScheduleRule } from "./rrule";
 import { openOrg } from "./standing";
 import { taskSeenSql } from "./task-access";
-import { budgetsApply } from "./usage";
 
 /**
  * "Semana da equipe" (ADR 0137 §9): once a week Lodi posts one card in each admin's DM with it, from what the server
@@ -292,8 +291,8 @@ export async function buildTeamWeek(
           and m.author_agent_id in (select id from agents where org_id = ${w.orgId} and builtin is null)
       ) s group by agent_id order by n desc limit 2`),
   );
-  // A budget is the workspace's money: only an administrator's card offers to raise it, where budgets apply.
-  for (const s of admin && (await budgetsApply(db, w.orgId)) ? stops : []) {
+  // A budget is the workspace's money: only an administrator's card offers to raise it.
+  for (const s of admin ? stops : []) {
     const agent = team.find((a) => a.id === s.agent_id);
     if (!agent) continue;
     const from = budgetOf(agent.budget);

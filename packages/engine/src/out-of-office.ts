@@ -4,7 +4,7 @@ import type { Agent } from "./agents";
 import { brainOf } from "./brain-settings";
 import { planLimitOf } from "./brains/select";
 import { isComputerBrain } from "./brains/types";
-import { budgetsApply, monthStartUtc, orgDefaultAgentBudget } from "./usage";
+import { monthStartUtc, orgDefaultAgentBudget } from "./usage";
 import { nextMonthStart } from "./usage-pause";
 
 /**
@@ -41,16 +41,15 @@ export async function outOfOffice(
   const now = options.now ?? new Date();
   const ms = now.getTime();
   const computer = list.filter((a) => isComputerBrain(brainOf(a.brain)) && a.machineId);
-  const [accounts, machines, spent, orgBudget, budgets] = await Promise.all([
+  const [accounts, machines, spent, orgBudget] = await Promise.all([
     accountUsages(db, orgId, computer),
     machineUsages(db, orgId, computer),
     spentThisMonth(db, orgId, now),
     orgDefaultAgentBudget(db, orgId),
-    budgetsApply(db, orgId),
   ]);
   const budgetSpent = (a: OutOfOfficeAgent) => {
     const budget = a.monthlyBudgetNanoUsd ?? orgBudget;
-    return budgets && (spent.get(a.id) ?? 0) >= budget;
+    return (spent.get(a.id) ?? 0) >= budget;
   };
   const budgetOut: OutOfOffice = { reason: "budget", until: new Date(nextMonthStart(ms)) };
   for (const a of list) {

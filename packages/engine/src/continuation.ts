@@ -11,7 +11,7 @@ import { isAgentOnlyDm } from "./dms";
 import { decisionNudge, FOLLOW_THROUGH_NUDGE, FOLLOW_THROUGH_NUDGE_DM, MISSION_ASK_NUDGE } from "./follow-through";
 import { cutText, cutTextEnd } from "./format";
 import { choiceP, type Judge, stanceQuestion } from "./judge";
-import { getMessage } from "./messages";
+import { getMessage, type Message } from "./messages";
 import type { NoticeKind } from "./notices";
 import { notifyRunFailed } from "./notification-producers";
 import { ANSWER_NUDGE } from "./reply-policy";
@@ -566,9 +566,11 @@ export async function personAsk(
   db: Executor,
   run: Pick<AgentRun, "orgId" | "stretchId" | "triggerMessageId">,
   carried?: string,
+  trigger?: Message | null,
 ): Promise<string> {
   if (carried) return carried;
-  const root = await getMessage(db, run.orgId, runStretchOf(run));
+  const rootId = runStretchOf(run);
+  const root = trigger?.id === rootId ? trigger : await getMessage(db, run.orgId, rootId);
   if (root?.authorType !== "person" || routineBriefOf(root.meta) || root.meta.background === true) return "";
   return root.body;
 }

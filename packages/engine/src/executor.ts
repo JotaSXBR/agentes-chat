@@ -2812,7 +2812,7 @@ async function executeRunInner(
       evidence.means = [...turnMeans(names, teammates), ...own];
       // No call executed in this run: no tool step to read.
       evidence.tried = t.executedCalls ? await triedCalls(db, run, t.harnessTried) : (t.harnessTried ?? []);
-      evidence.ask = await personAsk(db, run, t.request).catch(() => "");
+      evidence.ask = await personAsk(db, run, t.request, triggerMessage).catch(() => "");
       return evidence;
     };
     return { evidence, gather };

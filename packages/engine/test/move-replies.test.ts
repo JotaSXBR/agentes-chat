@@ -272,6 +272,8 @@ test("in a mission's thread: told once it stays, never sent back and forth betwe
     title: "Lojas",
     goal: "Conferir as lojas",
     mainSessionId: crypto.randomUUID(),
+    // No computer here, and the API never stands in for a computer brain: the main session thinks with the model.
+    brain: "model",
   });
   await say("@dev continue fora dessa thread", root.id);
   await drainOutbox(f.db, f.handlers);

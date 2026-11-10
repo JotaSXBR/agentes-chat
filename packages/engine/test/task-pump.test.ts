@@ -457,4 +457,49 @@ describe("the task pump: an agent takes its next task as room frees (24h build f
     for (const t of tasks) expect(await statusOf(t.id)).toBe("done");
     expect((await runsOf()).length).toBe(5);
   });
+
+  test("a dozen tasks to do and two runs parked on people's answers: the free agent works through the rest", async () => {
+    f = await setup();
+    const tasks: IssueView[] = [];
+    for (let n = 1; n <= 12; n++) tasks.push(await give(`Move service ${n} to the new cluster`));
+    // Two of them wait on a person's answer in their own conversations.
+    const parked = tasks.slice(0, 2);
+    for (const task of parked) {
+      const at = await openTaskConversation(f.db, person(f.owner.id), f.org.id, task.id);
+      await f.db.insert(agentRuns).values({
+        orgId: f.org.id,
+        agentId: f.agent.id,
+        channelId: at.channelId,
+        threadRootId: at.rootId,
+        triggerMessageId: at.rootId,
+        trigger: "mention",
+        hop: 1,
+        status: "waiting_input",
+        issueId: task.id,
+      });
+    }
+    // Parked runs hold no room: two start at once.
+    expect(await pump()).toBe(2);
+    let most = 0;
+    for (let round = 0; round < 12; round++) {
+      const live = (await runsOf()).filter((r) => r.status === "queued" || r.status === "running");
+      most = Math.max(most, live.length);
+      if (live.length === 0) break;
+      await finish(live.map((r) => r.id));
+      await f.db
+        .update(issues)
+        .set({ status: "done" })
+        .where(
+          inArray(
+            issues.id,
+            live.map((r) => r.issueId ?? ""),
+          ),
+        );
+      await pump();
+    }
+    expect(most).toBe(2);
+    for (const t of tasks.slice(2)) expect(await statusOf(t.id)).toBe("done");
+    // The parked ones keep waiting on their person, each with its one run.
+    for (const t of parked) expect((await runsOf()).filter((r) => r.issueId === t.id)).toHaveLength(1);
+  });
 });

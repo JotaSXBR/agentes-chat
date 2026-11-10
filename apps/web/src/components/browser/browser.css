@@ -1605,9 +1605,11 @@ html:not([data-pointer]) .brw-trail__ext:focus-visible {
 .brw-mf__top .ac-pixspin {
   filter: brightness(0) invert(1);
 }
+/* What it does now keeps its width up to its share: a long site's name gives way, never this to a stub. */
 .brw-mf__now {
   position: relative;
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 7px;
   min-width: 0;

@@ -38,7 +38,7 @@ import { act, cleanup, fireEvent, within } from "@testing-library/react";
 import { useState } from "react";
 import { BrowserCard, titleKind } from "@/components/browser/BrowserCard";
 import { HandBackFoot } from "@/components/computer/control";
-import { ADA_ID, createFakeApi, ENG_ID, fakeBrowserOf, ORG_ID, seedState } from "./fake-api";
+import { ADA_ID, ATLAS_ID, createFakeApi, ENG_ID, fakeBrowserOf, ORG_ID, seedState } from "./fake-api";
 import { fakeSockets } from "./fake-socket";
 import { onScreen, renderApp, renderPage, screen, settle } from "./render";
 
@@ -1359,5 +1359,69 @@ describe("its browser on the agent's screen: the card shows the whole screen (AD
     expect(screens).toEqual([]);
     expect(document.querySelector(".dsk--card")).toBeNull();
     expect(state.calls.some((c) => c.method === "desktop.status")).toBe(false);
+  });
+});
+
+describe("worst case: two agents' cards in one conversation", () => {
+  /** A long host, and a short one with a long path: what the frame's top says of each. */
+  const LONG_HOST =
+    "https://faturamento-internacional.painel.northwind-industries-holdings.example.com/relatorios/2026/novembro";
+  const LONG_PATH =
+    "https://app.example.com/organizacoes/northwind-industries-holdings/projetos/migracao-do-data-warehouse/tarefas/2381";
+  /** Atlas as a workspace may name it (the server takes up to 80 characters). */
+  const LONG_NAME = "Assistente de Conciliação Financeira Internacional";
+
+  test("each agent's card on its own row, its site and what it does on one line, with many steps", async () => {
+    const undo = onScreen(".brw-ac");
+    try {
+      const state = seedState();
+      const atlas = state.agents.find((a) => a.id === ATLAS_ID);
+      if (atlas) atlas.name = LONG_NAME;
+      const r = await renderApp(`/org/${ORG_ID}/c/${ENG_ID}`, { api: createFakeApi(state) });
+      await settle(5);
+      const socket = r.sockets.last();
+      await act(async () => socket.open());
+      const ev = (event: Record<string, unknown>) =>
+        act(async () => socket.push({ type: "event", channelId: ENG_ID, event }));
+      const runs = [
+        { channelId: ENG_ID, threadId: null, runId: "r-ada", agentId: ADA_ID, site: LONG_HOST, steps: 12 },
+        { channelId: ENG_ID, threadId: null, runId: "r-atlas", agentId: ATLAS_ID, site: LONG_PATH, steps: 1 },
+      ];
+      for (const { site, steps, ...run } of runs) {
+        await ev({ type: "agent.thinking", ...run });
+        for (let i = 0; i < steps; i++) {
+          const tool = i % 3 === 0 ? "browser_open" : "browser_click";
+          await ev({ type: "agent.tool", ...run, tool, toolUseId: `${run.runId}-${i}`, detail: site });
+        }
+      }
+      await settle(4);
+      for (const { agentId, site } of runs) {
+        await act(async () =>
+          socket.push({
+            type: "browser.frame",
+            agentId,
+            seq: 1,
+            data: FRAME_DATA,
+            metadata: { deviceWidth: 1280, deviceHeight: 800, url: site },
+          }),
+        );
+      }
+      await settle(4);
+      const cards = [...document.querySelectorAll(".brw-ac.is-open")] as HTMLElement[];
+      expect(cards).toHaveLength(2);
+      expect(document.querySelector('[data-run-id="r-ada"]')?.contains(cards[0] as HTMLElement)).toBe(true);
+      expect(document.querySelector('[data-run-id="r-atlas"]')?.contains(cards[1] as HTMLElement)).toBe(true);
+      const title = (card: HTMLElement) => card.querySelector(".brw-mf__site b")?.textContent;
+      expect(title(cards[0] as HTMLElement)).toBe(
+        "faturamento-internacional.painel.northwind-industries-holdings.example.com/relatorios/2026/novembro",
+      );
+      expect(title(cards[1] as HTMLElement)).toBe(
+        "app.example.com/organizacoes/northwind-industries-holdings/projetos/migracao-do-data-warehouse/tarefas/2381",
+      );
+      expect(cards[1]?.querySelector(".brw-mf__now")?.textContent).toContain(LONG_NAME);
+      expect(cards[0]?.querySelectorAll(".brw-mf__hist li")).toHaveLength(12);
+    } finally {
+      undo();
+    }
   });
 });

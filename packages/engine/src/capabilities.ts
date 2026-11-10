@@ -213,7 +213,7 @@ export function describeCapabilities(
     const undoable = tools.filter((t) => UNDOABLE_TOOLS.has(t.name) && !isSensitive(t)).map((t) => `\`${t.name}\``);
     if (undoable.length > 0) {
       lines.push(
-        `Done right away, no approval (the person sees each change under your reply with Undo for a few minutes): ${undoable.join(", ")}.`,
+        `Done right away, no approval (the person sees each change under your reply): ${undoable.join(", ")}.`,
       );
     }
     const approval = tools.filter((t) => isSensitive(t)).map((t) => `\`${t.name}\``);

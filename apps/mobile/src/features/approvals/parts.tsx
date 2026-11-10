@@ -8,16 +8,21 @@ import {
 } from "@agenteschat/client";
 import { aheadPhase } from "@agenteschat/client/lib/approval-kind";
 import { approvalOriginShort, approvalOriginWords } from "@agenteschat/client/lib/approval-origin";
+import { approvalEffects } from "@agenteschat/client/lib/approval-review";
 import { alwaysRoutineName, approvalDoing, approvalTitle } from "@agenteschat/client/lib/approval-words";
 import { fromServer, itemName } from "@agenteschat/client/lib/connected";
 import { nextLabel } from "@agenteschat/client/lib/format";
 import { connectorName } from "@agenteschat/client/lib/scopes";
+import { isPersonal } from "@agenteschat/client/lib/workspace-mode";
 import type { TFunction } from "i18next";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, Platform, Pressable, StyleSheet, View } from "react-native";
+import { useOrg } from "@/providers/org";
 import { Button, Chip, Fuse, haptics, LineIcon, Text, useToast } from "@/ui";
 import { router } from "@/ui/navigation";
+import { parseInline } from "../chat/logic";
+import { Spans } from "../chat/MessageSpans";
 import { ConnectorIcon, IconTile } from "../connectors/ConnectorIcon";
 import { AgentFace } from "../shared/Face";
 import { useColors, useDirectory, useNow, useOrgId } from "../shared/hooks";
@@ -48,6 +53,13 @@ const TRAIT_ICON = {
   unsent: "archive",
   deletable: "undo",
 } as const;
+
+/**
+ * A trait's words. What leaves a personal workspace (ADR 0159) leaves its person's workspace, not a company: the one
+ * trait with a personal sibling.
+ */
+export const traitKey = (trait: keyof typeof TRAIT_ICON, personal: boolean) =>
+  trait === "external" && personal ? "mobile.approval.trait.externalPersonal" : `mobile.approval.trait.${trait}`;
 
 /**
  * The action in words, as the web says it: an email's ("Salvar um rascunho de resposta para…"), a tool run by
@@ -394,15 +406,23 @@ export function ApprovalSaid({
 /** "Para todos, em produção", "Dá para desfazer": only what the request itself says. */
 export function ApprovalTraits({ approval: a }: { approval: Approval }) {
   const { t } = useTranslation();
+  const personal = isPersonal(useOrg().org);
   const traits = approvalTraits(a);
   if (traits.length === 0) return null;
   return (
     <View style={styles.chips}>
       {traits.map((tr) => (
-        <Chip key={tr} icon={TRAIT_ICON[tr]} label={t(`mobile.approval.trait.${tr}`)} />
+        <Chip key={tr} icon={TRAIT_ICON[tr]} label={t(traitKey(tr, personal))} />
       ))}
     </View>
   );
+}
+
+/** Whether the request can be undone, as a chip after its title ("Não dá para desfazer"); none when it doesn't say. */
+export function ApprovalUndoChip({ approval: a }: { approval: Approval }) {
+  const { t } = useTranslation();
+  const { undo } = approvalEffects(a);
+  return undo ? <Chip icon={TRAIT_ICON[undo]} label={t(`mobile.approval.trait.${undo}`)} /> : null;
 }
 
 /**
@@ -450,7 +470,7 @@ export function ApprovalDetails({
             style={stacked ? styles.wrapAnywhere : styles.grow}
             numberOfLines={long ? undefined : stacked ? 4 : 2}
           >
-            {r.value}
+            <Spans inline={parseInline(r.value)} />
           </Text>
         </View>
       ))}

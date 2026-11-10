@@ -585,7 +585,7 @@ export class DesktopSessions {
   private readonly claimed = new Set<number>();
   /** Refreshes run one after another: each starts dozens of short processes on the computer. */
   private refreshes: Promise<void> = Promise.resolve();
-  /** The data sockets of the streams that show each agent's desktop, which its pointer's steps go to (protocol 54). */
+  /** The data sockets of the streams that show each agent's desktop, which its pointer's steps go to (protocol 56). */
   private readonly shown = new Map<string, Set<{ send(data: string): void }>>();
   private sweepTimer: ReturnType<typeof setInterval> | null = null;
   private readonly sys: DesktopSystem;
@@ -753,7 +753,7 @@ export class DesktopSessions {
     };
   }
 
-  /** One step of the agent's pointer (protocol 54), to every stream that shows its desktop. */
+  /** One step of the agent's pointer (protocol 56), to every stream that shows its desktop. */
   cursor(agentId: string, cursor: DesktopCursor) {
     const set = this.shown.get(agentId);
     if (!set) return;

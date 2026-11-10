@@ -24,6 +24,7 @@ import { joinNames, lowerFirst } from "@agenteschat/client/lib/format";
 import { agentGrammar } from "@agenteschat/client/lib/grammar";
 import { namesComputers } from "@agenteschat/client/lib/machines";
 import { around, endSentence } from "@agenteschat/client/lib/text";
+import { isPersonal, modeKey } from "@agenteschat/client/lib/workspace-mode";
 import {
   Button,
   Card,
@@ -281,7 +282,7 @@ export function WorkspaceComputerCard({ view }: { view: SetupView }) {
   const { org } = useOrg();
   const reader = useWaitReader();
   const machine = managedOf(useMachines(org.id).data);
-  const title = computerName(t, org.name, machine);
+  const title = computerName(t, org.name, machine, isPersonal(org));
   return (
     <Card aria-labelledby="sec-workspace-computer" className="setup-card" data-phase={view.phase}>
       <div className="computers-card__head">
@@ -295,8 +296,8 @@ export function WorkspaceComputerCard({ view }: { view: SetupView }) {
             <h2 id="sec-workspace-computer" className="ac-card__title">
               {machine ? (
                 <Link
-                  to="/org/$orgId/settings/computers/$machineId"
-                  params={{ orgId: org.id, machineId: machine.id }}
+                  to="/org/$orgId/settings/devices/$deviceId"
+                  params={{ orgId: org.id, deviceId: machine.id }}
                   className="machine-row__name"
                 >
                   {title}
@@ -349,7 +350,7 @@ export function ComputerSetupNotice() {
   const { org } = useOrg();
   const there = useMatchRoute()({
     to: "/org/$orgId/settings/$section",
-    params: { orgId: org.id, section: "computers" },
+    params: { orgId: org.id, section: "devices" },
   });
   const reader = useWaitReader();
   const view = useSetupView(org.id);
@@ -375,7 +376,7 @@ export function ComputerSetupNotice() {
       <div className="outage setup-notice" role="status" data-phase={view.phase}>
         <ComputerIcon kind={WORKSPACE_COMPUTER_KIND} size={20} className="outage__icon" />
         <span className="outage__text">
-          <b>{t(setupNoticeTitleKey(view), { org: org.name })}</b>
+          <b>{t(modeKey(org, setupNoticeTitleKey(view)), { org: org.name })}</b>
           {line && <span>{line}</span>}
         </span>
         <span className="outage__crew">
@@ -385,7 +386,7 @@ export function ComputerSetupNotice() {
         </span>
         <span className="outage__acts">
           <Button asChild variant="ghost" size="sm">
-            <Link to="/org/$orgId/settings/$section" params={{ orgId: org.id, section: "computers" }}>
+            <Link to="/org/$orgId/settings/$section" params={{ orgId: org.id, section: "devices" }}>
               {t("computerSetup.notice.see")}
             </Link>
           </Button>

@@ -62,7 +62,7 @@ While a row is open for an owner, the right hand's prompt names none of the setu
 
 ## Amendment (2026-11-08): the right hand's card keeps three rows (§6)
 
-ADR 0158: the onboarding asks what the workspace does and makes its team, so the card keeps an AI (for the whole
+ADR 0162: the onboarding asks what the workspace does and makes its team, so the card keeps an AI (for the whole
 team), apps and people. An invitation waiting for its answer finishes the people row, which invites one address in
 place. On a hold every row waits with no button, and "Agora não" says nothing.
 
@@ -76,7 +76,7 @@ for the same AI and apps. §2 is withdrawn on the web and the phone, its card on
 - What it needs it asks for when it needs it, with the cards every agent already has (`setup:write` and
   `request_secret`): an AI (`offer_connect_ai`, and the no-AI line over the composer, which every DM shows again), an
   app (`offer_connect_app`), people (`offer_invites`), a secret (`request_secret`).
-- The right hand's first run (§6, ADR 0158) is the one setup checklist. Its rows, words and dialogs are unchanged.
+- The right hand's first run (§6, ADR 0162) is the one setup checklist. Its rows, words and dialogs are unchanged.
 - `agents.setup` keeps the role an agent started from (the first run's apps row suggests by the team's roles) and
   the right hand's skips. The confirm route still takes a new agent's steps, which the apps no longer send.
 - Gone with it: the step dialogs and screens, the greeting and its first tasks, and their words in every language.

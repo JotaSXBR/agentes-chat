@@ -21,7 +21,7 @@ import { listsAgent, seesDetails } from "@agenteschat/client/lib/audience";
 import { brainLine } from "@agenteschat/client/lib/brain";
 import { effortLevel } from "@agenteschat/client/lib/brain-advanced";
 import { modelUnpriced } from "@agenteschat/client/lib/endpoints";
-import { capitalize, formatPercent, lowerFirst, timeLeft } from "@agenteschat/client/lib/format";
+import { formatPercent, lowerFirst, timeLeft } from "@agenteschat/client/lib/format";
 import { agentGrammar } from "@agenteschat/client/lib/grammar";
 import { agentPlan, aiStateOf, planLabel, planOfAccount } from "@agenteschat/client/lib/no-ai";
 import { can } from "@agenteschat/client/lib/permissions";
@@ -29,6 +29,7 @@ import { planMeterText, usageShown } from "@agenteschat/client/lib/plan-usage";
 import { memoryLine } from "@agenteschat/client/lib/proposals";
 import { apiModelName, autoMakerOf, isAuto } from "@agenteschat/client/lib/providers";
 import { isRightHand, tellsNameStory } from "@agenteschat/client/lib/right-hand";
+import { isPersonal } from "@agenteschat/client/lib/workspace-mode";
 import { planLine } from "@agenteschat/ui/plan-state";
 import { useQueryClient } from "@tanstack/react-query";
 import { Fragment, type ReactNode, useEffect, useState } from "react";
@@ -104,6 +105,7 @@ import {
 } from "./logic";
 import { MergeReposSection } from "./MergeReposSection";
 import { MonthPixels } from "./MonthPixels";
+import { openAgentMore } from "./more-link";
 import { useMemoryOriginText } from "./useMemoryOriginText";
 import { agoShort, workTitle, workWhere } from "./work";
 
@@ -180,6 +182,8 @@ function Profile({ id }: { id: string }) {
   const details = seesDetails(agent);
   // The team's right hand (ADR 0137): what it is and how it works, its model, Configurar for who manages agents.
   const rightHand = isRightHand(agent);
+  // A personal workspace's agent (ADR 0159 §3): its rules, repositories and the rest in Advanced.
+  const personal = isPersonal(org);
   // Which view shows: the one last chosen, on every profile (a person who reads memories keeps reading memories).
   const [tab, setTabState] = useState<ProfileTab>(() => profileTabOf(readValueSync(STORED.agentProfileTab)));
   const setTab = (next: ProfileTab) => {
@@ -339,7 +343,7 @@ function Profile({ id }: { id: string }) {
         : null;
   // The right hand's one role name, as its row in Conversas and its conversation's header say it.
   const roleLine = rightHand
-    ? capitalize(t("rightHand.label"), i18n.language)
+    ? t("rightHand.labelCapitalized")
     : [roleName || null, plain ? (roleName ? lowerFirst(plain, i18n.language) : plain) : null]
         .filter(Boolean)
         .join(" · ");
@@ -366,6 +370,8 @@ function Profile({ id }: { id: string }) {
     : apiModelName(t, agent.model, modelLabel(agent.model) ?? undefined, autoMakerOf(aiStatus.data, id));
   const monthLabel =
     shown.plan?.account ?? thinksPlan ?? thinks?.text ?? apiModel ?? t("usageViews.agent.title", agentGrammar(name));
+  // A plan's maker, or the maker Automático's models come from through the API.
+  const monthMark = thinks?.mark ?? agent?.brain?.maker;
   // A short value fits on the right ("week 40%", "$3.20 of $50.00"); a sentence goes under the name.
   const monthValue = planNow?.top
     ? `${meter.short(planNow.top)} ${planNow.top.used}%`
@@ -476,7 +482,7 @@ function Profile({ id }: { id: string }) {
       <GroupedHeader>{t("mobile.intentAgents.thinks")}</GroupedHeader>
       <GroupedList>
         <GroupedRow
-          {...(thinks?.mark ? { leading: <ProviderLogo id={thinks.mark} size="sm" /> } : { icon: "key" as const })}
+          {...(monthMark ? { leading: <ProviderLogo id={monthMark} size="sm" /> } : { icon: "key" as const })}
           label={monthLabel}
           {...(monthValue ? { value: monthValue } : {})}
           {...(monthSub ? { sub: monthSub, subLines: 2 } : {})}
@@ -628,15 +634,28 @@ function Profile({ id }: { id: string }) {
           {usesNote ? <GroupedFooter>{usesNote}</GroupedFooter> : null}
         </>
       ) : null}
-      <AlwaysApproved agentId={id} name={name} mayRemove={mine || can(org, "approve_actions")} />
-      <MergeReposSection agentId={id} name={name} mayEdit={mine || can(org, "manage_agents")} />
-      {ownerLine ? (
-        <View style={styles.apart}>
-          <GroupedList>
-            <GroupedRow icon="person" label={ownerLine} />
-          </GroupedList>
-        </View>
-      ) : null}
+      {personal ? (
+        // A personal workspace keeps its rules, repositories and the rest in Advanced (ADR 0159 §3).
+        rightHand ? null : (
+          <View style={styles.apart}>
+            <GroupedList>
+              <GroupedRow icon="more" label={t("agentPage.tabs.advanced")} chevron onPress={() => openAgentMore(id)} />
+            </GroupedList>
+          </View>
+        )
+      ) : (
+        <>
+          <AlwaysApproved agentId={id} name={name} mayRemove={mine || can(org, "approve_actions")} />
+          <MergeReposSection agentId={id} name={name} mayEdit={mine || can(org, "manage_agents")} />
+          {ownerLine ? (
+            <View style={styles.apart}>
+              <GroupedList>
+                <GroupedRow icon="person" label={ownerLine} />
+              </GroupedList>
+            </View>
+          ) : null}
+        </>
+      )}
     </>
   );
 
@@ -761,7 +780,9 @@ function Profile({ id }: { id: string }) {
               <GroupedRow icon="lock" label={t("rightHand.profile.private")} labelLines={2} />
               <GroupedRow icon="hash" label={t("rightHand.profile.channels")} labelLines={2} />
               <GroupedRow
-                icon="brain"
+                {...(agent.brain?.maker
+                  ? { leading: <ProviderLogo id={agent.brain.maker} size="sm" /> }
+                  : { icon: "brain" as const })}
                 label={t("rightHand.profile.model")}
                 {...modelRow(
                   t,
@@ -829,7 +850,7 @@ function Profile({ id }: { id: string }) {
  * from a request, by whom and when. Its owner and whoever decides approvals take one back with its ×, at once.
  * Shown only when there is something.
  */
-function AlwaysApproved({ agentId, name, mayRemove }: { agentId: string; name: string; mayRemove: boolean }) {
+export function AlwaysApproved({ agentId, name, mayRemove }: { agentId: string; name: string; mayRemove: boolean }) {
   const { t } = useTranslation();
   const orgId = useOrgId();
   const toast = useToast();

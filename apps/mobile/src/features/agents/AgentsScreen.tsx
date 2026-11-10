@@ -17,6 +17,7 @@ import { aiStateOf } from "@agenteschat/client/lib/no-ai";
 import { can } from "@agenteschat/client/lib/permissions";
 import { isOutOfOffice } from "@agenteschat/client/lib/presence";
 import { isRightHand } from "@agenteschat/client/lib/right-hand";
+import { isPersonal, modeKey } from "@agenteschat/client/lib/workspace-mode";
 import { useIsFocused } from "expo-router";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -200,8 +201,9 @@ export function AgentsScreen() {
       {showsManager ? (
         <ManagerRow working={working.length} waiting={waiting.length} onPress={() => router.push("/task-manager")} />
       ) : null}
-      {/* Equipe's org chart and channels (ADR 0148). */}
-      {total > 0 ? <TeamEntry /> : null}
+      {/* Equipe's org chart and channels (ADR 0148). A personal workspace (ADR 0159) keeps it as the last row of You ›
+          Work: one person's agents rarely need an org chart in sight. */}
+      {total > 0 && !isPersonal(org) ? <TeamEntry /> : null}
       <LayoutAnimationConfig skipEntering>
         {waiting.length > 0 ? (
           <>
@@ -337,6 +339,8 @@ function FreeSections({
   onRoutine: ReadonlyMap<string, string>;
 }) {
   const { t } = useTranslation();
+  // A personal workspace's free agents are its person's, not a team (ADR 0159).
+  const { org } = useOrg();
   const { collapsed, toggle } = useCollapsedSections<string>(STORED.agentGroupsCollapsed, null);
   const pins = usePins();
   let shown = before;
@@ -371,7 +375,9 @@ function FreeSections({
         ) : (
           <Fragment key="free">
             <SectionHeader
-              title={groups.length > 0 ? t("mobile.agents.noGroupSection") : t("mobile.agents.teamSection")}
+              title={
+                groups.length > 0 ? t("mobile.agents.noGroupSection") : t(modeKey(org, "mobile.agents.teamSection"))
+              }
               count={lines.length}
             />
             {rows}

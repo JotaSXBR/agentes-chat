@@ -19,6 +19,7 @@ import { liveSubLine } from "@agenteschat/client/lib/agent-computer";
 import { computerName } from "@agenteschat/client/lib/computer";
 import { agentGrammar } from "@agenteschat/client/lib/grammar";
 import { can } from "@agenteschat/client/lib/permissions";
+import { isPersonal } from "@agenteschat/client/lib/workspace-mode";
 import { type AgentColorName, bodyTones } from "@agenteschat/ui/agent/engine";
 import { Canvas, Fill, Shader, Skia } from "@shopify/react-native-skia";
 import * as Clipboard from "expo-clipboard";
@@ -239,7 +240,7 @@ export function AgentScreen({
 
   const line = useRef(new PointerLine((x, y, buttons) => web.current?.call("pointer", x, y, buttons))).current;
   useEffect(() => () => line.stop(), [line]);
-  // The agent's own pointer (protocol 54), drawn while the person watches.
+  // The agent's own pointer (protocol 56), drawn while the person watches.
   const agentPointer = useRef<AgentPointerHandle>(null);
 
   useEffect(() => {
@@ -445,7 +446,7 @@ export function AgentScreen({
       action={again}
     />
   );
-  const computer = computerName(t, org?.name ?? "", view.machine);
+  const computer = computerName(t, org?.name ?? "", view.machine, isPersonal(org));
   const askCover = (
     <Cover
       fill

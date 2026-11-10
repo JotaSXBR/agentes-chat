@@ -69,7 +69,7 @@ describe("the page behind the agent's screen", () => {
     expect(heard({ type: "session", mode: "drive" })).toBeNull();
     expect(screenEvent(SERVER, { url, data: "{" })).toBeNull();
     expect(screenEvent(SERVER, { url, data: "null" })).toBeNull();
-    // The agent's pointer (protocol 54), as the server checked it.
+    // The agent's pointer (protocol 56), as the server checked it.
     expect(heard({ type: "cursor", act: "click", x: 514, y: 558, name: "Join the list" })).toEqual({
       type: "cursor",
       act: "click",

@@ -339,8 +339,16 @@ test("computer sessions: the conversation's session goes on while recent and sma
   f = await setup();
   const machineId = await computerAgent(f);
   let input = 40;
+  let cacheRead = 0;
   const { brain, seen } = scriptedComputerBrain(() => [
-    { type: "usage", input, output: 5, source: "plan", model: "claude-sonnet-5-5" },
+    {
+      type: "usage",
+      input,
+      output: 5,
+      source: "plan",
+      model: "claude-sonnet-5-5",
+      ...(cacheRead ? { cacheRead } : {}),
+    },
     { type: "done", text: "ok" },
   ]);
   const handlers = createJobHandlers({
@@ -371,24 +379,37 @@ test("computer sessions: the conversation's session goes on while recent and sma
   expect(seen[3]?.session?.resume).toBe(false);
   expect(seen[3]?.session?.id).not.toBe(seen[2]?.session?.id);
 
+  // A turn that read past the limit mostly from the cache is just as big: a fresh session.
+  input = SESSION_MAX_INPUT_TOKENS;
+  cacheRead = SESSION_MAX_INPUT_TOKENS - 40;
+  await reply("@dev do cache");
+  await drainOutbox(f.db, handlers);
+  expect(seen[4]?.session).toMatchObject({ id: seen[3]?.session?.id, resume: true });
+  input = 40;
+  cacheRead = 0;
+  await reply("@dev e depois?");
+  await drainOutbox(f.db, handlers);
+  expect(seen[5]?.session?.resume).toBe(false);
+  expect(seen[5]?.session?.id).not.toBe(seen[4]?.session?.id);
+
   // Idle past the cache: a fresh one too.
   const stale = new Date(Date.now() - SESSION_IDLE_MS - 1000);
   await f.db.update(schema.agentRuns).set({ finishedAt: stale, updatedAt: stale });
   await reply("@dev voltei");
   await drainOutbox(f.db, handlers);
-  expect(seen[4]?.session?.resume).toBe(false);
-  expect(seen[4]?.session?.id).not.toBe(seen[3]?.session?.id);
+  expect(seen[6]?.session?.resume).toBe(false);
+  expect(seen[6]?.session?.id).not.toBe(seen[5]?.session?.id);
 
   // A routine run never picks up the conversation's session.
   const [agent] = await f.db.select().from(schema.agents).where(eq(schema.agents.id, f.agent.id));
   const runs = await f.db.select().from(schema.agentRuns);
-  const last = runs.find((r) => r.brainSessionId === seen[4]?.session?.id);
+  const last = runs.find((r) => r.brainSessionId === seen[6]?.session?.id);
   if (!agent || !last) throw new Error("missing rows");
   const routineRun = { ...last, id: Bun.randomUUIDv7(), brainSessionId: null };
   await f.db.insert(schema.agentRuns).values({ ...routineRun, triggerMessageId: Bun.randomUUIDv7() });
   const plan = await resolveBrain({ db: f.db }, agent, routineRun, question.id, { fresh: true });
   expect(plan.session).toMatchObject({ resume: false, machineId });
-  expect(plan.session?.id).not.toBe(seen[4]?.session?.id);
+  expect(plan.session?.id).not.toBe(seen[6]?.session?.id);
 });
 
 test("edited instructions or org context reach a kept-alive session's next turn: a fresh session with the conversation", async () => {
@@ -1675,6 +1696,117 @@ test("a computer gone for minutes is an outage: the agent says so at once, witho
   expect(looks).toBe(2);
   expect((await f.db.select().from(schema.agentRuns))[0]?.status).toBe("waiting_input");
   expect((await timeline(f)).at(-1)?.meta).toMatchObject({ bodyCode: "brain_unavailable" });
+});
+
+/** The workspace's computer asleep in standby for hours (ADR 0161), as the hub says it; `wakes`: back once asked to. */
+function sleepingComputer(wakes: boolean) {
+  const slept = new Date(Date.now() - 6 * 3600_000).toISOString();
+  const woke: string[] = [];
+  const machines = {
+    status: async (id: string) =>
+      statusOf(
+        id,
+        wakes && woke.length > 0
+          ? { online: true }
+          : { online: false, standby: true, kind: "managed", lastSeenAt: slept },
+      ),
+    wake: async (id: string, why: string) => {
+      woke.push(`${id}:${why}`);
+    },
+  };
+  return { machines, woke };
+}
+
+test("a computer in standby: the run asks it to wake and waits quietly however long it slept, then answers", async () => {
+  f = await setup();
+  const machineId = await computerAgent(f);
+  await f.db.update(schema.providerCredentials).set({ revokedAt: new Date() });
+  const sleeping = sleepingComputer(true);
+  const { brain, seen } = scriptedComputerBrain(() => [{ type: "done", text: "Pronto." }]);
+  const handlers = createJobHandlers({
+    ...f.jobDeps,
+    computerBlipWaitMs: 10,
+    computerWakeWaitMs: 10_000,
+    brains: { claude_code: () => brain },
+    machines: sleeping.machines,
+  });
+  await post(f, "@dev oi");
+  await drainOutbox(f.db, handlers);
+
+  const [run] = await f.db.select().from(schema.agentRuns);
+  expect(run?.status).toBe("done");
+  expect(seen.length).toBe(1);
+  expect(new Set(sleeping.woke)).toEqual(new Set([`${machineId}:run`]));
+  // No note, no wait stored: only its answer.
+  expect((await timeline(f)).map((m) => m.body)).toEqual(["@dev oi", "Pronto."]);
+  expect((run?.transcript as { waitingForBrain?: unknown } | undefined)?.waitingForBrain).toBeUndefined();
+});
+
+test("still asleep after the wake's wait: the note and the wait for the computer, as for any computer away", async () => {
+  f = await setup();
+  const machineId = await computerAgent(f);
+  await f.db.update(schema.providerCredentials).set({ revokedAt: new Date() });
+  const sleeping = sleepingComputer(false);
+  const { brain, seen } = scriptedComputerBrain(() => [{ type: "done", text: "Pronto." }]);
+  const handlers = createJobHandlers({
+    ...f.jobDeps,
+    computerBlipWaitMs: 10,
+    computerWakeWaitMs: 300,
+    brains: { claude_code: () => brain },
+    machines: sleeping.machines,
+  });
+  await post(f, "@dev oi");
+  await drainOutbox(f.db, handlers);
+  const [run] = await f.db.select().from(schema.agentRuns);
+  expect(run?.status).toBe("waiting_input");
+  expect(run?.waitingMachineId).toBe(machineId);
+  expect(seen.length).toBe(0);
+  expect(sleeping.woke).toEqual([`${machineId}:run`]);
+  expect((await timeline(f)).at(-1)?.meta).toMatchObject({
+    bodyCode: "brain_unavailable",
+    brainUnavailable: { code: "machine_offline", machineId },
+  });
+});
+
+test("a run back from another wait finds its computer fallen asleep: it asks it to wake and waits again", async () => {
+  f = await setup();
+  const machineId = await computerAgent(f);
+  await f.db.update(schema.providerCredentials).set({ revokedAt: new Date() });
+  // Away for minutes, not asleep: the run says so and waits for it.
+  const lastSeenAt = new Date(Date.now() - 10 * 60_000).toISOString();
+  let asleep = false;
+  const woke: string[] = [];
+  const { brain, seen } = scriptedComputerBrain(() => [{ type: "done", text: "Voltei." }]);
+  const handlers = createJobHandlers({
+    ...f.jobDeps,
+    computerBlipWaitMs: 10,
+    computerWakeWaitMs: 10_000,
+    brains: { claude_code: () => brain },
+    machines: {
+      status: async (id) =>
+        !asleep
+          ? statusOf(id, { online: false, lastSeenAt })
+          : woke.length > 0
+            ? statusOf(id, { online: true })
+            : statusOf(id, { online: false, standby: true, kind: "managed", lastSeenAt }),
+      wake: async (id, why) => {
+        woke.push(`${id}:${why}`);
+      },
+    },
+  });
+  await post(f, "@dev oi");
+  await drainOutbox(f.db, handlers);
+  expect((await f.db.select().from(schema.agentRuns))[0]?.status).toBe("waiting_input");
+  expect(woke).toEqual([]);
+
+  // The operator put it in standby since; the run is asked to go on (a message, its computer's signal).
+  asleep = true;
+  await resumeRunsWaitingForMachine(f.db, machineId);
+  await drainOutbox(f.db, handlers);
+  expect((await f.db.select().from(schema.agentRuns))[0]?.status).toBe("done");
+  expect(seen.length).toBe(1);
+  expect(woke[0]).toBe(`${machineId}:run`);
+  expect((await timeline(f)).at(-1)?.body).toBe("Voltei.");
 });
 
 test("a cancel while the run waits for its computer ends it at once", async () => {

@@ -86,6 +86,7 @@ import {
   type ProviderId,
   providerLabel,
 } from "@agenteschat/client/lib/providers";
+import { isPersonal } from "@agenteschat/client/lib/workspace-mode";
 import {
   type AgentColor,
   Avatar,
@@ -133,7 +134,7 @@ import {
   usePlanHold,
 } from "./ConnectAiSteps";
 import { EndpointForm } from "./EndpointForm";
-import { PlanReplies } from "./PlanReplies";
+import { PlanReplies, usePlanRepliesShown } from "./PlanReplies";
 
 /*
  * What an agent thinks with, one select wherever it is chosen (Quem pensa, Conectar uma IA, Criar agente): the
@@ -180,7 +181,7 @@ export function useAiRows(agent: AiAgent, enabled = true) {
   const status = useAiStatus(org.id);
   const edition = useComputerEdition(org.id);
   const hold = usePlanHold();
-  const computerName = computerNameOf(t, org.name, view?.computer?.name ?? "");
+  const computerName = computerNameOf(t, org.name, view?.computer?.name ?? "", isPersonal(org));
   const machines = useMachines(org.id);
   const machine = machines.data?.find((m) => m.id === view?.computer?.machineId);
   const setupQ = useComputerSetup(org.id);
@@ -816,6 +817,11 @@ function AiSettings({
       onValueChange={changeModel}
       options={[
         autoOption,
+        // The model it has stays a choice when its plan's list doesn't have it, as the key's picker keeps one: the
+        // picker never shows empty.
+        ...(!shownModel || isAuto(shownModel) || planModels.some((m) => m.value === shownModel)
+          ? []
+          : [{ value: shownModel, label: shownModel, leading: <ProviderLogo id={row.mark} size="sm" /> }]),
         // Several makers' models grouped by maker, each beside its logo; the others beside their plan's.
         ...planModels.map((m) => {
           const line = brainModelLine(t, kind, plan, m, cursorPlanSays);
@@ -1270,7 +1276,7 @@ function AiFlow({
   const owner = agent.ownerUserId ? dir.memberById.get(agent.ownerUserId)?.name : undefined;
   const toComputers =
     onComputer ??
-    (() => void navigate({ to: "/org/$orgId/settings/$section", params: { orgId: org.id, section: "computers" } }));
+    (() => void navigate({ to: "/org/$orgId/settings/$section", params: { orgId: org.id, section: "devices" } }));
   return (
     <div className="ai-flow">
       {onBack && (
@@ -1539,6 +1545,13 @@ export function TeamAi({
   });
   const provider = pickedProvider ?? (opening === "key" ? `key:${keyOf(start?.provider)}` : `plan:${opening}`);
   const status = useAiStatus(org.id);
+  // The switch as it stands for them: on while every one of them answers other people.
+  const answersAll = agents.every((a) => {
+    const row = dir.agentById.get(a.id);
+    return !row || answersOthers(audienceOf(row), row.ownerUserId);
+  });
+  const repliesOn = everyone ?? answersAll;
+  const repliesShown = usePlanRepliesShown(repliesOn);
   if (hold) return <PlanHold hold={hold} />;
   if (failed) return <LoadFailed onRetry={() => void retry()} />;
   if (loading || !view) return <Spinner />;
@@ -1552,12 +1565,6 @@ export function TeamAi({
   const perAgent = (r: AiRow) => r.account?.mine === true && r.account.shared !== true;
   const forAllOf = (r: AiRow) => r.act === "use" && (r.account === undefined || r.account.shared === true);
   const fits = rows.map((r) => ({ ...r, disabled: r.disabled || !(forAllOf(r) || perAgent(r)) }));
-  // The switch as it stands for them: on while every one of them answers other people.
-  const answersAll = agents.every((a) => {
-    const row = dir.agentById.get(a.id);
-    return !row || answersOthers(audienceOf(row), row.ownerUserId);
-  });
-  const repliesOn = everyone ?? answersAll;
   const refresh = () => {
     for (const key of [keys.agents(org.id), keys.aiStatus(org.id), keys.aiAccounts(org.id)])
       void qc.invalidateQueries({ queryKey: key });
@@ -1715,7 +1722,7 @@ export function TeamAi({
               onConnect={view.canUsePlans ? () => setFlow("fresh") : undefined}
               disabled={busy}
             />
-            {picked && picked.group !== "keys" && view.scope !== "mine" && (
+            {picked && picked.group !== "keys" && view.scope !== "mine" && repliesShown && (
               <div className="ac-setlist ai-set">
                 <div className="ac-setlist__row ac-setlist__row--pad">
                   <PlanReplies

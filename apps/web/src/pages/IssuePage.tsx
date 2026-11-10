@@ -29,6 +29,9 @@ import {
   Icon,
   Input,
   Locked,
+  Menu,
+  MenuItem,
+  MenuSeparator,
   SavedNote,
   Select,
   type SelectOption,
@@ -56,6 +59,7 @@ import { SidePanel } from "@/components/SidePanel";
 import { TaskConversationButton, TaskConversationPanel, TaskConversationSummary } from "@/components/TaskConversation";
 import { IssueWhoSeesDialog, WhoSeesButton } from "@/components/WhoSees";
 import { useWikiLinkRenderer } from "@/components/WikiLinks";
+import { usePersonalView } from "@/hooks/usePersonalView";
 import {
   columnIdOf,
   columnsOf,
@@ -72,7 +76,7 @@ import { Markdown } from "@/lib/markdown";
 import { useOpenParam } from "@/lib/open-param";
 import { useToast } from "@/lib/toast";
 import { useIssueRealtime } from "@/realtime/context";
-import { IssueDeleteButton, IssueDeleteProvider } from "./IssueDelete";
+import { IssueDeleteButton, IssueDeleteProvider, useIssueDeleting } from "./IssueDelete";
 import "./issues.css";
 
 /** One issue as a page (`/issues/131`); the board opens the same details in its panel. */
@@ -145,8 +149,8 @@ function useIssueSource(i: Issue) {
 
 /**
  * An issue opened from the board or the list: the task's own page inside the shared details dialog ("#131" and its
- * title on its bar, which never scrolls away; "abrir em página própria"), wide and always full height so changing
- * tabs never makes it jump.
+ * title on its bar, which never scrolls away, its actions behind ⋯), wide and always full height so changing tabs
+ * never makes it jump.
  */
 export function IssueDialog({
   issue: i,
@@ -159,19 +163,13 @@ export function IssueDialog({
   focusMessageId?: string;
 }) {
   const { t } = useTranslation();
-  const { org } = useOrg();
   // "Conversa 5" (variant B): the conversation as the dialog's right column.
   const focus = focusMessageId;
   const [talk, setTalk] = useState(Boolean(focus));
   return (
     <IssueDeleteProvider onDeleted={onClose}>
       <DetailsDialog
-        actions={
-          <>
-            <IssueDeleteButton issue={i} />
-            <TaskConversationButton issue={i} open={talk} onToggle={() => setTalk((v) => !v)} />
-          </>
-        }
+        more={<IssueMore issue={i} onConversation={() => setTalk((v) => !v)} />}
         side={
           talk ? <TaskConversationPanel issue={i} focusMessageId={focus} onClose={() => setTalk(false)} /> : undefined
         }
@@ -191,16 +189,57 @@ export function IssueDialog({
             el.blur();
           }
         }}
-        page={{
-          label: t("issues.openPage"),
-          render: (props) => (
-            <Link to="/org/$orgId/issues/$number" params={{ orgId: org.id, number: String(i.number) }} {...props} />
-          ),
-        }}
       >
         <IssueDetails issue={i} variant="dialog" onConversation={() => setTalk(true)} />
       </DetailsDialog>
     </IssueDeleteProvider>
+  );
+}
+
+/**
+ * The dialog's actions behind one ⋯ beside the ×, so "#131" and the title keep the bar: its conversation, its own
+ * page, and, after a divider, Excluir tarefa for who may. The conversation also opens from its section in the body.
+ */
+function IssueMore({ issue: i, onConversation }: { issue: Issue; onConversation: () => void }) {
+  const { t } = useTranslation();
+  const { org } = useOrg();
+  const navigate = useNavigate();
+  const { ask, mayDelete } = useIssueDeleting();
+  return (
+    <Menu
+      label={t("issues.moreOptions")}
+      align="end"
+      trigger={
+        <Button
+          variant="ghost"
+          size="sm"
+          iconOnly
+          icon="more"
+          aria-label={t("issues.moreOptions")}
+          title={t("issues.moreOptions")}
+        />
+      }
+    >
+      <MenuItem icon="message" onSelect={onConversation}>
+        {t("issues.conversation.button")}
+      </MenuItem>
+      <MenuItem
+        icon="external"
+        onSelect={() =>
+          void navigate({ to: "/org/$orgId/issues/$number", params: { orgId: org.id, number: String(i.number) } })
+        }
+      >
+        {t("issues.openPage")}
+      </MenuItem>
+      {mayDelete(i) && (
+        <>
+          <MenuSeparator />
+          <MenuItem icon="trash" danger onSelect={() => ask(i)}>
+            {t("issues.delete.action")}
+          </MenuItem>
+        </>
+      )}
+    </Menu>
   );
 }
 
@@ -839,12 +878,22 @@ function useIssueFields(i: Issue) {
   };
 }
 
+/**
+ * Whether a task shows "Who sees it": always, but alone in a personal workspace only once it says anything but
+ * everyone (ADR 0159): nobody else is there to see it.
+ */
+function useWhoSeesShown(i: Issue) {
+  const { solo } = usePersonalView();
+  return !solo || (i.audience?.mode ?? "everyone") !== "everyone";
+}
+
 /** Column, who, priority and due date, at the top of the aside (on the page and in the dialog). */
 function Details({ issue: i }: { issue: Issue }) {
   const { t } = useTranslation();
   const { org } = useOrg();
   const f = useIssueFields(i);
   const [choosing, setChoosing] = useState(false);
+  const whoSees = useWhoSeesShown(i);
   return (
     <>
       <Field label={t("issues.column")} id={`is-col-${i.id}`}>
@@ -859,10 +908,12 @@ function Details({ issue: i }: { issue: Issue }) {
       <Field label={t("issues.form.assignee")} id={`is-who-${i.id}`}>
         <Select size="sm" value={f.who.value} onValueChange={f.who.onChange} options={f.who.options} />
       </Field>
-      <Field label={t("whoSees.label")} id={`is-who-sees-${i.id}`}>
-        <WhoSeesButton select value={i.audience ?? { mode: "everyone" }} onClick={() => setChoosing(true)} />
-        {choosing && <IssueWhoSeesDialog issue={i} onClose={() => setChoosing(false)} />}
-      </Field>
+      {whoSees && (
+        <Field label={t("whoSees.label")} id={`is-who-sees-${i.id}`}>
+          <WhoSeesButton select value={i.audience ?? { mode: "everyone" }} onClick={() => setChoosing(true)} />
+          {choosing && <IssueWhoSeesDialog issue={i} onClose={() => setChoosing(false)} />}
+        </Field>
+      )}
       <Field label={t("issues.form.priority")} id={`is-pri-${i.id}`}>
         <Select size="sm" value={f.priority.value} onValueChange={f.priority.onChange} options={f.priority.options} />
       </Field>
@@ -888,6 +939,7 @@ function PropsLine({ issue: i }: { issue: Issue }) {
   const actors = useActors();
   const f = useIssueFields(i);
   const [choosing, setChoosing] = useState(false);
+  const whoSees = useWhoSeesShown(i);
   const withLeading = (o: SelectOption) => (
     <span className="issue-prop__value">
       {o.leading}
@@ -936,10 +988,11 @@ function PropsLine({ issue: i }: { issue: Issue }) {
         />,
       )}
       {prop(t("issues.due"), <DatePicker size="sm" short aria-label={t("issues.due")} {...f.due} />)}
-      {prop(
-        t("whoSees.label"),
-        <WhoSeesButton value={i.audience ?? { mode: "everyone" }} onClick={() => setChoosing(true)} />,
-      )}
+      {whoSees &&
+        prop(
+          t("whoSees.label"),
+          <WhoSeesButton value={i.audience ?? { mode: "everyone" }} onClick={() => setChoosing(true)} />,
+        )}
       {choosing && <IssueWhoSeesDialog issue={i} onClose={() => setChoosing(false)} />}
       {(i.pullRequests.length > 0 || i.labels.length > 0 || i.githubUrl) && (
         <span className="issue-props__sep" aria-hidden="true" />

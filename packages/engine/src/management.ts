@@ -3,6 +3,7 @@ import { and, asc, type Database, desc, eq, gte, inArray, isNull, lt, schema, sq
 import { MODEL_TIERS, type ModelTier } from "@agenteschat/providers";
 import { getAgent, NEW_AGENT_AUDIENCES, type NewAgentAudience } from "./agents";
 import { decidableBySql } from "./approvals";
+import { recordAudit } from "./audit";
 import type { AutoModels } from "./auto-model";
 import { caches } from "./cache";
 import {
@@ -41,6 +42,7 @@ import {
   workspaceBudgetPercent,
 } from "./usage";
 import { resumeBudgetWaits } from "./usage-pause";
+import { isWorkspaceMode, WORKSPACE_MODES, type WorkspaceMode, workspaceModeCacheKey } from "./workspace-mode";
 
 const {
   organizations,
@@ -82,6 +84,8 @@ export interface OrgSettings extends MediaSettings {
   voiceMessages: boolean;
   /** Per provider, the models "Automático" picks per tier where the workspace chose its own (ADR 0087). */
   autoModels: AutoModels;
+  /** Who the workspace is for (ADR 0159): `team` or `personal`. */
+  mode: WorkspaceMode;
   /** Who can talk to a new agent whoever made it didn't choose for (`newAgentAudience`): everyone by default. */
   newAgentAudience: NewAgentAudience;
   /** Agents take the tasks people gave them by themselves as room frees (`task-pump.ts`). On by default. */
@@ -111,6 +115,7 @@ export async function getOrgSettings(db: Database, actorId: string, orgId: strin
     actionCheck: s?.actionCheck ?? true,
     voiceMessages: s?.voiceMessages ?? true,
     autoModels: (s?.autoModels ?? {}) as AutoModels,
+    mode: isWorkspaceMode(s?.mode) ? s.mode : "team",
     newAgentAudience: s?.newAgentAudience ?? "everyone",
     taskPump: s?.taskPump ?? true,
     questionWaitMinutes: s?.questionWaitMinutes ?? DEFAULT_QUESTION_WAIT_MINUTES,
@@ -156,6 +161,8 @@ export async function updateOrgSettings(
     }
   }
   if (input.teamSize && !TEAM_SIZES.includes(input.teamSize)) throw new ValidationError("invalid teamSize");
+  if (input.mode !== undefined && !isWorkspaceMode(input.mode))
+    throw new ValidationError(`mode must be one of ${WORKSPACE_MODES.join(", ")}`);
   if (input.defaultAgentBudgetNanoUsd !== undefined && !(input.defaultAgentBudgetNanoUsd > 0)) {
     throw new ValidationError("the default agent budget must be above zero");
   }
@@ -202,6 +209,16 @@ export async function updateOrgSettings(
     if (!cred) throw new ValidationError("defaultCredentialId does not belong to this organization");
   }
   await db.transaction(async (tx) => {
+    // The mode before this change, read in the transaction: a switch is audited with where it came from.
+    const modeBefore =
+      input.mode === undefined
+        ? undefined
+        : ((
+            await tx
+              .select({ mode: organizationSettings.mode })
+              .from(organizationSettings)
+              .where(eq(organizationSettings.orgId, orgId))
+          )[0]?.mode ?? "team");
     const storedAutoModels = async () => {
       const [row] = await tx
         .select({ autoModels: organizationSettings.autoModels })
@@ -240,6 +257,7 @@ export async function updateOrgSettings(
       ...(input.gifRating !== undefined ? { gifRating: input.gifRating } : {}),
       ...(input.agentStickers !== undefined ? { agentStickers: input.agentStickers } : {}),
       ...(input.agentMedia !== undefined ? { agentMedia: input.agentMedia } : {}),
+      ...(input.mode !== undefined ? { mode: input.mode } : {}),
       ...(input.newAgentAudience !== undefined ? { newAgentAudience: input.newAgentAudience } : {}),
       ...(input.taskPump !== undefined ? { taskPump: input.taskPump } : {}),
       ...(input.questionWaitMinutes !== undefined ? { questionWaitMinutes: input.questionWaitMinutes } : {}),
@@ -253,6 +271,15 @@ export async function updateOrgSettings(
         .values({ orgId, ...settings })
         .onConflictDoUpdate({ target: organizationSettings.orgId, set: { ...settings, updatedAt: new Date() } });
     }
+    if (input.mode !== undefined && modeBefore !== input.mode) {
+      await recordAudit(tx, {
+        orgId,
+        actor: { type: "person", id: actorId },
+        action: "organization.mode_changed",
+        target: { type: "organization", id: orgId },
+        details: { from: modeBefore, to: input.mode },
+      });
+    }
   });
   caches.orgs.delete(`${orgId}:`);
   caches.orgs.delete(`${orgId}:agent-budget`);
@@ -261,6 +288,7 @@ export async function updateOrgSettings(
   caches.orgs.delete(`${orgId}:action-check`);
   caches.orgs.delete(`${orgId}:auto-models`);
   caches.orgs.delete(mediaSettingsCacheKey(orgId));
+  caches.orgs.delete(workspaceModeCacheKey(orgId));
   caches.zones.deletePrefix(`${orgId}:`);
   invalidateDefaults(orgId);
   return getOrgSettings(db, actorId, orgId);

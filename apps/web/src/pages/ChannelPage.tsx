@@ -110,6 +110,7 @@ import { choiceReplyLine } from "@agenteschat/client/lib/choices";
 import { draftKeyOf } from "@agenteschat/client/lib/composer-drafts";
 import { consultsForLine } from "@agenteschat/client/lib/consult-group";
 import { consultationsOf } from "@agenteschat/client/lib/consultations";
+import { deviceWaitOf } from "@agenteschat/client/lib/devices";
 import { clearDraft, peekDraft } from "@agenteschat/client/lib/drafts";
 import { ErrorBoundary } from "@agenteschat/client/lib/error-boundary";
 import { errorCode, errorText, restrictionLine, runErrorText, runFailureLine } from "@agenteschat/client/lib/errors";
@@ -290,6 +291,7 @@ import { type ChannelActions, ChannelActionsContext, useChannelActions } from "@
 import { DatePill, type DatePillHandle } from "@/components/DatePill";
 import { DeleteChannelDialog } from "@/components/DeleteChannelDialog";
 import { MenuEntries } from "@/components/DesktopMenus";
+import { DeviceWaitCard } from "@/components/devices/DeviceWaitCard";
 import { useArchiveChannelWithUndo } from "@/components/entity-menus";
 import { InPlaceProvider } from "@/components/InPlace";
 import { HandedTaskChips, IssueTakenLine, IssueWorkCard } from "@/components/IssueWork";
@@ -302,7 +304,6 @@ import { ErrorState, LoadingConversation } from "@/components/Loading";
 import { AwayPill, WaitingCard } from "@/components/MachineOutages";
 import { useMediaTabs } from "@/components/MediaPicker";
 import { MemberPickerRows, memberOf, type PickKey, useMemberRows } from "@/components/MemberPicker";
-import { MemoryMarks } from "@/components/MemoryMark";
 import { MessageFeedback, PendingFeedback } from "@/components/MessageFeedback";
 import { MessageMoreMenu, PersonMessageActions, ReplyButton, useMessageMenu } from "@/components/MessageMore";
 import { MessageReceipts, SeenMark } from "@/components/MessageReceipts";
@@ -728,16 +729,25 @@ export function ChannelSkeleton({
             ))}
           </header>
         ) : (
+          // `ChannelHeader`'s rows: the # and the name on its line, the glyphs after them.
           <header className="channel__header">
             <NavToggle />
-            <div className="channel__head-text">
-              <Skeleton shape="block" width={20} height={20} />
-              <Skeleton width={140} height={14} />
-            </div>
-            <div className="channel__acts">
-              {[0, 1, 2].map((i) => (
-                <Skeleton key={i} shape="block" width={20} height={20} />
-              ))}
+            <div className="ac-actline channel__line">
+              <div className="channel__head-text">
+                <span className="channel__title">
+                  <span className="channel__skeleton-title">
+                    <Skeleton shape="block" width={20} height={20} />
+                  </span>
+                  <span className="channel__skeleton-title">
+                    <Skeleton width={140} height={14} />
+                  </span>
+                </span>
+              </div>
+              <div className="channel__acts">
+                {[0, 1, 2].map((i) => (
+                  <Skeleton key={i} shape="block" width={20} height={20} />
+                ))}
+              </div>
             </div>
           </header>
         )}
@@ -4245,6 +4255,8 @@ export const TimelineMessage = memo(function TimelineMessage({
   // "O Claude Code não está disponível agora": its computer is offline; one card that waits, then says it's back.
   const brainNotice = m.author.type === "agent" ? brainUnavailableOf(meta) : null;
   const waitNotice = brainNotice && isOfflineNotice(brainNotice) ? brainNotice : null;
+  // An agent's run parked until a device it named is back: one card that waits, then says it's back.
+  const deviceWait = m.author.type === "agent" ? deviceWaitOf(meta) : null;
   // "Ada não vai responder porque não tem uma IA conectada": one card with Connect, in place of its text.
   const noAi = m.author.type === "agent" && noAiCardOf(meta) !== null;
   // An agent's card whose button opens the app's own dialog, filled in ("Conectar uma IA para Ada").
@@ -4256,6 +4268,7 @@ export const TimelineMessage = memo(function TimelineMessage({
   const card =
     approvalId ||
     waitNotice ||
+    deviceWait ||
     noAi ||
     actionCard ||
     proposalId ||
@@ -4728,6 +4741,7 @@ export const TimelineMessage = memo(function TimelineMessage({
                 .filter((u) => u.action === "proposed")
                 .map((u) => <MemoryChangeCard key={`${u.action}-${u.itemId}`} update={u} agentId={agent.id} />)}
             {waitNotice && <WaitingCard notice={waitNotice} agentId={m.author.id ?? null} />}
+            {deviceWait && <DeviceWaitCard wait={deviceWait} message={m} />}
             {noAi && <NoAiCard message={m} />}
             {actionCard && <ActionCard message={m} />}
             {m.author.type === "agent" && !m.local && m.meta?.replyChips ? <ReplyChips message={m} /> : null}
@@ -4745,14 +4759,7 @@ export const TimelineMessage = memo(function TimelineMessage({
             {missionCommand && <MissionCommandCard command={missionCommand} />}
             {missionSuggestion && <MissionSuggestionBar message={m} suggestion={missionSuggestion} />}
             {/* Everyone's reactions (👍/👎 on an agent's reply are its feedback, in the same pills). */}
-            {!m.local && !readOnly && (
-              <MessageReactions
-                messageId={m.id}
-                initial={m.reactions}
-                feedback={feedback}
-                extra={m.memories?.length ? <MemoryMarks message={m} /> : undefined}
-              />
-            )}
+            {!m.local && !readOnly && <MessageReactions messageId={m.id} initial={m.reactions} feedback={feedback} />}
             {/* Long work (ADR 0121): how it stands, under the agent's "Vou cuidar disso". */}
             {m.longWork && !m.local && (
               <MessageWorkLine

@@ -317,7 +317,7 @@ export function serveNone(
  * password of the stream's mode, then its data socket; resolves once both are
  * up, and the bytes go on flowing. The desktop counts the stream as a viewer
  * (it isn't idle) until it ends, and its data socket hears the agent's pointer
- * (protocol 54). A switch of its mode (protocol 30) logs in again once `may`
+ * (protocol 56). A switch of its mode (protocol 30) logs in again once `may`
  * lets that mode go now (it throws when not).
  */
 export async function openDesktopStream(

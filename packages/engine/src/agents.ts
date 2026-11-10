@@ -30,11 +30,18 @@ import { recordOperatorEvent } from "./operator-events";
 import { can, getMembership, type Membership, requirePermission } from "./organizations";
 import { isRightHand, RIGHT_HAND_EDITABLE, refuseRightHand, rightHandPermanent } from "./right-hand";
 import { newSetup, setupOf } from "./setup-checklist";
-import { DEFAULT_AGENT_SCOPES, dropForeignMailGrants, grantScopes } from "./tools/scopes";
+import {
+  CONNECTOR_ALL,
+  DEFAULT_AGENT_SCOPES,
+  dropForeignMailGrants,
+  grantScopes,
+  PERSONAL_AGENT_SCOPES,
+} from "./tools/scopes";
 import { resyncBudgetCounter } from "./usage";
 import { resumeBudgetWaits } from "./usage-pause";
+import { isPersonalWorkspace } from "./workspace-mode";
 
-const { agents, importItems, machines, organizationMembers, providerCredentials } = schema;
+const { agents, connectorConnections, importItems, machines, organizationMembers, providerCredentials } = schema;
 
 export type Agent = typeof agents.$inferSelect;
 
@@ -210,9 +217,12 @@ export async function createAgent(
   const values = { ...fields, handle: fields.handle.toLowerCase(), model: fields.model ?? defaults.model };
   await validateAgentFields(db, orgId, values);
   const ownerUserId = input.ownerUserId === undefined ? actorId : input.ownerUserId;
-  // Whoever made it chose, else the workspace's default (open unless an admin narrowed it). With no owner to answer,
-  // "only its owner" would leave it answering nobody.
-  const audience = audienceMode ?? (ownerUserId ? await newAgentAudience(db, orgId) : "everyone");
+  // Whoever made it chose, else the workspace's default: open unless an admin narrowed it, and in a personal
+  // workspace only its owner (ADR 0159), so who joins later (family) isn't answered, nor shown its details, by every
+  // agent made while the person was alone. With no owner to answer, "only its owner" would leave it answering nobody.
+  const personal = await isPersonalWorkspace(db, orgId);
+  const audience =
+    audienceMode ?? (ownerUserId ? (personal ? ("owner" as const) : await newAgentAudience(db, orgId)) : "everyone");
   // Another agent's old handle still names that agent.
   const [held] = await db
     .select({ id: agents.id })
@@ -263,6 +273,26 @@ export async function createAgent(
       agent.id,
       DEFAULT_AGENT_SCOPES.map((scope) => ({ connectionId: null, scope })),
     );
+    // A personal workspace's agent starts with broad access (ADR 0159 §3a): every app connected there and its
+    // calendar. Only from someone who may give access, so a family member's own agent starts as a team's does.
+    // Sensitive tools still ask a person on every call; mail, databases and the computer keep their own switches.
+    const broad = personal && can(membership, "manage_agents");
+    if (broad) {
+      const apps = await db
+        .select({ id: connectorConnections.id })
+        .from(connectorConnections)
+        .where(eq(connectorConnections.orgId, orgId));
+      await grantScopes(
+        db,
+        orgId,
+        agent.id,
+        [
+          ...PERSONAL_AGENT_SCOPES.map((scope) => ({ connectionId: null, scope })),
+          ...apps.map((c) => ({ connectionId: c.id, scope: CONNECTOR_ALL })),
+        ],
+        actorId,
+      );
+    }
     // Skills the org marked "default for new agents".
     const defaults = await db
       .select({ id: schema.skills.id })
@@ -295,6 +325,7 @@ export async function createAgent(
         handle: agent.handle,
         model: agent.model,
         ...(autonomy ? { autonomy } : {}),
+        ...(broad ? { access: "broad" } : {}),
         ...(options.via ? { via: options.via } : {}),
       },
     });

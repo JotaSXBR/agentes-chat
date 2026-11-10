@@ -3,15 +3,36 @@ import { useAgentDetail, useAiStatus, useApi } from "@agenteschat/client";
 import { errorCode, errorText } from "@agenteschat/client/lib/errors";
 import { agentGrammar } from "@agenteschat/client/lib/grammar";
 import { stepPermissions } from "@agenteschat/client/lib/home";
-import { aiStateOf, choiceOfIntent, mayConnectAi, type PlanChoice } from "@agenteschat/client/lib/no-ai";
+import {
+  type AiChoice,
+  aiStateOf,
+  choiceOfIntent,
+  gateDims,
+  mayConnectAi,
+  type PlanChoice,
+  planMark,
+  planTitle,
+} from "@agenteschat/client/lib/no-ai";
 import { can } from "@agenteschat/client/lib/permissions";
 import { isRightHand, rightHandOf } from "@agenteschat/client/lib/right-hand";
-import { Dialog, DialogBody, Spinner } from "@agenteschat/ui";
+import { Button, Dialog, DialogBody, DialogFooter, Icon, ProviderLogo, Spinner } from "@agenteschat/ui";
 import { useNavigate } from "@tanstack/react-router";
-import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import type { TFunction } from "i18next";
+import {
+  type CSSProperties,
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { AgentAiForm, type AiAgent, type AiStart, LoneAiFlow, TeamAi } from "@/components/ai/AgentAi";
-import { PlanHold, usePlanHold } from "@/components/ai/ConnectAiSteps";
+import { PlanHold, useGatesWithoutAgent, usePlanGates, usePlanHold } from "@/components/ai/ConnectAiSteps";
+import { ConnectChoices } from "@/components/arrival/ConnectChoices";
+import { sceneTeam, TeamScene, useDawn } from "@/components/arrival/TeamScene";
 import { useOrg } from "@/components/org-context";
 import { useDirectory } from "@/hooks/useDirectory";
 import { useOpenParam } from "@/lib/open-param";
@@ -51,6 +72,11 @@ export interface ConnectAiRequest {
    * stays).
    */
   forNewAgent?: boolean;
+  /**
+   * Opened right after the onboarding (ADR 0160): the team stands asleep beside the choices, which are cards in
+   * words, and wakes as the sky turns to day once an AI is connected. The plans' own steps are the same.
+   */
+  arrival?: boolean;
 }
 
 /** How "Responder agora" went for a message, in this tab. */
@@ -137,6 +163,10 @@ export function ConnectAiProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/** A chosen plan's steps, named as its maker sells it; the key's, as the picker names it. */
+const stepTitle = (t: TFunction, choice: AiChoice) =>
+  choice === "key" ? t("connectAi.title.api_key") : planTitle(t, choice);
+
 function ConnectAiDialog({
   request,
   onClose,
@@ -205,11 +235,11 @@ function ConnectAiDialog({
   // Over Criar agente a computer connects in a new tab, so the draft stays; anywhere else the dialog makes way for it.
   const toComputers = () => {
     if (request.forNewAgent) {
-      window.open(`/org/${org.id}/settings/computers`, "_blank", "noopener");
+      window.open(`/org/${org.id}/settings/devices`, "_blank", "noopener");
       return;
     }
     onClose();
-    void navigate({ to: "/org/$orgId/settings/$section", params: { orgId: org.id, section: "computers" } });
+    void navigate({ to: "/org/$orgId/settings/$section", params: { orgId: org.id, section: "devices" } });
   };
   const keyFirst =
     !request.plan &&
@@ -217,6 +247,141 @@ function ConnectAiDialog({
     own.length === 0 &&
     dir.agents.length > 0 &&
     can(org, "manage_credentials");
+  // One agent's AI select, several agents' at once, or the steps alone for someone with no agent.
+  const flow = (from: AiStart, onThinks: () => void) =>
+    single ? (
+      <AgentAiForm agent={asAi(single)} mode="connect" start={from} onThinks={onThinks} onComputer={toComputers} />
+    ) : agents.length > 1 ? (
+      <TeamAi agents={agents.map(asAi)} start={from} onThinks={onThinks} onComputer={toComputers} />
+    ) : (
+      <LoneAiFlow start={from} onDone={onThinks} onComputer={toComputers} />
+    );
+  // The arrival's stage: never over a billing hold, whose notice is the whole dialog.
+  const stage = request.arrival === true && !hold;
+  // Its first screen is the cards; a pick moves on to that plan's steps, and Back returns to the cards.
+  const [chosen, setChosen] = useState<AiChoice | null>(null);
+  const [connected, setConnected] = useState(false);
+  const day = useDawn(stage && connected);
+  // A plan that can't sign in now dims on its card; its steps say why.
+  const gates = usePlanGates(org.id, stage ? agents[0]?.id : undefined);
+  const bareGates = useGatesWithoutAgent(org.id, stage && agents.length === 0);
+  if (stage) {
+    const lead = rightHandOf(dir.agents);
+    const stepping = chosen !== null && !connected;
+    const without = (
+      <span className="ac-iconline">
+        <Icon name="info" />
+        <span>{t("arrival.connect.without")}</span>
+      </span>
+    );
+    return (
+      <Dialog
+        open
+        onOpenChange={(o) => !o && onClose()}
+        title={chosen ? stepTitle(t, chosen) : t("arrival.connect.title")}
+        closeLabel={t("common.close")}
+        width={820}
+        bare
+        className="arrival arrival-connect"
+      >
+        <div className="arrival-stage">
+          <TeamScene
+            shape="tall"
+            quiet={0.22}
+            agents={sceneTeam(dir.agents, lead)}
+            lead={lead?.id}
+            asleep={!connected}
+            day={day}
+            expression={connected ? "happy" : undefined}
+          >
+            {chosen && (
+              <>
+                <span className="team-scene__trail" data-state={connected ? "done" : "walk"}>
+                  {[0, 1, 2, 3, 4].map((n) => (
+                    <i key={n} style={{ "--n": n } as CSSProperties} />
+                  ))}
+                </span>
+                <span className="team-scene__mark">
+                  {chosen === "key" ? <Icon name="key" /> : <ProviderLogo id={planMark(chosen)} size="tile" />}
+                </span>
+              </>
+            )}
+          </TeamScene>
+          <div className="arrival-stage__cap">
+            <b>{t(connected ? "arrival.stage.morning" : "arrival.stage.ready")}</b>
+            <span>{t(connected ? "arrival.stage.awake" : "arrival.stage.wake")}</span>
+          </div>
+        </div>
+        <div className="arrival-main">
+          {/* The kit's dialog head (Dialog.tsx), in the column beside the stage. */}
+          <div className="ac-dialog__head">
+            {stepping && (
+              <span className="ac-dialog__lead">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  iconOnly
+                  icon="chevronLeft"
+                  aria-label={t("common.back")}
+                  onClick={() => setChosen(null)}
+                />
+              </span>
+            )}
+            <div className="ac-actline">
+              <span className="ac-dialog__title" aria-hidden="true">
+                {chosen ? stepTitle(t, chosen) : t("arrival.connect.title")}
+              </span>
+            </div>
+            <span className="ac-dialog__close ac-acts">
+              <Button
+                variant="ghost"
+                size="sm"
+                iconOnly
+                icon="close"
+                className="ac-btn--glyph"
+                aria-label={t("common.close")}
+                onClick={onClose}
+              />
+            </span>
+          </div>
+          {!chosen && <p className="ac-dialog__desc">{t("arrival.connect.text")}</p>}
+          <DialogBody>
+            {!ready ? (
+              <Spinner />
+            ) : chosen ? (
+              <div className="arrival-main__steps">
+                {flow(chosen === "key" ? { key: true } : { plan: chosen }, () => {
+                  setConnected(true);
+                  onConnected();
+                })}
+              </div>
+            ) : (
+              <ConnectChoices
+                mayAddKey={can(org, "manage_credentials")}
+                dims={(c) => gateDims(agents.length > 0 ? gates.gateOf(c) : bareGates.at(c).gate)}
+                onPick={setChosen}
+              />
+            )}
+          </DialogBody>
+          {connected ? (
+            <DialogFooter>
+              <Button variant="primary" onClick={onClose}>
+                {t("connectAi.done")}
+              </Button>
+            </DialogFooter>
+          ) : (
+            !chosen && (
+              <DialogFooter note={without}>
+                <Button variant="ghost" onClick={onClose}>
+                  {t("arrival.connect.later")}
+                </Button>
+              </DialogFooter>
+            )
+          )}
+        </div>
+      </Dialog>
+    );
+  }
   return (
     <Dialog
       open
@@ -232,24 +397,10 @@ function ConnectAiDialog({
           <PlanHold hold={hold} />
         ) : dir.loading || status.isPending ? (
           <Spinner />
-        ) : single ? (
-          <AgentAiForm
-            agent={asAi(single)}
-            mode="connect"
-            start={start}
-            onThinks={onConnected}
-            onComputer={toComputers}
-          />
-        ) : agents.length > 1 ? (
-          <TeamAi agents={agents.map(asAi)} start={start} onThinks={onConnected} onComputer={toComputers} />
         ) : (
           // No agent of theirs without an AI: a plan signs in for the agents they create. An admin among other
           // people's agents starts on the workspace's key, which serves every agent with no plan.
-          <LoneAiFlow
-            start={keyFirst ? { ...start, key: true } : start}
-            onDone={onConnected}
-            onComputer={toComputers}
-          />
+          flow(!single && agents.length === 0 && keyFirst ? { ...start, key: true } : start, onConnected)
         )}
       </DialogBody>
     </Dialog>

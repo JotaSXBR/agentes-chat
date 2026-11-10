@@ -3,7 +3,7 @@ import { setupDom } from "@agenteschat/ui/testing/dom";
 
 setupDom();
 
-import { ApiError } from "@agenteschat/client";
+import { ApiError, type Issue, type IssueWork } from "@agenteschat/client";
 import { toYmd } from "@agenteschat/client/lib/format";
 import { act, cleanup, fireEvent, within } from "@testing-library/react";
 import { mondayOf } from "@/pages/CalendarPage";
@@ -69,6 +69,50 @@ describe("Issues (board and list)", () => {
     expect(within(timeout).getByRole("img", { name: "1 de 2 critérios de aceite" })).toBeTruthy();
   });
 
+  test("ten agents at work over the board: every card shows, and the board still ends its page for the page to scroll down to", async () => {
+    const state = seedState();
+    const [ada] = state.agents;
+    if (!ada) throw new Error("no agent");
+    const names = ["Bento", "Cora", "Davi", "Elis", "Faro", "Gael", "Hana", "Iris", "Juno"];
+    state.agents.push(
+      ...names.map((name, k) => ({ ...ada, id: `agent-at-work-${k}`, name, handle: name.toLowerCase() })),
+    );
+    const states: IssueWork["state"][] = ["running", "waiting_approval", "running", "waiting_input", "running"];
+    const api = createFakeApi(state);
+    const list = api.issues.list;
+    api.issues.list = async (orgId, filters) => {
+      const all = await list(orgId, filters);
+      const at = all.find((i) => i.work);
+      const work = at?.work;
+      if (!at || !work) return all;
+      const extra = names.map(
+        (name, k): Issue => ({
+          ...at,
+          id: `iss-at-work-${k}`,
+          number: 200 + k,
+          title: `${name} revisa a integração do agendamento com o calendário da clínica, etapa ${k + 1} de ${names.length}`,
+          assignee: { type: "agent", id: `agent-at-work-${k}` },
+          pullRequests: [],
+          work: {
+            ...work,
+            agentId: `agent-at-work-${k}`,
+            state: k === names.length - 1 ? "stalled" : (states[k % states.length] ?? "running"),
+            steps: [{ tool: "update_issue", detail: `#${200 + k}`, at: work.since }],
+          },
+        }),
+      );
+      return [...all, ...extra];
+    };
+    await go("issues", api);
+    const now = screen().getByRole("region", { name: "Agentes trabalhando agora" });
+    expect(now.querySelectorAll(".issues-now__card")).toHaveLength(10);
+    // Nothing comes after the board's split, up to the work area: when the cards above squeeze it, it keeps a window's
+    // height and the page scrolls down to it (over-pages.css), with nothing for its columns to run over.
+    let el: Element | null = document.querySelector(".issues-boardframe.page-split");
+    expect(el).toBeTruthy();
+    for (; el && !el.matches(".shell__main"); el = el.parentElement) expect(el.nextElementSibling).toBeNull();
+  });
+
   test("a click opens the details dialog (kept in the URL); Escape closes it", async () => {
     const { router } = await go("issues");
     await click(screen().getByRole("link", { name: "#131 Confirmação do agendamento por WhatsApp" }));
@@ -77,14 +121,31 @@ describe("Issues (board and list)", () => {
     expect(dialog.textContent).toContain("#131");
     expect(within(dialog).getByRole("region", { name: "Pedir a um agente" })).toBeTruthy();
     expect(within(dialog).getByRole("complementary", { name: "Detalhes da tarefa" })).toBeTruthy();
-    expect(within(dialog).getByRole("link", { name: "Abrir página da tarefa" }).getAttribute("href")).toBe(
-      `/org/${ORG_ID}/issues/131`,
-    );
     expect(router.state.location.href).toContain("?open=131");
     await act(async () => fireEvent.keyDown(document.body, { key: "Escape" }));
     await settle(2);
     expect(screen().queryByRole("dialog")).toBeNull();
     expect(router.state.location.href).not.toContain("open=");
+  });
+
+  test("the dialog's bar: #131 and the title, then one ⋯ beside the × with the conversation, its page and Excluir", async () => {
+    const { router } = await go("issues?open=131");
+    const dialog = screen().getByRole("dialog", { name: "Confirmação do agendamento por WhatsApp" });
+    const close = dialog.querySelector(".ac-details__close") as HTMLElement;
+    expect([...close.querySelectorAll(".ac-btn")].map((b) => b.getAttribute("aria-label"))).toEqual([
+      "Mais opções",
+      "Fechar",
+    ]);
+    // Nothing else on the bar: no buttons above or beside the title to squeeze it.
+    expect(dialog.querySelector(".ac-details__actions")).toBeNull();
+    const more = within(close).getByRole("button", { name: "Mais opções" });
+    more.focus();
+    await key(more, "Enter");
+    const items = within(screen().getByRole("menu")).getAllByRole("menuitem");
+    expect(items.map((m) => m.textContent)).toEqual(["Conversa", "Abrir página da tarefa", "Excluir tarefa"]);
+    await click(items[1] as HTMLElement);
+    await settle(4);
+    expect(router.state.location.pathname).toBe(`/org/${ORG_ID}/issues/131`);
   });
 
   test("an issue's link with ?open= reopens its details", async () => {
@@ -502,15 +563,16 @@ describe("Issue detail", () => {
     expect(screen().getByRole("region", { name: "Histórico" }).textContent).toContain("mudou o status para Em revisão");
   });
 
-  test("the conversation (variant B): Conversa on the bar opens the thread panel beside the details, chat's own box", async () => {
+  test("the conversation (variant B): Conversa in the bar's ⋯ opens the thread panel beside the details, chat's own box", async () => {
     const { api } = await go("issues?open=131");
     const dialog = screen().getByRole("dialog", { name: "Confirmação do agendamento por WhatsApp" });
     // Where Discussão was: one line that opens it.
     const summary = within(dialog).getByRole("button", { name: /Conversar sobre a tarefa/ });
     expect(summary).toBeTruthy();
-    const toggle = within(dialog).getByRole("button", { name: "Conversa" });
-    expect(toggle.getAttribute("aria-pressed")).toBe("false");
-    await click(toggle);
+    const more = within(dialog).getByRole("button", { name: "Mais opções" });
+    more.focus();
+    await key(more, "Enter");
+    await click(within(screen().getByRole("menu")).getByRole("menuitem", { name: "Conversa" }));
     await settle(6);
     expect(dialog.className).toContain("ac-details--side");
     expect(within(dialog).getByRole("heading", { name: "Conversa da tarefa" })).toBeTruthy();

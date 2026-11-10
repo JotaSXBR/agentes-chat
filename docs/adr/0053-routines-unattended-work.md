@@ -220,6 +220,19 @@ The owner decided on 2026-10-31 that a routine a person asked for posts and mess
 
 Handing the agent to a new owner clears the list, like its "Aprovar sempre" rules.
 
+## Addendum 2026-11-09: job lanes, slots that grow, routines that ramp (§10)
+
+What went wrong: in a busy hour, agents' runs and a burst of routines held every job slot for minutes. Quick jobs (`message.posted`, `notifications.message`, `search.index`) then waited tens of seconds behind them instead of about one, and new runs waited minutes to start, while the database, the server and the agents' computers stayed calm. The limit was the pump: 20 jobs at once per process, background work up to half, one queue for every kind.
+
+1. **Two lanes.** `LONG_JOB_KINDS` (`outbox.ts`) lists the kinds that can hold a slot for minutes, or that sweeps queue by the hundred with nobody waiting on them: agents' runs, routines' firings, agents' own wakes (`autonomy.later`, `agent_work.check_in`, `agent.follow_up`), memory consolidation and reflection, reindexing, storage migrations, skill updates, Vault syncs and the purges. Every other kind is quick. Of the `OUTBOX_MAX_IN_FLIGHT` slots (48), `OUTBOX_QUICK_SLOTS` (12) are for quick jobs only; long jobs hold the rest at most (36), background work half of those (18). A claim takes quick jobs first, then long ones in the room left, then background ones.
+2. **Slots that grow.** Every 30 s the pump looks at each lane: the p90 of its claims' waits, or its oldest job still due when that is longer. A lane that waited over 2 s gets a quarter of the base more (12), the quick lane first, up to `OUTBOX_MAX_IN_FLIGHT_CEILING` (64 by default, for a small server) and never past 4 jobs per database connection (`DATABASE_POOL_MAX`, now 20 by default; the built-in database has one, so there they never grow). A lane that waited for nothing and left that much unused gives it back, never below its base.
+3. **Told when it isn't enough.** A quick lane over 5 s for 5 minutes, growing included, is reported once to the error reporter, and again only after it recovered; each resize is a log line. No page shows it: none shows the job queue today.
+4. **Routines ramp.** A scheduled routine fires at its slot plus a stable offset into that minute from its id (0–59 s), and the firing tick runs every 5 s (it was 30 s, at most 100 routines a tick), so the routines of 09:00 fire across the minute instead of together. Its slot, its next run as shown and its run's `at` stay the minute.
+
+This changes §10's last bullet: background jobs take at most half of the long slots, and quick jobs keep slots of their own. ADR 0046's priority column stays a proposal: lanes by kind need no migration.
+
+ADR 0163 takes this further: workspaces take turns in each lane, the long lane grows as far as memory allows instead of 4 jobs per database connection, and worker processes add slots.
+
 ## Addendum 2026-11-10: "Sempre neste repositório" on merge cards
 
 Every merge asks on its card, and the merge list (`agents.merge_repos`) was only on the agent's page, so people approved merge after merge in the same repository. A merge card now offers "Sempre neste repositório": approving it adds that repository to the agent's merge list in the decision's transaction (`addAgentMergeRepository`, audited as `agent.merge_repositories_changed` with `via: approval`), and merges there then run without a card as the list says. It is `approvals.approve_always` with a `repo`, never a rule.

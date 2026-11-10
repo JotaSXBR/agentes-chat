@@ -44,7 +44,6 @@ import {
   cacheDmRead,
   cacheMessage,
   cacheMessageActions,
-  cacheMessageMemories,
   cacheMessageMeta,
   cacheMessageWork,
   cachePinned,
@@ -93,6 +92,7 @@ import {
 } from "@agenteschat/client";
 import { type AgentUnavailableEvent, isAgentUnavailable } from "@agenteschat/client/lib/audience";
 import { newerBlockState } from "@agenteschat/client/lib/blocks";
+import { deviceWaitEventOf } from "@agenteschat/client/lib/devices";
 import { knownErrorText } from "@agenteschat/client/lib/errors";
 import { formatPercent } from "@agenteschat/client/lib/format";
 import { nextMonthIso, usageWhen } from "@agenteschat/client/lib/plan-usage";
@@ -506,8 +506,17 @@ export function RealtimeProvider({
         event.alert !== false &&
         inDesktopApp()
       ) {
-        const notice = desktopNotice(tRef.current, orgId, event.notification);
-        if (notice) void thisMac.notify(notice.title, notice.body, notice.path).catch(() => {});
+        const agentName = (id: string) => qc.getQueryData<Agent[]>(keys.agents(orgId))?.find((a) => a.id === id)?.name;
+        const notice = desktopNotice(tRef.current, orgId, event.notification, agentName);
+        if (notice)
+          void thisMac
+            .notify(
+              notice.title,
+              notice.body,
+              notice.path,
+              notice.phoneId ? { orgId, phoneId: notice.phoneId } : undefined,
+            )
+            .catch(() => {});
       }
       // A mission waits for me (a decision, a review, an approval): the lists and the sidebar's count.
       if (event.type.startsWith("mission.") && "missionId" in event && typeof event.missionId === "string") {
@@ -819,14 +828,20 @@ export function useChannelRealtime(orgId: string, channelId: string, enabled: bo
       if (event.type === "card.delegate") cacheCardDelegate(qc, orgId, event, event.delegate);
       // A right hand's card of a workspace change was applied, dismissed or sent on: the whole card.
       if (event.type === "action_card.updated") cacheActionCard(qc, orgId, event, event.card);
+      // An agent's wait for a device ended (or changed): its card flips to how it ended, without a reload.
+      const deviceWait = deviceWaitEventOf(event);
+      if (deviceWait) {
+        cacheMessageMeta(qc, orgId, deviceWait.channelId, deviceWait.messageId, () => ({
+          deviceWait: deviceWait.deviceWait,
+        }));
+        if (deviceWait.threadId)
+          void qc.invalidateQueries({ queryKey: keys.thread(orgId, deviceWait.channelId, deviceWait.threadId) });
+      }
       // A DM between people: the other one read it ("Visto" moves).
       if (event.type === "channel.read") cacheDmRead(qc, orgId, event);
       // Someone reacted: the pills under that message change for everyone.
       if (event.type === "message.reactions")
         applyReactions(qc, orgId, event.messageId, event.reactions, playAgentReaction);
-      // An agent saved something from a person's message: the memory mark appears (or goes) live.
-      if (event.type === "message.memories")
-        cacheMessageMemories(qc, orgId, event.channelId, event.messageId, event.memories);
       // Someone pinned or unpinned a message: its "Fixar" / "Desafixar" and the pins list follow.
       if (event.type === "message.pinned" || event.type === "message.unpinned") {
         cachePinned(qc, orgId, channelId, event.messageId, event.type === "message.pinned");

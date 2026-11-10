@@ -46,6 +46,7 @@ import {
   providerOf,
 } from "@agenteschat/client/lib/providers";
 import { thinksWithLine } from "@agenteschat/client/lib/right-hand";
+import { isPersonal } from "@agenteschat/client/lib/workspace-mode";
 import {
   type AgentAppearance,
   Button,
@@ -234,7 +235,7 @@ export function PlanWithoutAgent({
   const has = added ?? freePlanAccount(gates.accounts, choice);
   const title = planTitle(t, choice);
   const cloud = gates.edition === "cloud";
-  const name = cloud ? computerName(t, org.name, managedOf(machines.data)) : (computer?.name ?? "");
+  const name = cloud ? computerName(t, org.name, managedOf(machines.data), isPersonal(org)) : (computer?.name ?? "");
   const steps = gate.state === "ready" || gate.state === "preparing" || (gate.state === "offline" && signingIn);
   // Only whoever connected the computers there signs a plan in on them: a computer of their own is the way on.
   const elsewhere = gate.state === "locked" && !cloud;
@@ -358,7 +359,9 @@ function PlanSteps({
   }, [gate.state, markWaited]);
 
   const computer =
-    edition === "cloud" ? computerName(t, org.name, managedOf(machines.data)) : (view?.computer?.name ?? "");
+    edition === "cloud"
+      ? computerName(t, org.name, managedOf(machines.data), isPersonal(org))
+      : (view?.computer?.name ?? "");
   const refresh = (agentIds: string[]) => {
     for (const key of [
       ...agentIds.map((id) => keys.agentBrain(org.id, id)),

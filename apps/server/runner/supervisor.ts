@@ -247,7 +247,7 @@ export type WorkerLinkFrame =
     }
   /** From the worker: its agent's Chrome is in use on the agent's desktop (`BROWSER_LEASE_MS`). */
   | { type: "browser.desktop" }
-  /** From the worker: a step of its agent's pointer, for the streams of the agent's desktop root holds (protocol 54). */
+  /** From the worker: a step of its agent's pointer, for the streams of the agent's desktop root holds (protocol 56). */
   | ({ type: "desktop.cursor" } & DesktopCursor)
   /**
    * To the worker: close its least recently used idle brain CLI (`BrainManager.reclaimIdle`), `spare` last; with
@@ -386,7 +386,7 @@ export interface SupervisorOptions {
   desktop?: (agent: AgentScope, use: WorkerDesktopUse) => Promise<WorkerDesktop>;
   /** How many people watch or control the agent's desktop (`DesktopSessions.status`). */
   desktopViewers?: (agentId: string) => number;
-  /** A step of the agent's pointer, to the streams of its desktop (`DesktopSessions.cursor`, protocol 54). */
+  /** A step of the agent's pointer, to the streams of its desktop (`DesktopSessions.cursor`, protocol 56). */
   cursor?: (agentId: string, cursor: DesktopCursor) => void;
   /** The account an agent thinks with now, still on this computer (the agents frame); null: none. */
   account?: (agentId: string) => string | null;

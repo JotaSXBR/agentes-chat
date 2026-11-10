@@ -17,7 +17,7 @@ export type ScreenEvent =
   /** noVNC's session took its mode: the app's switch cover ("Assumindo o controle…") waits for it. */
   | { type: "session"; mode: DesktopMode }
   | { type: "refused"; why: "tooLong" }
-  /** A step of the agent's pointer (protocol 54): the app draws it over the screen while it watches. */
+  /** A step of the agent's pointer (protocol 56): the app draws it over the screen while it watches. */
   | ({ type: "cursor" } & DesktopCursor);
 
 /** The keys the app's key row presses, as X keysyms. */

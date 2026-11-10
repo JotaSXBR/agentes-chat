@@ -216,7 +216,7 @@ describe("the agent's screen on the phone's page", () => {
     expect(sockets[1]?.url).toContain("mode=control");
   });
 
-  test("the agent's pointer (protocol 54) goes to the app as the server says it, never to noVNC", async () => {
+  test("the agent's pointer (protocol 56) goes to the app as the server says it, never to noVNC", async () => {
     const { session, sockets, rfbs, events } = setup();
     session.set({ connect: true, mode: "watch" });
     const heard: unknown[] = [];

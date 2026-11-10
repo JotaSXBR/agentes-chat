@@ -19,12 +19,14 @@ import {
   Icon,
   type IconName,
   InfoHint,
+  InkOrbit,
   LineIcon,
   Text,
   textLineOf,
   useTheme,
 } from "@/ui";
 import { BUTTON_SIZES } from "@/ui/Button";
+import { usePersonalView } from "../settings/hooks";
 import { useColors } from "../shared/hooks";
 
 /**
@@ -78,6 +80,8 @@ export function Note({
  * "Atende outras pessoas" (ADR 0059 §5), the web's `PlanReplies`: off, an agent on its owner's plan answers only them;
  * on, everyone who may talk to it. Its ⓘ, right after the label, says whom it answers on which plan (whose, to an admin
  * or on someone else's plan) and the plan's terms: no line under it. A plan's page and the agent's AI draw the same.
+ * Alone in a personal workspace (ADR 0159) it waits while off, there being nobody else to answer, but where `keep` asks
+ * (the agent's own AI): it comes back as someone joins, and shows whenever it is on.
  */
 export function PlanReplies({
   on,
@@ -88,6 +92,7 @@ export function PlanReplies({
   plan,
   coding,
   disabled,
+  keep = false,
 }: {
   on: boolean;
   onChange: (on: boolean) => void;
@@ -101,8 +106,12 @@ export function PlanReplies({
   /** A coding plan, named by the line, its maker's words behind the ⓘ. */
   coding?: CodingPlan;
   disabled?: boolean;
+  /** Shown even while off and alone in a personal workspace: the agent's Advanced, where the switch always is. */
+  keep?: boolean;
 }) {
   const { t } = useTranslation();
+  const { solo } = usePersonalView();
+  if (solo && !on && !keep) return null;
   const says = planReplies(t, { on, agent, owner, brain, plan, coding });
   const label = t("aiAccounts.share.switch");
   return (
@@ -314,12 +323,12 @@ export function PasteField({
   );
 }
 
-/** "Esperando…" beside a step that waits on the computer. */
+/** "Esperando…" beside a step that waits on the computer, after the pixel loader as on the web. */
 export function Waiting({ label }: { label: string }) {
   const c = useColors();
   return (
     <View style={styles.wait} accessibilityLiveRegion="polite">
-      <Icon name="clock" size={13} color={c.faint} />
+      <InkOrbit size={13} color={c.faint} />
       <Text variant="caption" tone="faint" style={styles.bold}>
         {label}
       </Text>

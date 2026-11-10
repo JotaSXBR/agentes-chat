@@ -241,6 +241,7 @@ export function AgentAiScreen({ agentId }: { agentId: string }) {
                   plan={signInPlan(view, computerRow, view.brain as MachineAccountKind)}
                   coding={planOf(account?.provider)}
                   disabled={busy}
+                  keep
                 />
               </View>
             ) : null}

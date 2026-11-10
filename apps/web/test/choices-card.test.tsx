@@ -211,3 +211,16 @@ test("the worst a ref can say still holds a card's shape: a title that wraps, si
   for (const card of [choices, poll, block]) expect(card?.textContent).toContain(title);
   expect(document.querySelector(".artifact-tile")).toBeNull();
 });
+
+test("an agent's code between backticks stays code: in the question and in the summary once answered", async () => {
+  await card([
+    { question: "Rodo `bun test` antes do merge?", options: [{ label: "Sim" }, { label: "Não" }] },
+    QUESTIONS[1] as (typeof QUESTIONS)[number],
+  ]);
+  expect(document.querySelector(".choices__question code.ac-inlinecode")?.textContent).toBe("bun test");
+  await act(async () => fireEvent.click(document.querySelector(".choices__option") as HTMLElement));
+  await settle(4);
+  await act(async () => fireEvent.click(document.querySelector(".choices__option") as HTMLElement));
+  await settle(6);
+  expect(document.querySelector(".choices__asked code.ac-inlinecode")?.textContent).toBe("bun test");
+});

@@ -19,6 +19,7 @@ import { joinNames } from "@agenteschat/client/lib/format";
 import { agentGrammar } from "@agenteschat/client/lib/grammar";
 import { planOfAccount } from "@agenteschat/client/lib/no-ai";
 import { isPlanId, planOf, signInProviderOf } from "@agenteschat/client/lib/plans";
+import { isPersonal } from "@agenteschat/client/lib/workspace-mode";
 import {
   Button,
   Card,
@@ -232,7 +233,9 @@ export function AiAccountsSection() {
                   : identityUnknown(a, machine)
                     ? t("aiAccounts.page.identityUnknown")
                     : null),
-              several ? t("aiAccounts.page.on", { computer: computerNameOf(t, org.name, a.computer) }) : null,
+              several
+                ? t("aiAccounts.page.on", { computer: computerNameOf(t, org.name, a.computer, isPersonal(org)) })
+                : null,
               usedBy.length > 0
                 ? t("aiAccounts.page.usedBy", { count: usedBy.length, agents: names(usedBy) })
                 : t("aiAccounts.page.noAgent"),
@@ -373,10 +376,10 @@ export function AiAccountsSection() {
               ? t("aiAccounts.page.disconnectAgents", {
                   count: open.account.usedBy.length,
                   agents: names(open.account.usedBy),
-                  computer: computerNameOf(t, org.name, open.account.logins[0]?.computer ?? ""),
+                  computer: computerNameOf(t, org.name, open.account.logins[0]?.computer ?? "", isPersonal(org)),
                 })
               : t("aiAccounts.page.disconnectNone", {
-                  computer: computerNameOf(t, org.name, open.account.logins[0]?.computer ?? ""),
+                  computer: computerNameOf(t, org.name, open.account.logins[0]?.computer ?? "", isPersonal(org)),
                 }),
             ...(open.account.logins.some((l) =>
               endsOnClaude(

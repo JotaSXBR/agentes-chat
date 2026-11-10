@@ -103,8 +103,9 @@ test("its greeting's cards beside the checklist: one question at a time (ADR 015
   expect(introLeadKey(true, true)).toBe("rightHand.intro.lead");
   expect(introLeadKey(false, false)).toBe("rightHand.intro.lead");
   const src = (f: string) => readFileSync(new URL(f, import.meta.url), "utf8");
+  // A personal workspace reads its own sibling (ADR 0159), on both.
   for (const f of ["../../src/features/right-hand/Intro.tsx", "../../../web/src/components/RightHandIntro.tsx"])
-    expect(src(f)).toContain("t(introLeadKey(held, team.length > 0))");
+    expect(src(f)).toContain("t(modeKey(org, introLeadKey(held, team.length > 0)))");
 });
 
 test("how agents should talk waits for the team's first answer, so it never stands beside the first task", () => {
@@ -129,21 +130,23 @@ test("the phone's greeting draws the checklist and Conversas has one line back t
   const src = (f: string) => readFileSync(new URL(`../../src/features/${f}`, import.meta.url), "utf8");
   expect(src("right-hand/Intro.tsx")).toContain("<FirstRunCard agent={agent} channelId={channelId} />");
   expect(src("chats/ChatsScreen.tsx")).toContain("<FirstRunLine />");
-  // One line that says who is setting up the team and how far ("Atlas is setting up the team · 1 of 3").
-  expect(src("chats/FirstRunLine.tsx")).toContain('t("mobile.chats.firstRunLine"');
+  // One line that says who is setting up the team and how far ("Atlas is setting up the team · 1 of 3"); a personal
+  // workspace's says "your agents" (ADR 0159).
+  expect(src("chats/FirstRunLine.tsx")).toContain('t(modeKey(org, "mobile.chats.firstRunLine")');
   // The apps row names what it reads, as the web's does, never "Sem apps" with apps connected; an invitation waiting
-  // finishes the people row, saying who.
+  // finishes the people row, saying who; a personal workspace's rows read its own words (ADR 0159).
   const card = src("right-hand/FirstRun.tsx");
   expect(card).toContain("apps: appNames,");
   expect(card).toContain("invited: run.invited.length ? joinNames(run.invited, t) : null,");
   // As on the web: the AI row connects the whole team, the apps row is its own screen of suggested apps, a skip says
-  // nothing, and an invitation only sent says so, the welcome kept for someone joining (ADR 0158).
+  // nothing, and an invitation only sent says so, the welcome kept for someone joining (ADR 0162).
   expect(card).toContain("openConnectAi(team.length > 0 ? {} : { agentId: agent.id })");
   expect(card).toContain('apps: () => openSetupStep(agent.id, "apps")');
   expect(card).toContain("firstRunBeats(doneHere, { members: run.members, invited: run.invited.length })");
   expect(card).toContain('? t("agentSetup.firstRun.say.invited")');
-  // biome-ignore lint/suspicious/noTemplateCurlyInString: the card's own source text, placeholder included.
-  expect(card).toContain(": facts[beat]\n          ? t(`agentSetup.firstRun.say.${beat}`, agentGrammar(agent.name))");
+  expect(card).toContain(
+    ": firstRunFact(facts, beat)\n          ? t(firstRunSayKey(beat, personal), agentGrammar(agent.name))",
+  );
   // One first task, the team card's: the card's asks offer none.
   expect(card).not.toContain("firstTask");
   const steps = src("agents/setup/SetupStepScreen.tsx");

@@ -36,11 +36,24 @@ import {
 } from "@agenteschat/client/lib/approval-words";
 import { nextLabel } from "@agenteschat/client/lib/format";
 import { agentGrammar } from "@agenteschat/client/lib/grammar";
+import { modeKey } from "@agenteschat/client/lib/workspace-mode";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, View } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
-import { Button, Count, EventPillAction, HoldButton, Icon, LineIcon, Text, useReducedMotion, useToast } from "@/ui";
+import { useOrg } from "@/providers/org";
+import {
+  ACT_LINE,
+  Button,
+  Count,
+  EventPillAction,
+  HoldButton,
+  Icon,
+  LineIcon,
+  Text,
+  useReducedMotion,
+  useToast,
+} from "@/ui";
 import { router } from "@/ui/navigation";
 import { approvalAction, approvalRisk, approveAlwaysToast } from "../approvals/logic";
 import {
@@ -69,7 +82,8 @@ import { PromptForm } from "../shared/PromptForm";
 import { successHaptic, tapHaptic, useSurface } from "../shared/parts";
 import { useSheet } from "../shared/SheetHost";
 import { AskCard, AskDone, AskFoot, ExpiryLine, useAskStore } from "./asks";
-import { markName, threadFaces } from "./logic";
+import { markName, parseInline, threadFaces } from "./logic";
+import { Spans } from "./MessageSpans";
 
 /**
  * The cards inside a message: the approval it asks for, an agent's question and a change
@@ -360,8 +374,8 @@ function ApprovalGroupAsk({ items }: { items: Approval[] }) {
                     <View style={styles.itemMark}>
                       <ApprovalMark approval={lead} size={20} bare />
                     </View>
-                    <View style={styles.itemWrap}>
-                      <View style={styles.itemText}>
+                    <View style={[ACT_LINE.row, styles.itemWrap]}>
+                      <View style={ACT_LINE.text}>
                         <Text variant="subhead" tone="ink" style={styles.bold}>
                           {head(run)}
                         </Text>
@@ -455,21 +469,21 @@ function ApprovalGroupItem({
         <View style={styles.itemMark}>
           <ApprovalMark approval={a} size={20} bare />
         </View>
-        {/* Its words, then its buttons at the row's right end; where both don't fit, the buttons go right under
-            the words, from where they start. */}
-        <View style={styles.itemWrap}>
-          <View style={styles.itemText}>
-            <Text variant="subhead" tone="ink" numberOfLines={2} style={styles.bold}>
+        {/* Its words, then its buttons at the row's end while the words fit their line beside them; else the buttons
+            go under the words, from where they start. The words read whole, code drawn as code. */}
+        <View style={[ACT_LINE.row, styles.itemWrap]}>
+          <View style={ACT_LINE.text}>
+            <Text variant="subhead" tone="ink" style={styles.bold}>
               {approvalTitleText(t, a)}
             </Text>
             {detail ? (
-              <Text variant="footnote" tone="muted" numberOfLines={3}>
-                {detail}
+              <Text variant="footnote" tone="muted">
+                <Spans inline={parseInline(detail)} />
               </Text>
             ) : null}
             {own.why ? (
               <Text variant="footnote" tone="ink">
-                {own.why}
+                <Spans inline={parseInline(own.why)} />
               </Text>
             ) : null}
             {own.origin ? (
@@ -551,6 +565,7 @@ function ApprovalAsk({ approval: a }: { approval: Approval }) {
   const c = useColors();
   const asks = useAskStore();
   const origin = useOriginShort(a);
+  const { org } = useOrg();
   const ownerId = a.ownerUserId ?? dir.agentById.get(a.agentId)?.ownerUserId ?? null;
   const owner = approvalWaitsFor(a, ownerId ? dir.memberById.get(ownerId)?.name : undefined);
   const requester = requesterDecidesLine(t, a);
@@ -571,8 +586,9 @@ function ApprovalAsk({ approval: a }: { approval: Approval }) {
     <AskCard
       id={a.id}
       kind="approval"
-      // A request that leaves the workspace (an e-mail, a post, a payment) says so before anything else.
-      kindNote={high ? t("mobile.approval.leaves") : undefined}
+      // A request that leaves the workspace (an e-mail, a post, a payment) says so before anything else; a personal
+      // workspace's is no company's (ADR 0159).
+      kindNote={high ? t(modeKey(org, "mobile.approval.leaves")) : undefined}
       agentId={a.agentId}
       waitsFor={a.canDecide ? "you" : owner ? t("ask.waitingFor", { name: owner }) : null}
       lead={approvalWhy(a) ?? approvalAskLine(t, a.canDecide)}
@@ -905,17 +921,8 @@ const styles = StyleSheet.create({
   // The mark beside the title's first line.
   itemRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
   itemMark: { width: 20, paddingTop: 1, alignItems: "center" },
-  // Its words and its buttons on one line while they fit; else the buttons wrap under the words, at their start.
-  itemWrap: {
-    flex: 1,
-    minWidth: 0,
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "center",
-    columnGap: 12,
-    rowGap: 8,
-  },
-  itemText: { flexGrow: 1, flexShrink: 1, flexBasis: 160, minWidth: 0 },
+  // Its words and its buttons on one line while the words fit theirs; else the buttons under the words, at their start.
+  itemWrap: { flex: 1, minWidth: 0, alignItems: "center", columnGap: 16, rowGap: 8 },
   // Under the words, from where they start (the mark's 20 and the gap's 10).
   itemUnder: { marginLeft: 30 },
   // A request's decision: one row under its values, left-aligned, every button the strip's height.

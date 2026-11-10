@@ -4,7 +4,7 @@ import { ROLE_DEFAULTS, ROLE_IDS, type RoleId } from "./new-agent";
 import { providerLabel } from "./providers";
 
 /*
- * The right hand's first run (ADR 0155 §6, ADR 0158): the one setup checklist, inside its greeting for the
+ * The right hand's first run (ADR 0155 §6, ADR 0162): the one setup checklist, inside its greeting for the
  * workspace's owners. Other agents have none: one that needs something asks for it in the conversation, when it does.
  * The server keeps the rows skipped, and the ready-made role each agent started from. These are the rules the apps
  * share.
@@ -25,18 +25,23 @@ export interface SetupRow {
 
 /**
  * Its rows, one order everywhere: what the onboarding's steps leave (they made the workspace, said what it does and
- * made the team): an AI, apps, people.
+ * made the team): an AI, apps, people. A personal workspace (ADR 0159), which the onboarding opens at once, starts
+ * with what the person wants help with and their agents, and has no people row.
  */
-export const FIRST_RUN_STEPS = ["ai", "apps", "people"] as const satisfies readonly SetupStep[];
+export const FIRST_RUN_STEPS = ["about", "team", "ai", "apps", "people"] as const satisfies readonly SetupStep[];
 export type FirstRunStep = (typeof FIRST_RUN_STEPS)[number];
 
-/** What may each row's button do for this person (`stepPermissions` in lib/home). */
+/** What may each row's button do for this person (`stepPermissions` in lib/home, plus `configure`). */
 export interface FirstRunPowers {
   owner: boolean;
+  configure: boolean;
+  createAgents: boolean;
   connectAi: boolean;
   pay: boolean;
   connectors: boolean;
   invite: boolean;
+  /** A personal workspace (ADR 0159): its first run has no people row, it is for one person. */
+  personal?: boolean;
 }
 
 /**
@@ -47,15 +52,21 @@ export interface FirstRunPowers {
 export function firstRunSteps(agent: Pick<Agent, "setup" | "builtin">, may: FirstRunPowers): FirstRunStep[] {
   if (agent.builtin !== "right_hand" || !agent.setup || !may.owner) return [];
   const row: Record<FirstRunStep, boolean> = {
+    about: Boolean(may.personal) && may.configure,
+    team: Boolean(may.personal) && may.createAgents,
     ai: may.connectAi || may.pay,
     apps: may.connectors,
-    people: may.invite,
+    people: may.invite && !may.personal,
   };
   return FIRST_RUN_STEPS.filter((s) => row[s]);
 }
 
 /** What the workspace's data says, read by the apps (mirror of the prompt's `cardOpen`, engine right-hand-prompt). */
 export interface FirstRunFacts {
+  /** The workspace's context isn't empty. */
+  context: boolean;
+  /** An agent besides the right hand exists. */
+  team: boolean;
   /** The right hand's AI is ready or waiting for its computer, and no billing hold. */
   ai: boolean;
   /** An app is connected. */
@@ -64,9 +75,23 @@ export interface FirstRunFacts {
   people: boolean;
 }
 
+/** Whether the data did a row (a skip doesn't): what a row's line and burst celebrate. */
+export const firstRunFact = (facts: FirstRunFacts, step: FirstRunStep) => facts[step === "about" ? "context" : step];
+
+/**
+ * The line a row says once done. A personal workspace's own words; its first two rows are only ever its own, so they
+ * have no other.
+ */
+export const firstRunSayKey = (step: FirstRunStep, personal: boolean) => {
+  if (step === "about" || step === "team") return `agentSetup.firstRun.say.${step}Personal` as const;
+  return personal ? (`agentSetup.firstRun.say.${step}Personal` as const) : (`agentSetup.firstRun.say.${step}` as const);
+};
+
 /** The rows done: from the data, or skipped ("Agora não", the only thing stored). */
 export function firstRunDone(setup: AgentSetupChecklist, facts: FirstRunFacts): Set<FirstRunStep> {
   const done = new Set<FirstRunStep>();
+  if (facts.context) done.add("about");
+  if (facts.team) done.add("team");
   if (facts.ai) done.add("ai");
   if (facts.apps || setup.done.includes("apps")) done.add("apps");
   if (facts.people || setup.done.includes("people")) done.add("people");
@@ -89,10 +114,12 @@ export const beatRow = (beat: FirstRunBeat): FirstRunStep => (beat === "invited"
 /** How a row reads now: done, open, or waiting for the plan (a billing hold: the hold's banner holds the plan). */
 export type FirstRunRowState = "done" | "open" | "afterPlan";
 
+/** How a row reads now. On a hold a personal workspace's first two rows stay open: its agents wait for the plan asleep. */
 export const firstRunRowState = (
   step: FirstRunStep,
   s: { done: ReadonlySet<FirstRunStep>; held: boolean },
-): FirstRunRowState => (s.done.has(step) ? "done" : s.held ? "afterPlan" : "open");
+): FirstRunRowState =>
+  s.done.has(step) ? "done" : s.held && step !== "about" && step !== "team" ? "afterPlan" : "open";
 
 /** The foot's asks wait for a team that can think: a team and an AI, never on a hold. */
 export const firstRunAsks = (done: ReadonlySet<FirstRunStep>, held: boolean, team: boolean) =>
@@ -101,6 +128,8 @@ export const firstRunAsks = (done: ReadonlySet<FirstRunStep>, held: boolean, tea
 /** What the rows say, from what the app read: names already joined in the person's language. */
 export interface FirstRunRowFacts {
   org: string;
+  /** The agents besides the right hand, for a personal workspace's row of them. */
+  agents?: number;
   /** What the right hand thinks with ("Claude"), once it does. */
   label: string | null;
   /** The apps connected ("o Gmail e o Drive"); null when none. */
@@ -108,6 +137,8 @@ export interface FirstRunRowFacts {
   members: number;
   /** Who was invited and hasn't answered yet ("João e Ana"); null when nobody. */
   invited: string | null;
+  /** A personal workspace (ADR 0159): rows in its words (`PERSONAL_ROW_WORDS`). */
+  personal?: boolean;
 }
 
 /**
@@ -116,6 +147,16 @@ export interface FirstRunRowFacts {
  */
 export const firstRunAiLabel = (thinks: { text: string; kind: string }, maker: string | null | undefined) =>
   thinks.kind !== "agent" ? thinks.text : maker ? providerLabel(maker) : null;
+
+/**
+ * The words a personal workspace's rows say differently (ADR 0159), each a `<key>Personal` sibling of the row's key:
+ * about the person instead of the company, their agents instead of a team, their apps instead of work apps.
+ */
+export const PERSONAL_ROW_WORDS: Partial<Record<FirstRunStep, readonly string[]>> = {
+  about: ["todo", "todoDesc", "done"],
+  team: ["todo", "todoDesc", "action", "done"],
+  apps: ["todo", "todoDesc"],
+};
 
 /** One row's words: its title, a line under it while open, its button's word, and "Agora não" where a row skips. */
 export function firstRunRow(
@@ -127,11 +168,16 @@ export function firstRunRow(
 ): SetupRow & { skip?: string } {
   // Keys built from the row's id, so read through an untyped `t`.
   const t = tr as unknown as (key: string, o?: Record<string, unknown>) => string;
-  const k = (key: string) => `agentSetup.firstRun.${step}.${key}`;
+  const k = (key: string) =>
+    `agentSetup.firstRun.${step}.${key}${f.personal && PERSONAL_ROW_WORDS[step]?.includes(key) ? "Personal" : ""}`;
   if (state === "afterPlan")
     return { title: t(k("todo"), { org: f.org }), desc: t("agentSetup.firstRun.afterPlan"), action: "" };
   if (state === "done") {
     switch (step) {
+      case "about":
+        return { title: t(k("done"), { org: f.org }), action: t("agentSetup.change") };
+      case "team":
+        return { title: t(k("done"), { count: f.agents ?? 0 }), action: t("agentSetup.see") };
       case "ai":
         return { title: f.label ? t(k("done"), { label: f.label }) : t(k("doneAny")), action: t("agentSetup.switch") };
       case "apps":
@@ -171,16 +217,38 @@ const TEMPLATE_ROLES: Record<string, RoleId> = {
   bia: "support",
 };
 
+/**
+ * The apps (catalog connector ids) a personal template's agents use (ADR 0159; mirror of the personal `MEMBERS` in
+ * packages/engine/src/team-templates.ts), by handle: a person's calendar, files and lists rather than a team's tools.
+ */
+const PERSONAL_TEMPLATE_APPS: Record<string, readonly string[]> = {
+  clara: ["google-calendar", "todoist"],
+  duda: ["google-sheets", "drive"],
+  leo: ["google-calendar"],
+  mel: ["todoist", "google-docs"],
+  gabi: ["notion", "google-docs"],
+  lu: ["google-docs", "notion"],
+  rosa: ["todoist", "google-calendar"],
+  vic: ["google-calendar", "drive"],
+  rui: ["google-calendar", "google-docs", "google-sheets"],
+};
+
+/** A template handle without its taken-name suffix (`iara-2` is Iara's). */
+const templateHandle = (handle: string) => handle.replace(/-\d+$/, "");
+
 /** A team agent's role, by its own role or its template handle (`iara-2` is Iara's). */
 export const teamRole = (a: Pick<Agent, "handle" | "setup">): RoleId | null =>
-  setupRole(a.setup) ?? TEMPLATE_ROLES[a.handle.replace(/-\d+$/, "")] ?? null;
+  setupRole(a.setup) ?? TEMPLATE_ROLES[templateHandle(a.handle)] ?? null;
 
 /** The apps (catalog connector ids) the team's roles suggest, the most suggested first. */
 export function firstRunApps(team: readonly Pick<Agent, "handle" | "setup">[]): string[] {
   const count = new Map<string, number>();
   for (const a of team) {
     const role = teamRole(a);
-    if (role) for (const id of Object.keys(ROLE_DEFAULTS[role].levels)) count.set(id, (count.get(id) ?? 0) + 1);
+    const apps = role
+      ? Object.keys(ROLE_DEFAULTS[role].levels)
+      : (PERSONAL_TEMPLATE_APPS[templateHandle(a.handle)] ?? []);
+    for (const id of apps) count.set(id, (count.get(id) ?? 0) + 1);
   }
   return [...count.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id);
 }

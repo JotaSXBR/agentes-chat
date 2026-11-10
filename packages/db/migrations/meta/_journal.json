@@ -1699,43 +1699,71 @@
     {
       "idx": 244,
       "version": "7",
-      "when": 1794602000000,
-      "tag": "0244_github_items",
+      "when": 1794603000000,
+      "tag": "0244_devices",
       "breakpoints": true
     },
     {
       "idx": 245,
       "version": "7",
-      "when": 1794602300000,
-      "tag": "0245_brain_switches_unused",
+      "when": 1794603300000,
+      "tag": "0245_workspace_mode",
       "breakpoints": true
     },
     {
       "idx": 246,
       "version": "7",
-      "when": 1794602600000,
-      "tag": "0246_picture_size",
+      "when": 1794613300000,
+      "tag": "0246_feedback_files",
       "breakpoints": true
     },
     {
       "idx": 247,
       "version": "7",
-      "when": 1794602900000,
-      "tag": "0247_new_agent_audience",
+      "when": 1794614300000,
+      "tag": "0247_github_items",
       "breakpoints": true
     },
     {
       "idx": 248,
       "version": "7",
-      "when": 1794603200000,
-      "tag": "0248_task_pump",
+      "when": 1794615300000,
+      "tag": "0248_machine_standby",
       "breakpoints": true
     },
     {
       "idx": 249,
       "version": "7",
-      "when": 1794616300000,
-      "tag": "0249_question_defaults",
+      "when": 1794615600000,
+      "tag": "0249_brain_switches_unused",
+      "breakpoints": true
+    },
+    {
+      "idx": 250,
+      "version": "7",
+      "when": 1794615900000,
+      "tag": "0250_picture_size",
+      "breakpoints": true
+    },
+    {
+      "idx": 251,
+      "version": "7",
+      "when": 1794616200000,
+      "tag": "0251_new_agent_audience",
+      "breakpoints": true
+    },
+    {
+      "idx": 252,
+      "version": "7",
+      "when": 1794616500000,
+      "tag": "0252_task_pump",
+      "breakpoints": true
+    },
+    {
+      "idx": 253,
+      "version": "7",
+      "when": 1794616800000,
+      "tag": "0253_question_defaults",
       "breakpoints": true
     }
   ]

@@ -99,10 +99,14 @@ import type {
   CodeSent,
   CommandApproval,
   ComposioUsage,
+  ComputerDevice,
+  ComputerDeviceInput,
   ComputerQueue,
   ComputerSetup,
   ComputerTarget,
   Connection,
+  ConnectLink,
+  ConnectLinkState,
   ConnectOutcome,
   ConnectorCatalog,
   ConsultationConversation,
@@ -119,13 +123,17 @@ import type {
   DesktopPictureView,
   DesktopRelease,
   DesktopStatus,
+  DeviceAudience,
   DeviceRequest,
+  DevicesList,
   DirectMessage,
   DmRead,
   DmTarget,
   EndpointCheck,
   EndpointModel,
   EndpointStyle,
+  FeedbackFile,
+  FeedbackInput,
   ForeignMailbox,
   FormerAgent,
   GifKey,
@@ -226,6 +234,8 @@ import type {
   PersonalTokenInput,
   PersonLimits,
   PersonUsage,
+  PhoneDevice,
+  PhoneDeviceInput,
   PhoneSignIn,
   Poll,
   PostMedia,
@@ -300,7 +310,6 @@ import type {
   ThreadInfo,
   ThreadPage,
   ThreadPatch,
-  ToolChange,
   ToolDecision,
   TrashedArtifact,
   UndoAllResult,
@@ -309,6 +318,7 @@ import type {
   UsageReport,
   WebhookProvider,
   WebhookSetup,
+  WifiPairing,
   WikiBulkFailed,
   WikiBulkTarget,
   WikiFolderAudience,
@@ -325,6 +335,7 @@ import type {
   WorkspaceActionCard,
   WorkspaceActionCardView,
   WorkspaceLimits,
+  WorkspaceMode,
 } from "./types";
 
 /**
@@ -339,6 +350,11 @@ export interface ApiClient {
     /** `null` unless I am the installation's owner (and not on agentes.chat itself). */
     telemetry(): Promise<ServerTelemetry | null>;
     setTelemetry(enabled: boolean): Promise<ServerTelemetry>;
+    /** By email to whoever runs the server; only where it takes feedback (`AuthConfig.feedback`). */
+    sendFeedback(input: FeedbackInput): Promise<void>;
+    /** A picture or a video for the feedback being written: kept an hour unless it is sent. */
+    uploadFeedbackFile(file: File): Promise<FeedbackFile>;
+    dropFeedbackFile(id: string): Promise<void>;
     /** `null` unless I am the installation's owner on a self-hosted server. */
     jev(): Promise<JevKey | null>;
     /** Checked with TypeSafe first: `jev_key_invalid` (422) when it refuses, `jev_key_env` (409) with an env key. */
@@ -392,8 +408,8 @@ export interface ApiClient {
     /** A one-time sign-in for the phone app, shown as a QR code. */
     phoneSignIn(): Promise<PhoneSignIn>;
     /**
-     * A password for an account that has none (`password_set` 409 when it has one). `reauth.sign_in` (403) without a
-     * sign-in in the last 10 minutes.
+     * A password for an account that has none, or a new one in place of its own (ADR 0158: every other session ends).
+     * `reauth.sign_in` (403) without a sign-in in the last 10 minutes.
      */
     addPassword(password: string): Promise<void>;
     /** What deleting my account would close, leave and remove. */
@@ -432,6 +448,8 @@ export interface ApiClient {
     create(input: {
       name: string;
       context?: string;
+      /** Who it is for (ADR 0159); a team's when left out. */
+      mode?: WorkspaceMode;
     }): Promise<{ organization: Organization; generalChannelId: string }>;
     /**
      * Its owner's progress in setting it up: the furthest step reached (it only moves forward), or `finished`. Null
@@ -512,6 +530,12 @@ export interface ApiClient {
     /** What removing them (or leaving) does; refused as the removal would be. */
     removal(orgId: string, userId: string): Promise<RemovalPreview>;
     removeMember(orgId: string, userId: string, via?: string): Promise<void>;
+    /**
+     * A one-time new-password link for a member, on a server that sends no email (owners only, ADR 0158): it works
+     * once, for an hour, and ends the earlier one. Refused (403) for oneself, the server's owner and someone in a
+     * workspace the caller doesn't own; 409 `password_link.email` where the server emails the person their own.
+     */
+    passwordLink(orgId: string, userId: string): Promise<{ url: string; expiresAt: string }>;
     invitations(orgId: string): Promise<Invitation[]>;
     invite(
       orgId: string,
@@ -990,6 +1014,35 @@ export interface ApiClient {
     /** Which computer the agent uses: a connected machine, or `null` for none. */
     setTarget(orgId: string, agentId: string, machineId: string | null): Promise<ComputerTarget>;
   };
+  /** Bring your own devices: computers people connect and the phones they reach, as agents' targets. */
+  devices: {
+    list(orgId: string): Promise<DevicesList>;
+    updateComputer(orgId: string, machineId: string, input: ComputerDeviceInput): Promise<ComputerDevice>;
+    removeComputer(orgId: string, machineId: string): Promise<void>;
+    updatePhone(orgId: string, phoneId: string, input: PhoneDeviceInput): Promise<PhoneDevice>;
+    /** Forgets it; it comes back if its host sees it again. */
+    forgetPhone(orgId: string, phoneId: string): Promise<void>;
+    /** Takes the phone back from the agent using it. */
+    stopPhone(orgId: string, phoneId: string): Promise<void>;
+    createLink(orgId: string, kind: "server" | "computer"): Promise<ConnectLink>;
+    link(orgId: string, linkId: string): Promise<ConnectLinkState>;
+    approveRequest(
+      orgId: string,
+      requestId: string,
+      input: { name?: string; audience?: DeviceAudience },
+    ): Promise<{ machineId: string }>;
+    denyRequest(orgId: string, requestId: string): Promise<void>;
+    decideAccess(orgId: string, requestId: string, decision: "once" | "always" | "no"): Promise<void>;
+    deviceWait(orgId: string, runId: string, action: "retry" | "stop"): Promise<void>;
+    /** Pairs an Android phone with the computer over Wi-Fi: the QR way, or the six-digit `code` and its `address`. */
+    startWifiPairing(
+      orgId: string,
+      machineId: string,
+      input: { address?: string; code?: string },
+    ): Promise<WifiPairing>;
+    wifiPairing(orgId: string, machineId: string, pairingId: string): Promise<WifiPairing>;
+    cancelWifiPairing(orgId: string, machineId: string, pairingId: string): Promise<void>;
+  };
   /** Connected computers (ADR 0025): machines running `agentes-runner`. */
   machines: {
     list(orgId: string): Promise<Machine[]>;
@@ -1152,12 +1205,6 @@ export interface ApiClient {
       input: { label: string; tools: { name: string; access: ToolDecision; label: string; confirmed?: boolean }[] },
     ): Promise<CustomServer>;
     disconnect(orgId: string, serverId: string): Promise<void>;
-    /** Approved tools whose server changed them (ADR 0117), for connector admins. */
-    toolChanges(orgId: string): Promise<ToolChange[]>;
-    /** Accepts a tool's new description and input: agents get them now. */
-    acceptToolChange(orgId: string, connectionId: string, toolName: string): Promise<void>;
-    /** "Aceitar todas": every change waiting on one connection's tools, at once. */
-    acceptConnectionToolChanges(orgId: string, connectionId: string): Promise<{ accepted: number }>;
   };
   dms: {
     /** My direct conversations, with unread counts. */

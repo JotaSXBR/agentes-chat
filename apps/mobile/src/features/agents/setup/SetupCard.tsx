@@ -6,7 +6,7 @@ import { useColors } from "../../shared/hooks";
 import { successHaptic } from "../../shared/parts";
 
 /*
- * The setup card's drawing on the phone (ADR 0155 §6, ADR 0158), as on the web: the right hand's first run inside its
+ * The setup card's drawing on the phone (ADR 0155 §6, ADR 0162), as on the web: the right hand's first run inside its
  * greeting, the one setup checklist. Other agents have none: one that needs something asks for it in the conversation.
  */
 

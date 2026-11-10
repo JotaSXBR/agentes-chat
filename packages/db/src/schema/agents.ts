@@ -366,6 +366,11 @@ export const organizationSettings = pgTable("organization_settings", {
    */
   agentsImproveSkills: boolean().notNull().default(true),
   /**
+   * Who the workspace is for (ADR 0159): `team` or `personal`. It changes defaults, words and what is in sight, never
+   * what exists or who may do what.
+   */
+  mode: text().$type<"team" | "personal">().notNull().default("team"),
+  /**
    * Who can talk to a new agent whoever made it didn't choose for (an import, a team proposal, the API): `everyone`
    * or `owner`, only the person responsible for it. Open by default; Criar agente starts its own choice here.
    */

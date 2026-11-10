@@ -1,6 +1,7 @@
 import type { AgentAudience, AudienceMode, ForeignMailbox } from "@agenteschat/client";
 import { useRoles, useSetAudiences } from "@agenteschat/client";
 import {
+  audienceModeKey,
   audienceOf,
   audiencePatch,
   canEditAudience,
@@ -28,7 +29,7 @@ const MODES: AudienceMode[] = ["everyone", "people", "owner"];
  * one choice for all of them, saved as each one's own. What it would open (someone else's plan, mailboxes other people
  * gave one of them) is asked once before the save.
  */
-export function AgentsAudienceScreen() {
+export function AgentsAudienceScreen({ agentId }: { agentId?: string }) {
   const { t } = useTranslation();
   const { orgId, org } = useOrg();
   const dir = useDirectory();
@@ -39,8 +40,12 @@ export function AgentsAudienceScreen() {
   const mine = dir.agents.filter(
     (a) => !isRightHand(a) && !a.former && meId && canEditAudience(org ?? undefined, a, meId),
   );
-  const [picked, setPicked] = useState<Set<string>>(() => new Set());
-  const [audience, setAudience] = useState<AgentAudience>({ mode: "everyone", userIds: [], roleIds: [] });
+  // Opened for one agent (its edit screen's row): that agent ticked, its own choice to start from.
+  const one = agentId ? mine.find((a) => a.id === agentId) : undefined;
+  const [picked, setPicked] = useState<Set<string>>(() => new Set(one ? [one.id] : []));
+  const [audience, setAudience] = useState<AgentAudience>(() =>
+    one ? { ...audienceOf(one), consultable: undefined } : { mode: "everyone", userIds: [], roleIds: [] },
+  );
   const chosen = mine.filter((a) => picked.has(a.id));
   const ownerless = chosen.some((a) => !a.ownerUserId);
   const pickedPeople = new Set(audience.userIds);
@@ -148,7 +153,7 @@ export function AgentsAudienceScreen() {
         {MODES.map((mode) => (
           <GroupedRow
             key={mode}
-            label={t(`audience.mode.${mode}`)}
+            label={t(audienceModeKey(org, mode))}
             sub={
               mode === "owner" && ownerless ? t("audience.modeText.noOwner") : t(`audience.several.modeText.${mode}`)
             }
@@ -171,17 +176,24 @@ export function AgentsAudienceScreen() {
       ) : null}
       {audience.mode === "people" ? (
         <>
-          <GroupedHeader>{t("agentSetup.who.people")}</GroupedHeader>
+          {roleList.length > 0 ? (
+            <>
+              <GroupedHeader>{t("audience.roles")}</GroupedHeader>
+              <GroupedList>
+                {roleList.map((r) => (
+                  <GroupedRow
+                    key={r.id}
+                    icon="members"
+                    label={r.name}
+                    checked={pickedRoles.has(r.id)}
+                    onPress={() => flip("roleIds", r.id)}
+                  />
+                ))}
+              </GroupedList>
+            </>
+          ) : null}
+          <GroupedHeader>{t("audience.people")}</GroupedHeader>
           <GroupedList>
-            {roleList.map((r) => (
-              <GroupedRow
-                key={r.id}
-                icon="members"
-                label={r.name}
-                checked={pickedRoles.has(r.id)}
-                onPress={() => flip("roleIds", r.id)}
-              />
-            ))}
             {people.map((m) => (
               <GroupedRow
                 key={m.userId}

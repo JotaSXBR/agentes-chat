@@ -22,6 +22,7 @@ import {
 } from "@agenteschat/client/lib/no-ai";
 import { can } from "@agenteschat/client/lib/permissions";
 import { isRightHand } from "@agenteschat/client/lib/right-hand";
+import { modeKey } from "@agenteschat/client/lib/workspace-mode";
 import { Button, Chip, Dialog, DialogFooter, EventPillAction, Icon, InfoHint } from "@agenteschat/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
@@ -62,8 +63,8 @@ export function NoAiBanner({ agentIds, dmAgentId }: { agentIds: string[]; dmAgen
     const agent = dir.agentById.get(dmAgentId);
     const name = agent?.name ?? t("channel.unknownAgent");
     return (
-      <div className="noai-banner ac-actrow" role="status">
-        <span className="noai-banner__text ac-iconline ac-actrow__text">
+      <div className="noai-banner ac-actline" role="status">
+        <span className="noai-banner__text ac-iconline">
           <Icon name="plug" size={16} />
           <b>{t(noAiStatusKey(status.data, dmAgentId), agentGrammar(name))}</b>
         </span>
@@ -78,8 +79,8 @@ export function NoAiBanner({ agentIds, dmAgentId }: { agentIds: string[]; dmAgen
   if (status.data.any || agentIds.length === 0) return null;
   const action = t("noAi.banner.orgAction");
   return (
-    <div className="noai-banner ac-actrow" role="status">
-      <span className="noai-banner__text ac-iconline ac-actrow__text">
+    <div className="noai-banner ac-actline" role="status">
+      <span className="noai-banner__text ac-iconline">
         <Icon name="plug" size={16} />
         {/* Asking in the chat is understood only where Jev reads the message (`ai-intent.ts`). */}
         {status.data.routing?.by === "jev" ? (
@@ -280,7 +281,9 @@ function KeptCard({ message, card, hold }: { message: Message; card: NoAiCardMet
                 </EventPillAction>
               )}
               {noTeam && (
-                <EventPillAction onClick={() => setTemplates(true)}>{t("teamPlan.start.templates")}</EventPillAction>
+                <EventPillAction onClick={() => setTemplates(true)}>
+                  {t(modeKey(org, "teamPlan.start.templates"))}
+                </EventPillAction>
               )}
             </>
           ) : undefined

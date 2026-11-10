@@ -40,6 +40,7 @@ import { HelpLink } from "@/components/HelpLink";
 import { ErrorState, LoadingLine } from "@/components/Loading";
 import { useOrg } from "@/components/org-context";
 import { lookOf } from "@/lib/look";
+import { inlineWords } from "@/lib/markdown";
 import { useToast } from "@/lib/toast";
 import {
   filterMemories,
@@ -83,7 +84,7 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
       <CardHeader
         id={`prop-${proposal.id}`}
         icon="document"
-        title={proposalTitle(t, proposal, org.name, () => agent.name)}
+        title={proposalTitle(t, proposal, org, () => agent.name)}
         action={
           proposal.stale ? (
             <Chip icon="close">{t("proposals.stale")}</Chip>
@@ -195,7 +196,7 @@ function LearnedRow({ m }: { m: Memory }) {
       {draft === null ? (
         m.summary ? (
           <>
-            <span>{m.summary}</span>
+            <span>{inlineWords(m.summary)}</span>
             <details className="agp-mem__details">
               <summary className="small muted">{t("agentPage.memory.details")}</summary>
               <p className="small">{memoryLine(t, m)}</p>

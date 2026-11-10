@@ -16,6 +16,7 @@ import { namesText } from "@agenteschat/client/lib/format";
 import { can } from "@agenteschat/client/lib/permissions";
 import { removalLines } from "@agenteschat/client/lib/removal";
 import { leaves, removes } from "@agenteschat/client/lib/roles";
+import { isPersonal } from "@agenteschat/client/lib/workspace-mode";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -69,7 +70,15 @@ function Members() {
   const removable = (m: Person) => (m.userId === meId ? leaves(viewer, list ?? []) : removes(viewer, m, roles));
 
   return (
-    <Page title={invites ? t("settings.section.members") : t("members.title")}>
+    <Page
+      title={
+        isPersonal(org)
+          ? t("settings.section.membersPersonal")
+          : invites
+            ? t("settings.section.members")
+            : t("members.title")
+      }
+    >
       <View style={styles.gap} />
       {invites ? (
         <>
@@ -187,6 +196,7 @@ function WaitingYou() {
             label={r.name}
             sub={waitingLine(t, i18n.language, r)}
             subLines={2}
+            media
             chevron
             onPress={() => router.push({ pathname: "/join-requests", params: { request: r.id } })}
           />
@@ -230,7 +240,10 @@ function SentInvitations() {
             key={inv.id}
             leading={<PersonAvatar name={inv.email} size={30} />}
             label={inv.email}
+            labelLines={2}
             sub={invitationLine(t, i18n.language, inv, roles, { resentUntil: resent[inv.id] })}
+            subLines={2}
+            media
             more
             onPress={() => open(inv)}
           />
@@ -289,7 +302,9 @@ function Suggestions() {
                 key={s.id}
                 leading={<PersonAvatar name={s.email} size={30} />}
                 label={s.email}
+                labelLines={2}
                 sub={t("members.suggest.waiting", { when: whenWords(t, i18n.language, s.createdAt) })}
+                media
                 {...(s.note ? { belowText: s.note } : {})}
                 more
                 disabled={cancel.isPending}

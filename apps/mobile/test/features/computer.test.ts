@@ -197,6 +197,8 @@ describe("the agent's computer full screen on the phone: what its stage shows", 
     expect(phoneStage(waiting())).toBe("preparing");
     expect(phoneStage(waiting({ held: true }))).toBe("held");
     expect(phoneStage(facts({ machine: { ...ACME, online: false } }))).toBe("offline");
+    // Asleep in standby: it opens as it wakes, like one about to say its first hello.
+    expect(phoneStage(facts({ machine: { ...ACME, online: false, standby: true } }))).toBe("joining");
     // Ready, and the agent gets it at its next hello: a moment more.
     expect(phoneStage(facts({ machine: null, desktop: null, browser: false }))).toBe("joining");
     expect(phoneStage(facts({ edition: "selfhost", machine: null, desktop: null, browser: false }))).toBe("noComputer");
@@ -259,6 +261,13 @@ describe("the profile's Computador entry on the phone", () => {
     };
     const offline = facts({ machine: { ...ACME, online: false } });
     expect(entryLine(t, entryState(offline, NOW), words)).toBe("Sem resposta · já estamos cuidando");
+    // Asleep in standby, nothing is wrong: it wakes when wanted.
+    const asleep = facts({
+      machine: { ...ACME, online: false, standby: true },
+      desktop: { available: false, reason: "offline" },
+      browser: false,
+    });
+    expect(entryLine(t, entryState(asleep, NOW), words)).toBe("Disponível · ninguém usando agora");
     expect(entryLine(t, entryState({ ...offline, edition: "selfhost" }, NOW), { ...words, edition: "selfhost" })).toBe(
       `Offline desde ${clockAt("pt-BR", ACME.lastSeenAt, new Date(NOW))}`,
     );
@@ -337,8 +346,11 @@ describe("the workspace's computer on its way, on Conversas", () => {
     const source = await Bun.file(
       new URL("../../src/features/computer/SetupWait.tsx", import.meta.url).pathname,
     ).text();
-    // Its title is the computer's name, in every state, and only where no header names it.
-    expect(source).toContain('const name = t("computerSetup.title", { org: wait.org });');
+    // Its title is the computer's name, in every state, and only where no header names it; a personal workspace's
+    // is its person's agents' computer (ADR 0159).
+    expect(source).toContain('const name = t(modeKey(wait, "computerSetup.title"), { org: wait.org });');
+    expect(source).toContain("mode: workspaceModeOf(org),");
+    expect(source).toContain('t(modeKey(org, setupNoticeTitleKey(view)), { org: org?.name ?? "" })');
     expect(source).not.toContain("computerSetup.notice.title");
     expect(source).toContain("{said ? null : (");
     // In line, or being prepared before a step: the header's word already says it.

@@ -43,6 +43,7 @@ import { can as canDo } from "@agenteschat/client/lib/permissions";
 import { brainModelChoice, brainModelChoices, isPlanId, planOf } from "@agenteschat/client/lib/plans";
 import { apiProviderOf, isAuto } from "@agenteschat/client/lib/providers";
 import { cleanSite, SITE } from "@agenteschat/client/lib/sites";
+import { isPersonal, modeKey } from "@agenteschat/client/lib/workspace-mode";
 import {
   Button,
   ComputerPortrait,
@@ -220,7 +221,8 @@ export function WorkCard({
     : kind === "model"
       ? "key"
       : planOfAccount({ kind, provider: agent.brain?.provider ?? null });
-  const keyProvider = apiProviderOf(saved.model, models.data?.models ?? []);
+  // The model's maker; on Automático, the maker the server says its models come from.
+  const keyProvider = apiProviderOf(saved.model, models.data?.models ?? []) ?? agent.brain?.maker;
   const orgModel = isAuto(saved.model)
     ? t("brain.auto.label")
     : (models.data?.models.find((m) => m.id === saved.model)?.label ?? saved.model);
@@ -345,8 +347,14 @@ export function WorkCard({
       {machine && !machine.online && kind !== "model" && (
         <SettingNote icon="pause">
           {edition === "cloud"
-            ? t("agentPage.work.offlineCloud", { ...g, computer: computerNameOf(t, org.name, machine.name) })
-            : t("agentPage.work.offline", { ...g, computer: computerNameOf(t, org.name, machine.name) })}
+            ? t("agentPage.work.offlineCloud", {
+                ...g,
+                computer: computerNameOf(t, org.name, machine.name, isPersonal(org)),
+              })
+            : t("agentPage.work.offline", {
+                ...g,
+                computer: computerNameOf(t, org.name, machine.name, isPersonal(org)),
+              })}
           <ThisMacReconnect machineId={machine.machineId} />
         </SettingNote>
       )}
@@ -373,9 +381,9 @@ function DesktopUseNote({ machine: m }: { machine: Machine }) {
       <Icon name="computer" size={16} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <span style={{ display: "block" }}>
-          {t("desktop.use.agent", { ...g, computer: computerNameOf(t, org.name, m.name) })}
+          {t("desktop.use.agent", { ...g, computer: computerNameOf(t, org.name, m.name, isPersonal(org)) })}
         </span>
-        <span className="small muted">{machineReasonText(t, use)}</span>
+        <span className="small muted">{machineReasonText(t, use, "desktop_use_install")}</span>
         {command && <CommandBlock command={command} />}
       </div>
     </div>
@@ -394,6 +402,26 @@ function ThisMacReconnect({ machineId }: { machineId: string }) {
 }
 
 /**
+ * The steps card's head: the computer on the title's first line, then Esperando with its loader, under the title from
+ * its words' edge when the row has no room for both.
+ */
+function StepsHead({ title }: { title: string }) {
+  const { t } = useTranslation();
+  return (
+    <div className="brw-steps__head ac-iconline">
+      <Icon name="computer" size={16} />
+      <span className="brw-steps__headline">
+        <b>{title}</b>
+        <span className="brw-steps__wait" role="status">
+          <Icon name="spinner" size={14} />
+          {t("agentPage.work.steps.waiting")}
+        </span>
+      </span>
+    </div>
+  );
+}
+
+/**
  * What turns the computer's browser on, there; the page notices by itself. The app's three clicks, drawn small; on a
  * Linux computer, which may be a server without the app, the command too. In agentes for Mac on this very Mac: one
  * button to Preferences → Ferramentas instead (ADR 0036). Nothing once its switch is on, or on the workspace's own
@@ -408,11 +436,7 @@ export function BrowserSteps({ computer, machineId }: { computer: string; machin
   if (here) {
     return (
       <section className="brw-steps" aria-label={t("machines.thisMac.browserTitle")}>
-        <div className="brw-steps__head">
-          <Icon name="computer" size={16} />
-          <b>{t("machines.thisMac.browserTitle")}</b>
-          <span className="brw-steps__wait">{t("agentPage.work.steps.waiting")}</span>
-        </div>
+        <StepsHead title={t("machines.thisMac.browserTitle")} />
         <div className="row" style={{ gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           <span className="small muted" style={{ flex: 1, minWidth: 200 }}>
             {t("machines.thisMac.browserText")}
@@ -445,11 +469,7 @@ export function BrowserSteps({ computer, machineId }: { computer: string; machin
   );
   return (
     <section className="brw-steps" aria-label={t("agentPage.work.steps.title", { computer })}>
-      <div className="brw-steps__head">
-        <Icon name="computer" size={16} />
-        <b>{t("agentPage.work.steps.title", { computer })}</b>
-        <span className="brw-steps__wait">{t("agentPage.work.steps.waiting")}</span>
-      </div>
+      <StepsHead title={t("agentPage.work.steps.title", { computer })} />
       {row && !allowsInApp(row.os) ? (
         <div className="stack-4" style={{ gap: 6 }}>
           <span className="small">{t("browser.machine.offHelp")}</span>
@@ -679,7 +699,9 @@ function ComputerForm({ onClose }: { onClose: () => void }) {
         chosen || workspace
           ? t("agentPage.work.saved.computer", {
               ...g,
-              computer: chosen ? computerNameOf(t, org.name, chosen.name) : noComputer.label("workspace"),
+              computer: chosen
+                ? computerNameOf(t, org.name, chosen.name, isPersonal(org))
+                : noComputer.label("workspace"),
             })
           : t("agentPage.work.saved.none", g),
       );
@@ -763,7 +785,7 @@ function ComputerForm({ onClose }: { onClose: () => void }) {
           ) : (
             <Link
               to="/org/$orgId/settings/$section"
-              params={{ orgId: org.id, section: "computers" }}
+              params={{ orgId: org.id, section: "devices" }}
               className="small agp-wdlg__link"
             >
               <Icon name="plus" size={14} />
@@ -775,7 +797,9 @@ function ComputerForm({ onClose }: { onClose: () => void }) {
         busy={busy}
         primary={
           chosen
-            ? t("agentPage.work.computer.useMachine", { computer: computerNameOf(t, org.name, chosen.name) })
+            ? t("agentPage.work.computer.useMachine", {
+                computer: computerNameOf(t, org.name, chosen.name, isPersonal(org)),
+              })
             : workspace
               ? t("agentPage.work.computer.useMachine", { computer: noComputer.label("workspace") })
               : t("agentPage.work.use")
@@ -870,7 +894,9 @@ function BrowserForm({ onClose }: { onClose: () => void }) {
           : on === work.granted
             ? t("agentPage.work.saved.sites")
             : where && !ready(where)
-              ? t("agentPage.work.saved.browserWaiting", { computer: computerNameOf(t, org.name, where.name) })
+              ? t("agentPage.work.saved.browserWaiting", {
+                  computer: computerNameOf(t, org.name, where.name, isPersonal(org)),
+                })
               : t("agentPage.work.saved.browserOn", g),
       );
       onClose();
@@ -966,14 +992,17 @@ function BrowserForm({ onClose }: { onClose: () => void }) {
             {!admin && <SettingNote icon="lock">{t("agentPage.work.browserDialog.admins")}</SettingNote>}
             {moveTo && (
               <SettingNote icon="arrowRight" live>
-                {t("agentPage.work.browserDialog.moves", { ...g, computer: computerNameOf(t, org.name, moveTo.name) })}
+                {t("agentPage.work.browserDialog.moves", {
+                  ...g,
+                  computer: computerNameOf(t, org.name, moveTo.name, isPersonal(org)),
+                })}
               </SettingNote>
             )}
             {noComputer && (
               <SettingNote icon="alert">
                 {edition === "cloud"
                   ? t("agentPage.work.browserDialog.noComputerCloud", {
-                      computer: t("computerSetup.title", { org: org.name }),
+                      computer: t(modeKey(org, "computerSetup.titleInSentence"), { org: org.name }),
                     })
                   : t("agentPage.work.browserDialog.noComputer")}
               </SettingNote>

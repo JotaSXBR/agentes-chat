@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import "./agent-setup.css";
 
 /*
- * The setup card's drawing (ADR 0155 §6, ADR 0158): the right hand's first run inside its greeting, the one setup
+ * The setup card's drawing (ADR 0155 §6, ADR 0162): the right hand's first run inside its greeting, the one setup
  * checklist. Other agents have none: one that needs something asks for it in the conversation, when it does.
  */
 

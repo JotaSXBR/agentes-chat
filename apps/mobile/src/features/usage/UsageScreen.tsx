@@ -13,6 +13,7 @@ import { formatPercent, formatShortDate, formatTokensShort, formatUsd } from "@a
 import { can } from "@agenteschat/client/lib/permissions";
 import { accountShares, noWindowsText, planMeterText, splitUsage } from "@agenteschat/client/lib/plan-usage";
 import { parseAmount } from "@agenteschat/client/lib/text";
+import { isPersonal } from "@agenteschat/client/lib/workspace-mode";
 import { gradientOf } from "@agenteschat/ui/agent/engine";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -20,7 +21,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View }
 import { LayoutAnimationConfig } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useOrg } from "@/providers/org";
-import { Button, fieldText, Icon, InfoHint, Segmented, Text, useTheme, useToast } from "@/ui";
+import { Button, fieldText, Icon, InfoHint, MEDIA_ROW, MediaRow, Segmented, Text, useTheme, useToast } from "@/ui";
 import { router } from "@/ui/navigation";
 import { PlanHoldNote, usePlanHold } from "../ai/parts";
 import { AgentFace } from "../shared/Face";
@@ -118,7 +119,12 @@ export function UsageScreen() {
                         <View style={styles.machineName}>
                           <Icon name="laptop" size={12} color={c.faint} />
                           <Text variant="caption" tone="faint" style={[styles.caps, styles.shrink]}>
-                            {computerNameOf(t, org?.name ?? "", list[0]?.machineName ?? "").toLocaleUpperCase()}
+                            {computerNameOf(
+                              t,
+                              org?.name ?? "",
+                              list[0]?.machineName ?? "",
+                              isPersonal(org),
+                            ).toLocaleUpperCase()}
                           </Text>
                         </View>
                         {list.map((a, i) => (
@@ -315,23 +321,26 @@ function ApiCard({ data }: { data: OrgPlanUsage }) {
                 pressed && styles.pressed,
               ]}
             >
-              <AgentFace agentId={a.agentId} size={28} live={false} />
-              <View style={styles.grow}>
-                <Text variant="subhead" tone="ink" numberOfLines={1} style={styles.bold}>
-                  {name}
-                </Text>
-                <Text variant="small" tone="muted" style={styles.tabular}>
-                  {`${t("usageViews.tokens", { tokens: formatTokensShort(t, i18n.language, a.tokens) })} · ${t("usageViews.budgetShare", { percent: formatPercent(i18n.language, a.budgetPercent) })}`}
-                </Text>
-                {a.costUsd !== undefined && a.budgetUsd !== undefined ? (
+              {/* The face on the name's line, the numbers under them at the row's width: never a column beside them. */}
+              <MediaRow
+                size="row"
+                face={<AgentFace agentId={a.agentId} size={MEDIA_ROW.row.face} live={false} />}
+                name={name}
+              >
+                <View>
                   <Text variant="small" tone="muted" style={styles.tabular}>
-                    {t(a.budgetIsDefault ? "settings.usageAgentLineDefault" : "settings.usageAgentLine", {
-                      spent: formatUsd(i18n.language, a.costUsd),
-                      budget: formatUsd(i18n.language, a.budgetUsd),
-                    })}
+                    {`${t("usageViews.tokens", { tokens: formatTokensShort(t, i18n.language, a.tokens) })} · ${t("usageViews.budgetShare", { percent: formatPercent(i18n.language, a.budgetPercent) })}`}
                   </Text>
-                ) : null}
-              </View>
+                  {a.costUsd !== undefined && a.budgetUsd !== undefined ? (
+                    <Text variant="small" tone="muted" style={styles.tabular}>
+                      {t(a.budgetIsDefault ? "settings.usageAgentLineDefault" : "settings.usageAgentLine", {
+                        spent: formatUsd(i18n.language, a.costUsd),
+                        budget: formatUsd(i18n.language, a.budgetUsd),
+                      })}
+                    </Text>
+                  ) : null}
+                </View>
+              </MediaRow>
             </Pressable>
           );
         })}
@@ -418,8 +427,7 @@ const styles = StyleSheet.create({
   shareNum: { minWidth: 44, textAlign: "right", fontVariant: ["tabular-nums"] },
   shareTokens: { minWidth: 68, textAlign: "right", fontVariant: ["tabular-nums"] },
   // Narrower than the web's row: the tokens and the budget's share on one line under the name, the spend under it.
-  // The face at the top, beside the name (the lines under it run long).
-  api: { flexDirection: "row", alignItems: "flex-start", gap: 12, paddingVertical: 10 },
+  api: { paddingVertical: 10 },
   kind: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10 },
   amount: { minWidth: 64, textAlign: "right" },
   budget: { gap: 6 },

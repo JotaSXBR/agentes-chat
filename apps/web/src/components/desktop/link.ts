@@ -74,7 +74,7 @@ export class DesktopLink {
   mode: DesktopMode | null = null;
   /** The server switched the stream: a new session in `mode` follows, for the next channel. */
   onSwitch: ((mode: DesktopMode) => void) | null = null;
-  /** A step of the agent's pointer (protocol 54): its computer says each, whatever the session. */
+  /** A step of the agent's pointer (protocol 56): its computer says each, whatever the session. */
   onCursor: ((cursor: DesktopCursor) => void) | null = null;
   private current: DesktopChannel | null = null;
   private waiting: MessageEvent[] = [];

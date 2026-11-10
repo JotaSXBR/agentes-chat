@@ -317,7 +317,7 @@ A failure names the check, what happened and the fix:
 | `app.config` | The app refused a value in `.env` | The values `error` names. |
 | `app.health`, `tailscale.timeout` | Something didn't answer in time (`--timeout`, 300 s by default) | `docker compose logs agentes`, or `tailscale`. |
 | `computer` | `--computer yes` on a machine that can't be the agents' computer: sign-up is open, a provisioner gives workspaces their computers, no root or no systemd on Linux, or it's already connected as a computer. Or one of the first two was turned on after a yes, and agentes.chat won't start with the token | What `fix` says, or `--computer no`. |
-| `computer.install`, `computer.off`, `computer.token` | The agents' computer didn't install or wasn't accepted (agentes.chat itself is up, and the result still has `url` and `appLink`) | What `fix` says, then the same command again. Its log shows its state: `journalctl -u agentes-runner` on Linux, `~/.agentes-runner/runner.log` on a Mac. |
+| `computer.install`, `computer.off`, `computer.token` | The agents' computer didn't install or wasn't accepted (agentes.chat itself is up, and the result still has `url` and `appLink`) | What `fix` says, then the same command again. Its log shows its state: `journalctl -u agentes-runner` on Linux, `~/.agentes-runner/runner.log` on a Mac. On any computer you connected, `agentes-runner doctor` lists what it gives agents (connections, agent apps, toolchains, phones) and what needs you, and waits there until each is fixed. |
 
 </details>
 
@@ -1473,6 +1473,66 @@ docker compose up -d
 An uptime check from outside the server on `https://<your address>/api/health` is worth having: it
 answers 200 only while the app and its database are up, so it tells you when the server doesn't come
 back. On Tailscale, run it from another device in your tailnet.
+
+</details>
+
+<details>
+<summary><b>More at once: worker processes</b></summary>
+
+The app runs its jobs (agents' runs, routines, messages' routing, notifications, emails) in its own
+process: 48 at once to start with, 12 of them kept for the quick ones. While jobs wait for a slot, it
+gives itself more, every 30 seconds: agents' runs as far as half of its memory holds them, about 4 MB
+each while they wait on their model or their computer, and quick jobs up to 4 per database connection
+(`DATABASE_POOL_MAX`), never while its processor, its database or its memory is what jobs wait on. Its
+memory is its container's limit when it has one; beside Postgres and the speech server on one computer,
+it counts only what it holds and what was free there when it started.
+Workspaces take turns, so one workspace's burst of routines makes only that workspace wait. When jobs
+keep waiting anyway, the log says so, with `add a worker process`, and so do the error reports when
+they are on (`SENTRY_DSN`).
+
+A worker process runs jobs only: it answers its health check and nothing else over HTTP, and leaves
+pushes to the app, the process that knows who has the app open. Add one next to `agentes` in the
+compose file, with the same image and settings. It leaves the migrations to the app and starts once the
+app is up:
+
+```yaml
+  agentes-worker:
+    image: "${AGENTES_IMAGE:-ghcr.io/agentes-chat/agentes:latest}"
+    env_file: .env
+    environment:
+      DATABASE_URL: "postgres://agentes:${POSTGRES_PASSWORD}@postgres:5432/agentes"
+      FILES_DIR: /data/files
+      SERVER_ROLE: worker
+      RUN_MIGRATIONS_ON_BOOT: "false"
+    volumes:
+      - files:/data/files
+    depends_on:
+      postgres:
+        condition: service_healthy
+      agentes:
+        condition: service_healthy
+    networks: [default, speech]
+    restart: unless-stopped
+    stop_grace_period: 40s
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
+```
+
+Then `docker compose up -d`. Every process takes jobs from the same queue in Postgres, each job on one
+process at a time (a job whose process stopped mid-way runs again once its lease ends, which jobs are
+written for), so each worker adds as many jobs at once as the app runs. Each process keeps up to
+`DATABASE_POOL_MAX` connections (20), plus one it listens on: keep their sum under Postgres's
+`max_connections` (100 in the compose file's Postgres). Before a reboot, stop the worker with the app
+(`docker compose stop agentes agentes-worker`). A worker on another computer needs the app's files
+where it can reach them (`S3_*`, or Postgres without `FILES_DIR`), and one on the app's computer
+outside Docker a `PORT` of its own. The built-in database (on this computer, without Docker) belongs
+to one process and takes no worker.
 
 </details>
 

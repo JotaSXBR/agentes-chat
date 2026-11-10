@@ -387,9 +387,8 @@ export async function answerNow(
     const ready: AnsweringRun[] = [];
     for (const r of allowed) if ((await agentAiState(deps, r.agent, r.run)).state !== "no_ai") ready.push(r);
     if (ready.length === 0) throw stillMissing();
-    // Who the agent answers may have narrowed since (an agent moved onto a plan answers only its owner until they
-    // turn on Atende outras pessoas, ADR 0059 §5):
-    // a run starts again only for someone it still answers.
+    // Who the agent answers may have narrowed since ("Atende outras pessoas" off, "Quem pode falar"): a run starts
+    // again only for someone it still answers.
     // …and whose roles still let them talk to agents (`talk_to_agents`, ADR 0085).
     const talks = new Map<string | null, Speaker>();
     for (const r of ready)

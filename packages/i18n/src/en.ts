@@ -1574,6 +1574,13 @@ export const en = {
       },
       noChannel: "In no channel",
       none: "No agent matches.",
+      /** Choosing agents for one change at once ("Quem pode falar"). */
+      pick: "Select {{name}}",
+      pickAll: "Select all",
+      selection: "Selected agents",
+      selected_one: "{{count}} selected",
+      selected_other: "{{count}} selected",
+      clearSelection: "Clear selection",
     },
     chart: {
       byLabel: "Org chart by",
@@ -4458,7 +4465,6 @@ export const en = {
       saved: {
         brain: "{{name}} now thinks with {{brain}}.",
         /** From the API onto a plan, it answers only its owner (ADR 0059 §5): "you", or their name. */
-        brainOwner: "{{name}} now thinks with {{brain}} and answers only {{owner}}.",
         computer: "{{name}} now works on {{computer}}.",
         none: "{{name}} now has no computer.",
         browserOn: "{{name}} can browse websites now.",
@@ -8641,6 +8647,9 @@ export const en = {
       disconnected: "{{label}} disconnected.",
       useFor: "Use for {{name}} too",
       useForMenu: "Use for…",
+      /** "Usar para…" for every agent at once: the menu's first item, and the phone's action. */
+      useForAll: "All agents",
+      useForAllAgents: "Use for all agents",
       revokeOnClaude: "To end it on Claude too, revoke it in Claude's settings.",
     },
     usage: {
@@ -8712,6 +8721,31 @@ export const en = {
     search: "Search roles and people",
     noMatch: "No role or person with that name.",
     pickSomeone: "Pick at least one person or role.",
+    /** One choice for several agents at once (Equipe's selection), each with its own responsible person. */
+    several: {
+      title_one: "Who can talk to {{count}} agent",
+      title_other: "Who can talk to {{count}} agents",
+      modeText: {
+        everyone: "Anyone in the workspace can call these agents.",
+        people: "Pick the people and roles that can talk to them.",
+        owner: "Each agent talks only to its owner.",
+      },
+      ownerAlways: "Each agent's owner always can.",
+      consultable: "Other agents can consult them",
+      consultableHint:
+        "For people not on the list, they answer only the agent that asked, never them directly. Sensitive actions still need approval from each one's owner.",
+      agents: {
+        consulted: "This covers people only. Other agents can still consult them for anyone not on the list.",
+        blocked: "This covers agents too. No other agent can reach them for anyone not on the list.",
+      },
+      /** Before the save, when it opens someone's plan or takes mailboxes from more than one of them. */
+      askTitle_one: "Change who can talk to {{count}} agent?",
+      askTitle_other: "Change who can talk to {{count}} agents?",
+      saved_one: "Who can talk changed for {{count}} agent.",
+      saved_other: "Who can talk changed for {{count}} agents.",
+      failed_one: "{{count}} agent couldn't be changed. Try again.",
+      failed_other: "{{count}} agents couldn't be changed. Try again.",
+    },
     chip: { owner: "Personal", people: "Restricted" },
     summary: {
       everyone: "Everyone in the workspace",
@@ -9789,6 +9823,13 @@ export const en = {
   },
   access: {
     matrixTitle: "Agent access",
+    /** Who can talk to the workspace's new agents (`newAgentAudience`), for who configures it. */
+    newAgents: {
+      title: "New agents",
+      hint: "It applies to agents created, imported or proposed from now on.",
+      /** The web's way to the agents that exist: Equipe's selection (the phone's is in Agentes' bar). */
+      existing: "To change the ones you have, select several in Team.",
+    },
     matrixHint:
       "Sensitive actions (merge, deploy, share, pay) always ask for approval, at any level. To set it tool by tool, open the connector's Tools.",
     matrixHow: "Click a cell to change it:",

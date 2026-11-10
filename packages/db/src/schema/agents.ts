@@ -365,6 +365,11 @@ export const organizationSettings = pgTable("organization_settings", {
    * `skills.agents_improve` wins.
    */
   agentsImproveSkills: boolean().notNull().default(true),
+  /**
+   * Who can talk to a new agent whoever made it didn't choose for (an import, a team proposal, the API): `everyone`
+   * or `owner`, only the person responsible for it. Open by default; Criar agente starts its own choice here.
+   */
+  newAgentAudience: text().$type<"everyone" | "owner">().notNull().default("everyone"),
   updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 });
 

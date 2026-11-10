@@ -8,7 +8,7 @@ import {
   useUnarchiveAgent,
   useWorkingRuns,
 } from "@agenteschat/client";
-import { listsAgent } from "@agenteschat/client/lib/audience";
+import { canEditAudience, listsAgent } from "@agenteschat/client/lib/audience";
 import { errorText } from "@agenteschat/client/lib/errors";
 import { agentGrammar } from "@agenteschat/client/lib/grammar";
 import { waitingComputerByAgent } from "@agenteschat/client/lib/machine-outages";
@@ -16,6 +16,7 @@ import { previewBody } from "@agenteschat/client/lib/message-body";
 import { aiStateOf } from "@agenteschat/client/lib/no-ai";
 import { can } from "@agenteschat/client/lib/permissions";
 import { isOutOfOffice } from "@agenteschat/client/lib/presence";
+import { isRightHand } from "@agenteschat/client/lib/right-hand";
 import { useIsFocused } from "expo-router";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -55,7 +56,7 @@ import { useMachineOutages } from "../outages/queries";
 import { chooseAction } from "../settings/parts";
 import { AgentFace } from "../shared/Face";
 import { FirstUse } from "../shared/FirstUse";
-import { useColors, useDirectory, useNow, useOrgId, usePullRefresh } from "../shared/hooks";
+import { useColors, useDirectory, useMeId, useNow, useOrgId, usePullRefresh } from "../shared/hooks";
 import { agentLook } from "../shared/logic";
 import { successHaptic, Tile } from "../shared/parts";
 import { useWaitingApprovals, useWorkingNow } from "../shared/queries";
@@ -92,6 +93,7 @@ export function AgentsScreen() {
   const header = useTabHeader();
   const orgId = useOrgId();
   const org = useOrg().org;
+  const meId = useMeId();
   const runs = useWorkingRuns(orgId);
   const dms = useDms(orgId);
   const approvals = useApprovals(orgId);
@@ -161,9 +163,23 @@ export function AgentsScreen() {
   const showsManager = total > 0 && !(tasks.isError && !tasks.data);
   // The bar's "+" does what the empty page's button does: a new agent, never the generic New.
   const creates = mayCreate(org, "agent");
-  const actions: HeaderAction[] = creates
+  // "Quem pode falar" for several at once, where I may change two or more (Equipe's selection on the web).
+  const editable = agents.filter((a) => !isRightHand(a) && meId && canEditAudience(org ?? undefined, a, meId)).length;
+  const audience: HeaderAction[] =
+    editable > 1
+      ? [
+          {
+            icon: "members",
+            sf: "person.2",
+            label: t("audience.section"),
+            onPress: () => router.push("/agents-audience"),
+          },
+        ]
+      : [];
+  const create: HeaderAction[] = creates
     ? [{ icon: "plus", sf: "plus", label: t("mobile.agents.create"), onPress: () => router.push("/new-agent") }]
     : header.actions;
+  const actions = [...audience, ...create];
   return (
     <LargeTitleScreen
       title={t("mobile.agents.title")}

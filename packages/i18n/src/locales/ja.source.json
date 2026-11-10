@@ -3887,6 +3887,24 @@
   "team.list.none": {
     "value": "No agent matches."
   },
+  "team.list.pick": {
+    "value": "Select {{name}}"
+  },
+  "team.list.pickAll": {
+    "value": "Select all"
+  },
+  "team.list.selection": {
+    "value": "Selected agents"
+  },
+  "team.list.selected": {
+    "value": {
+      "one": "{{count}} selected",
+      "other": "{{count}} selected"
+    }
+  },
+  "team.list.clearSelection": {
+    "value": "Clear selection"
+  },
   "team.chart.byLabel": {
     "value": "Org chart by"
   },
@@ -10691,9 +10709,6 @@
   },
   "agentPage.work.saved.brain": {
     "value": "{{name}} now thinks with {{brain}}."
-  },
-  "agentPage.work.saved.brainOwner": {
-    "value": "{{name}} now thinks with {{brain}} and answers only {{owner}}."
   },
   "agentPage.work.saved.computer": {
     "value": "{{name}} now works on {{computer}}."
@@ -21043,6 +21058,12 @@
   "aiAccounts.page.useForMenu": {
     "value": "Use for…"
   },
+  "aiAccounts.page.useForAll": {
+    "value": "All agents"
+  },
+  "aiAccounts.page.useForAllAgents": {
+    "value": "Use for all agents"
+  },
   "aiAccounts.page.revokeOnClaude": {
     "value": "To end it on Claude too, revoke it in Claude's settings."
   },
@@ -21199,6 +21220,54 @@
   },
   "audience.pickSomeone": {
     "value": "Pick at least one person or role."
+  },
+  "audience.several.title": {
+    "value": {
+      "one": "Who can talk to {{count}} agent",
+      "other": "Who can talk to {{count}} agents"
+    }
+  },
+  "audience.several.modeText.everyone": {
+    "value": "Anyone in the workspace can call these agents."
+  },
+  "audience.several.modeText.people": {
+    "value": "Pick the people and roles that can talk to them."
+  },
+  "audience.several.modeText.owner": {
+    "value": "Each agent talks only to its owner."
+  },
+  "audience.several.ownerAlways": {
+    "value": "Each agent's owner always can."
+  },
+  "audience.several.consultable": {
+    "value": "Other agents can consult them"
+  },
+  "audience.several.consultableHint": {
+    "value": "For people not on the list, they answer only the agent that asked, never them directly. Sensitive actions still need approval from each one's owner."
+  },
+  "audience.several.agents.consulted": {
+    "value": "This covers people only. Other agents can still consult them for anyone not on the list."
+  },
+  "audience.several.agents.blocked": {
+    "value": "This covers agents too. No other agent can reach them for anyone not on the list."
+  },
+  "audience.several.askTitle": {
+    "value": {
+      "one": "Change who can talk to {{count}} agent?",
+      "other": "Change who can talk to {{count}} agents?"
+    }
+  },
+  "audience.several.saved": {
+    "value": {
+      "one": "Who can talk changed for {{count}} agent.",
+      "other": "Who can talk changed for {{count}} agents."
+    }
+  },
+  "audience.several.failed": {
+    "value": {
+      "one": "{{count}} agent couldn't be changed. Try again.",
+      "other": "{{count}} agents couldn't be changed. Try again."
+    }
   },
   "audience.chip.owner": {
     "value": "Personal"
@@ -23911,6 +23980,15 @@
   },
   "access.matrixTitle": {
     "value": "Agent access"
+  },
+  "access.newAgents.title": {
+    "value": "New agents"
+  },
+  "access.newAgents.hint": {
+    "value": "It applies to agents created, imported or proposed from now on."
+  },
+  "access.newAgents.existing": {
+    "value": "To change the ones you have, select several in Team."
   },
   "access.matrixHint": {
     "value": "Sensitive actions (merge, deploy, share, pay) always ask for approval, at any level. To set it tool by tool, open the connector's Tools."

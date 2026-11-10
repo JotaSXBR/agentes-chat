@@ -1,11 +1,13 @@
 import type { AgentGroup, Team, TeamAgent } from "@agenteschat/client";
 import { useApprovals, useRoles } from "@agenteschat/client";
 import { agentSections } from "@agenteschat/client/lib/agent-groups";
+import { canEditAudience } from "@agenteschat/client/lib/audience";
 import { can } from "@agenteschat/client/lib/permissions";
 import { filterTeam, sortTeam, type TeamFilter, type TeamSort } from "@agenteschat/client/lib/team-views";
 import {
   Button,
   Card,
+  Checkbox,
   EmptyState,
   FilterToggle,
   Icon,
@@ -17,11 +19,13 @@ import {
   Toolbar,
 } from "@agenteschat/ui";
 import { Link } from "@tanstack/react-router";
-import { Fragment, type ReactNode, useState } from "react";
+import { Fragment, type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AgentAvatar, PersonAvatar } from "@/components/AgentAvatar";
 import { AgentGroupMenu, type GroupDialogFor, GroupNameDialog } from "@/components/AgentGroups";
 import { useOrg } from "@/components/org-context";
+import { SelectionBar } from "@/components/SelectionBar";
+import { BulkAudienceDialog } from "./BulkAudience";
 import { ReportsToMenu } from "./ReportsTo";
 import { AgentNow, ChannelName, SectorMark, useTeamLookups } from "./shared";
 import "@/components/people-usage.css";
@@ -71,6 +75,14 @@ function AgentsTable({ agents, groups }: { agents: TeamAgent[]; groups: AgentGro
   const groupBy = picked ?? (groups.length > 0 ? "sector" : "owner");
   const [sort, setSort] = useState<{ by: TeamSort; desc: boolean }>({ by: "name", desc: false });
   const [dialog, setDialog] = useState<GroupDialogFor | null>(null);
+  // Agents picked for one change at once ("Quem pode falar"): only the ones I may change, as on each agent's page.
+  const [chosen, setChosen] = useState<Set<string>>(() => new Set());
+  const [bulk, setBulk] = useState(false);
+  const editable = (a: TeamAgent) => {
+    const agent = look.dir.agentById.get(a.id);
+    return agent !== undefined && canEditAudience(org, agent, me.user.id);
+  };
+  const choosing = agents.some(editable);
   const rows = sortTeam(
     filterTeam(agents, {
       filter,
@@ -102,7 +114,28 @@ function AgentsTable({ agents, groups }: { agents: TeamAgent[]; groups: AgentGro
     </th>
   );
   const showSector = groupBy !== "sector" && groups.length > 0;
-  const columns = 6 + (showSector ? 1 : 0) + (manages ? 1 : 0);
+  const columns = 6 + (showSector ? 1 : 0) + (manages ? 1 : 0) + (choosing ? 1 : 0);
+  // What the list shows now: a filter or a search that hides one leaves it out of the change.
+  const pickable = rows.filter(editable);
+  const selected = pickable.filter((a) => chosen.has(a.id));
+  const selectedAgents = selected.flatMap((a) => look.dir.agentById.get(a.id) ?? []);
+  const toggle = (id: string, on: boolean) =>
+    setChosen((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  const clear = () => setChosen(new Set());
+  // Esc clears the selection (a dialog or a menu closes itself first).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || (e.target instanceof Element && e.target.closest("[role=dialog], [role=menu]"))) return;
+      setChosen(new Set());
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
   // The count joins the title's own words, so a title led by a face or a mark shares their baseline.
   const section = (key: string, title: (count: ReactNode) => ReactNode, list: TeamAgent[]) =>
     list.length === 0 ? null : (
@@ -120,7 +153,18 @@ function AgentsTable({ agents, groups }: { agents: TeamAgent[]; groups: AgentGro
     const channels = (a.channelIds ?? []).flatMap((id) => look.channelById.get(id) ?? []);
     const directory = look.dir.agentById.get(a.id);
     return (
-      <tr key={a.id} className="team-table__row">
+      <tr key={a.id} className="team-table__row" data-picked={chosen.has(a.id) || undefined}>
+        {choosing && (
+          <td className="team-table__pick">
+            {editable(a) && (
+              <Checkbox
+                checked={chosen.has(a.id)}
+                onCheckedChange={(on) => toggle(a.id, on === true)}
+                aria-label={t("team.list.pick", { name: a.name })}
+              />
+            )}
+          </td>
+        )}
         <td>
           <Link to="/org/$orgId/agents/$agentId" params={{ orgId: org.id, agentId: a.id }} className="team-who">
             <AgentAvatar agentId={a.id} name={a.name} size="sm" />
@@ -307,6 +351,22 @@ function AgentsTable({ agents, groups }: { agents: TeamAgent[]; groups: AgentGro
         <table className="pu-table team-table">
           <thead>
             <tr>
+              {choosing && (
+                <th className="team-table__pick">
+                  <Checkbox
+                    checked={
+                      pickable.length > 0 && selected.length === pickable.length
+                        ? true
+                        : selected.length > 0
+                          ? "indeterminate"
+                          : false
+                    }
+                    onCheckedChange={(on) => setChosen(on === true ? new Set(pickable.map((a) => a.id)) : new Set())}
+                    aria-label={t("team.list.pickAll")}
+                    disabled={pickable.length === 0}
+                  />
+                </th>
+              )}
               {head("name", t("team.list.col.agent"))}
               {head("role", t("team.list.col.role"))}
               {showSector && head("sector", t("agentGroups.group"))}
@@ -342,6 +402,34 @@ function AgentsTable({ agents, groups }: { agents: TeamAgent[]; groups: AgentGro
         )}
       </Card>
       {dialog && <GroupNameDialog purpose={dialog} onClose={() => setDialog(null)} />}
+      {selected.length > 0 && (
+        <SelectionBar label={t("team.list.selection")}>
+          <span className="drive-selbar__count">{t("team.list.selected", { count: selected.length })}</span>
+          <Button size="sm" variant="ghost" icon="audiencePeople" onClick={() => setBulk(true)}>
+            <span className="drive-selbar__label">{t("audience.section")}</span>
+          </Button>
+          <span className="drive-selbar__sep" aria-hidden="true" />
+          <Button
+            size="sm"
+            variant="ghost"
+            iconOnly
+            icon="close"
+            aria-label={t("team.list.clearSelection")}
+            title={t("team.list.clearSelection")}
+            onClick={clear}
+          />
+        </SelectionBar>
+      )}
+      {bulk && selectedAgents.length > 0 && (
+        <BulkAudienceDialog
+          agents={selectedAgents}
+          onClose={() => setBulk(false)}
+          onSaved={() => {
+            setBulk(false);
+            clear();
+          }}
+        />
+      )}
     </>
   );
 }

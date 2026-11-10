@@ -143,7 +143,7 @@ test("agent brain: defaults, who may, letting others talk to a plan, what the co
   expect(withMac.options.find((o) => o.kind === "claude_code")?.available).toBe(true);
   expect(withMac.options.find((o) => o.kind === "codex")).toMatchObject({ available: false, reason: "not_reported" });
 
-  // Choosing a plan asks nothing: it answers only its owner until they let others in.
+  // Choosing a plan asks nothing, and it keeps whom it answered: the whole workspace (ADR 0059 §5, 2026-11-09).
   expect((await api(`/agents/${agentId}/brain`, { method: "PUT", json: { brain: "codex" } })).status).toBe(409);
   const chosen = await api(`/agents/${agentId}/brain`, {
     method: "PUT",
@@ -154,14 +154,17 @@ test("agent brain: defaults, who may, letting others talk to a plan, what the co
     brain: "claude_code",
     model: "opus",
     effectiveModel: "opus",
-    onlyOwner: true,
+    onlyOwner: false,
     ownSignIn: true,
   });
-  // "Atende outras pessoas": on with nothing to accept, and Bia may talk to it.
   const canTalk = async () =>
     ((await (await asBia("/agents")).json()) as { agents: { id: string; canTalk: boolean }[] }).agents.find(
       (a) => a.id === agentId,
     )?.canTalk;
+  expect(await canTalk()).toBe(true);
+  // "Atende outras pessoas" off: only its owner. On again with nothing to accept, and Bia may talk to it.
+  const off = await api(`/agents/${agentId}/brain`, { method: "PUT", json: { onlyOwner: true } });
+  expect(await off.json()).toMatchObject({ onlyOwner: true });
   expect(await canTalk()).toBe(false);
   const shared = await api(`/agents/${agentId}/brain`, { method: "PUT", json: { onlyOwner: false } });
   expect(shared.status).toBe(200);

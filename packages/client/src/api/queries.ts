@@ -958,6 +958,49 @@ export function useWidenAudience(orgId: string, agentId: string) {
   return { widen, saveAsync, busy: save.isPending, done: save.isSuccess && save.data !== null };
 }
 
+/**
+ * One "Quem pode falar" for several agents (Equipe's selection), as `useWidenAudience` saves one: the mailboxes each
+ * would lose go to `ask` together, nothing is saved without its yes, and each agent is saved with what was agreed.
+ * Null when `ask` said no; else the agents that couldn't be saved.
+ */
+export function useSetAudiences(orgId: string) {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      agents,
+      audience,
+      ask,
+    }: {
+      agents: readonly Pick<Agent, "id" | "name">[];
+      audience: AgentAudience;
+      ask: (losses: { agentId: string; mailboxes: ForeignMailbox[] }[]) => Promise<boolean>;
+    }) => {
+      const losses = await Promise.all(
+        agents.map(async (a) => ({
+          agentId: a.id,
+          // An older server without the check: nothing to ask, as before it.
+          mailboxes: await api.agents.mailLoss(orgId, a.id, audience).catch((e: unknown) => {
+            if (e instanceof ApiError && e.status === 404) return null;
+            throw e;
+          }),
+        })),
+      );
+      if (!(await ask(losses.map((l) => ({ agentId: l.agentId, mailboxes: l.mailboxes ?? [] }))))) return null;
+      const failed: string[] = [];
+      for (const { agentId, mailboxes } of losses) {
+        const seen = mailboxes ? { mailLossSeen: mailboxes.map((m) => m.accountId) } : {};
+        await api.agents.update(orgId, agentId, { audience, ...seen }).catch(() => failed.push(agentId));
+      }
+      return { failed };
+    },
+    onSettled: (_out, _error, { agents }) => {
+      for (const a of agents) agentChanged(qc, orgId, a.id);
+      void qc.invalidateQueries({ queryKey: keys.team(orgId) });
+    },
+  });
+}
+
 /** `silent`: the caller shows a failure itself (a refused key, in its dialog with the way to fix it). */
 export function useAddCredential(orgId: string, silent = false) {
   const api = useApi();

@@ -1684,7 +1684,15 @@
         "caresFor": "Opiekuje się"
       },
       "noChannel": "W żadnym kanale",
-      "none": "Żaden agent nie pasuje."
+      "none": "Żaden agent nie pasuje.",
+      "pick": "Zaznacz: {{name}}",
+      "pickAll": "Zaznacz wszystkie",
+      "selection": "Zaznaczeni agenci",
+      "selected_one": "Zaznaczono: {{count}}",
+      "selected_few": "Zaznaczono: {{count}}",
+      "selected_many": "Zaznaczono: {{count}}",
+      "selected_other": "Zaznaczono: {{count}}",
+      "clearSelection": "Wyczyść zaznaczenie"
     },
     "chart": {
       "byLabel": "Schemat według",
@@ -4659,8 +4667,6 @@
       "saved": {
         "brain": "{{name}} myśli teraz z {{brain}}.",
         "brain_female": "{{name}} myśli teraz z {{brain}}.",
-        "brainOwner": "{{name}} myśli teraz z {{brain}} i odpowiada tylko: {{owner}}.",
-        "brainOwner_female": "{{name}} myśli teraz z {{brain}} i odpowiada tylko: {{owner}}.",
         "computer": "{{name}} pracuje teraz na komputerze {{computer}}.",
         "computer_female": "{{name}} pracuje teraz na komputerze {{computer}}.",
         "none": "{{name}} nie ma teraz komputera.",
@@ -9320,6 +9326,8 @@
       "useFor": "Użyj też dla agenta {{name}}",
       "useFor_female": "Użyj też dla agentki {{name}}",
       "useForMenu": "Użyj dla…",
+      "useForAll": "Wszyscy agenci",
+      "useForAllAgents": "Użyj dla wszystkich agentów",
       "revokeOnClaude": "Aby zakończyć to także w Claude, cofnij dostęp w ustawieniach Claude."
     },
     "usage": {
@@ -9397,6 +9405,36 @@
     "search": "Szukaj ról i osób",
     "noMatch": "Brak roli lub osoby o tej nazwie.",
     "pickSomeone": "Wybierz co najmniej jedną osobę lub rolę.",
+    "several": {
+      "title_one": "Kto może rozmawiać z {{count}} agentem",
+      "title_few": "Kto może rozmawiać z {{count}} agentami",
+      "title_many": "Kto może rozmawiać z {{count}} agentami",
+      "title_other": "Kto może rozmawiać z {{count}} agenta",
+      "modeText": {
+        "everyone": "Każdy w przestrzeni roboczej może zawołać tych agentów.",
+        "people": "Wybierz osoby i role, które mogą z nimi rozmawiać.",
+        "owner": "Każdy agent rozmawia tylko ze swoim właścicielem."
+      },
+      "ownerAlways": "Właściciel każdego agenta zawsze może.",
+      "consultable": "Inni agenci mogą się z nimi konsultować",
+      "consultableHint": "Osobom spoza listy odpowiadają tylko za pośrednictwem agenta, który pytał, nigdy bezpośrednio. Wrażliwe akcje nadal wymagają zatwierdzenia przez właściciela każdego z nich.",
+      "agents": {
+        "consulted": "Dotyczy tylko osób. Inni agenci nadal mogą się z nimi konsultować w sprawie osób spoza listy.",
+        "blocked": "Dotyczy też agentów. Żaden inny agent nie skontaktuje się z nimi w sprawie osób spoza listy."
+      },
+      "askTitle_one": "Zmienić, kto może rozmawiać z {{count}} agentem?",
+      "askTitle_few": "Zmienić, kto może rozmawiać z {{count}} agentami?",
+      "askTitle_many": "Zmienić, kto może rozmawiać z {{count}} agentami?",
+      "askTitle_other": "Zmienić, kto może rozmawiać z {{count}} agenta?",
+      "saved_one": "Zmieniono, kto może rozmawiać, dla {{count}} agenta.",
+      "saved_few": "Zmieniono, kto może rozmawiać, dla {{count}} agentów.",
+      "saved_many": "Zmieniono, kto może rozmawiać, dla {{count}} agentów.",
+      "saved_other": "Zmieniono, kto może rozmawiać, dla {{count}} agenta.",
+      "failed_one": "Nie udało się zmienić {{count}} agenta. Spróbuj ponownie.",
+      "failed_few": "Nie udało się zmienić {{count}} agentów. Spróbuj ponownie.",
+      "failed_many": "Nie udało się zmienić {{count}} agentów. Spróbuj ponownie.",
+      "failed_other": "Nie udało się zmienić {{count}} agenta. Spróbuj ponownie."
+    },
     "chip": {
       "owner": "Osobisty",
       "people": "Ograniczony"
@@ -10581,6 +10619,11 @@
   },
   "access": {
     "matrixTitle": "Dostęp agentów",
+    "newAgents": {
+      "title": "Nowi agenci",
+      "hint": "Dotyczy agentów utworzonych, zaimportowanych lub zaproponowanych od teraz.",
+      "existing": "Aby zmienić istniejących, zaznacz kilku w Zespole."
+    },
     "matrixHint": "Wrażliwe akcje (merge, deploy, udostępnianie, płatności) zawsze proszą o zatwierdzenie, na każdym poziomie. Aby ustawić to narzędzie po narzędziu, otwórz Narzędzia konektora.",
     "matrixHow": "Kliknij komórkę, żeby ją zmienić:",
     "kindLabel": "Pokaż",

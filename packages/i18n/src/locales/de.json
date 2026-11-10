@@ -1580,7 +1580,13 @@
         "caresFor": "Kümmert sich um"
       },
       "noChannel": "In keinem Kanal",
-      "none": "Kein Agent passt."
+      "none": "Kein Agent passt.",
+      "pick": "{{name}} auswählen",
+      "pickAll": "Alle auswählen",
+      "selection": "Ausgewählte Agenten",
+      "selected_one": "{{count}} ausgewählt",
+      "selected_other": "{{count}} ausgewählt",
+      "clearSelection": "Auswahl aufheben"
     },
     "chart": {
       "byLabel": "Organigramm nach",
@@ -4353,7 +4359,6 @@
       },
       "saved": {
         "brain": "{{name}} denkt jetzt mit {{brain}}.",
-        "brainOwner": "{{name}} denkt jetzt mit {{brain}} und antwortet nur {{owner}}.",
         "computer": "{{name}} arbeitet jetzt auf {{computer}}.",
         "none": "{{name}} hat jetzt keinen Computer.",
         "browserOn": "{{name}} kann jetzt im Web surfen.",
@@ -8688,6 +8693,8 @@
       "disconnected": "{{label}} getrennt.",
       "useFor": "Auch für {{name}} verwenden",
       "useForMenu": "Verwenden für…",
+      "useForAll": "Alle Agenten",
+      "useForAllAgents": "Für alle Agenten verwenden",
       "revokeOnClaude": "Um es auch bei Claude zu beenden, widerrufe es in den Einstellungen von Claude."
     },
     "usage": {
@@ -8758,6 +8765,28 @@
     "search": "Rollen und Personen suchen",
     "noMatch": "Keine Rolle oder Person mit diesem Namen.",
     "pickSomeone": "Wähle mindestens eine Person oder Rolle.",
+    "several": {
+      "title_one": "Wer mit {{count}} Agenten schreiben darf",
+      "title_other": "Wer mit {{count}} Agenten schreiben darf",
+      "modeText": {
+        "everyone": "Alle im Workspace können diese Agenten rufen.",
+        "people": "Wähle die Personen und Rollen, die mit ihnen schreiben dürfen.",
+        "owner": "Jeder Agent schreibt nur mit seinem Inhaber."
+      },
+      "ownerAlways": "Der Inhaber jedes Agenten darf es immer.",
+      "consultable": "Andere Agenten können sie um Rat fragen",
+      "consultableHint": "Personen, die nicht auf der Liste stehen, antworten sie nie direkt, sondern nur dem Agenten, der gefragt hat. Sensible Aktionen brauchen weiterhin die Freigabe des jeweiligen Inhabers.",
+      "agents": {
+        "consulted": "Gilt nur für Personen. Andere Agenten können sie weiterhin für alle fragen, die nicht auf der Liste stehen.",
+        "blocked": "Gilt auch für Agenten. Kein anderer Agent erreicht sie für Personen, die nicht auf der Liste stehen."
+      },
+      "askTitle_one": "Ändern, wer mit {{count}} Agenten schreiben darf?",
+      "askTitle_other": "Ändern, wer mit {{count}} Agenten schreiben darf?",
+      "saved_one": "Wer schreiben darf, wurde für {{count}} Agenten geändert.",
+      "saved_other": "Wer schreiben darf, wurde für {{count}} Agenten geändert.",
+      "failed_one": "{{count}} Agent konnte nicht geändert werden. Versuch es noch einmal.",
+      "failed_other": "{{count}} Agenten konnten nicht geändert werden. Versuch es noch einmal."
+    },
     "chip": {
       "owner": "Persönlich",
       "people": "Eingeschränkt"
@@ -9823,6 +9852,11 @@
   },
   "access": {
     "matrixTitle": "Zugriff der Agenten",
+    "newAgents": {
+      "title": "Neue Agenten",
+      "hint": "Gilt für Agenten, die ab jetzt erstellt, importiert oder vorgeschlagen werden.",
+      "existing": "Um bestehende zu ändern, wähle mehrere im Team aus."
+    },
     "matrixHint": "Sensible Aktionen (Merge, Deploy, Teilen, Bezahlen) fragen immer nach einer Freigabe, auf jeder Stufe. Um es pro Tool festzulegen, öffne die Tools des Konnektors.",
     "matrixHow": "Klicke auf eine Zelle, um sie zu ändern:",
     "kindLabel": "Anzeigen",

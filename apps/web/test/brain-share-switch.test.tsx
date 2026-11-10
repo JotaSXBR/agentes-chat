@@ -11,10 +11,10 @@ import { hintOf, shownText } from "./hint";
 import { renderApp, screen, settle } from "./render";
 
 /*
- * "Atende outras pessoas" (ADR 0059 §5): an agent on its owner's plan answers only them until they turn it on, with
- * nothing to accept. Behind the ⓘ after its label, whom it answers in that state and on which plan, and what the
- * plan's terms say. An admin who doesn't own it gets the same switch, its ⓘ naming whose plan it is, asked first in a
- * note under it, and widens or narrows it in "Quem pode falar" too.
+ * "Atende outras pessoas" (ADR 0059 §5): an agent on its owner's plan keeps whom it answered, off it answers only them,
+ * and turning it on asks nothing. Behind the ⓘ after its label, whom it answers in that state and on which plan, and
+ * what the plan's terms say. An admin who doesn't own it gets the same switch, its ⓘ naming whose plan it is, asked
+ * first in a note under it (moving it onto its owner's plan too), and widens or narrows it in "Quem pode falar" too.
  */
 
 afterEach(() => cleanup());
@@ -103,7 +103,7 @@ const CLAUDE =
   "Os planos do Claude são para uso pessoal. Deixar outras pessoas usarem o seu é uma zona cinzenta nos termos do Claude.";
 
 describe("Atende outras pessoas (Quem pensa)", () => {
-  test("off by default; on asks nothing and saves at once; its ⓘ says whom Ada answers and the plan's terms", async () => {
+  test("off while Ada answers only her owner; on asks nothing and saves at once; its ⓘ says whom and the terms", async () => {
     const state = await ada({});
     const d = await brainDialog();
     const off = replies(d);
@@ -192,7 +192,7 @@ describe("Atende outras pessoas (Quem pensa)", () => {
     );
   });
 
-  test("onto a plan it starts off, and choosing the plan asks nothing", async () => {
+  test("onto its owner's own plan it keeps whom it answers, and choosing the plan asks nothing", async () => {
     const state = await ada({ brain: "model", effectiveModel: null, onlyOwner: false }, { ownPlan: "max" });
     const d = await brainDialog();
     await chooseBrain(d, /^Claude/);
@@ -213,6 +213,39 @@ describe("Atende outras pessoas (Quem pensa)", () => {
     await click(within(d).getByRole("button", { name: "Usar o plano de João" }));
     await settle(6);
     expect(brainCalls(state).at(-1)).toEqual({ onlyOwner: false });
+  });
+
+  test("an admin moving João's Ada onto his own plan while she answers others: the same question first", async () => {
+    const joaos: MachineAccount = {
+      id: "acct_joao",
+      kind: "claude_code",
+      label: "Max do João",
+      email: null,
+      plan: "max",
+      status: "active",
+      ownerId: "u-joao",
+      ownerName: "João",
+      mine: false,
+      usedBy: [],
+      usage: null,
+      provider: null,
+      keyHint: null,
+    };
+    const onApi = { brain: "model", effectiveModel: null, account: null } as const;
+    const state = await ada({ ...onApi, onlyOwner: false, accounts: [joaos] }, { mine: false });
+    const d = await brainDialog();
+    await chooseBrain(d, /^Max do João/);
+    expect(brainCalls(state)).toEqual([]);
+    expect(d.textContent).toContain("As conversas com Ada vão usar o plano do Claude de João");
+    await click(within(d).getByRole("button", { name: "Usar o plano de João" }));
+    await settle(6);
+    expect(brainCalls(state).at(-1)).toEqual({ brain: "claude_code", account: "acct_joao" });
+    cleanup();
+    // Answering only João, his plan opens to nobody: saved at once.
+    const only = await ada({ ...onApi, accounts: [joaos] }, { mine: false });
+    await chooseBrain(await brainDialog(), /^Max do João/);
+    await settle(6);
+    expect(brainCalls(only)).toEqual([{ brain: "claude_code", account: "acct_joao" }]);
   });
 
   test("back on the API it still answers only its owner: the notice lets everyone in with one click", async () => {

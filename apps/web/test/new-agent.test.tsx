@@ -608,8 +608,8 @@ describe("Criar agente: what gets created", () => {
     expect(
       screen().queryByText("O workspace ainda não tem uma IA. Conecte uma agora, ou crie o agente e conecte depois."),
     ).toBeNull();
-    // On a plan it starts answering only its owner: the switch says so, off.
-    expect(screen().getByRole("switch", { name: "Atende outras pessoas" }).getAttribute("aria-checked")).toBe("false");
+    // On a plan it keeps answering whom "Quem pode falar" lets in: the switch starts on, as every default.
+    expect(screen().getByRole("switch", { name: "Atende outras pessoas" }).getAttribute("aria-checked")).toBe("true");
     await proceed();
     await click(screen().getByRole("button", { name: "Criar Eva" }));
     await settle(8);
@@ -1434,6 +1434,24 @@ describe("Criar agente: what gets created", () => {
     });
     const channels = state.calls.find((c) => c.method === "agents.setChannels")?.args[2] as { channelId: string }[];
     expect(channels.map((c) => c.channelId).sort()).toEqual([ENG_ID, GENERAL_ID].sort());
+  });
+
+  test("a workspace that narrowed new agents: it starts on its owner alone, on everyone with nobody responsible", async () => {
+    const state = seedState();
+    state.newAgentAudience = "owner";
+    await open(state);
+    await startAs("QA");
+    await proceed(3);
+    const audience = screen().getByRole("radiogroup", { name: "Quem pode falar com a Iris" });
+    const on = (name: RegExp) => within(audience).getByRole("radio", { name }).getAttribute("aria-checked");
+    expect(on(/^Só o responsável/)).toBe("true");
+    await pick(screen().getByRole("combobox", { name: "Responsável" }), /Sem responsável/);
+    expect(on(/^Todos do workspace/)).toBe("true");
+    // Someone responsible again: the workspace's choice comes back, nothing picked meanwhile.
+    await pick(screen().getByRole("combobox", { name: "Responsável" }), /^João/);
+    expect(on(/^Só o responsável/)).toBe("true");
+    await proceed();
+    expect(title()).toBe("Modelo e orçamento");
   });
 
   test("'Só o responsável' needs an owner", async () => {

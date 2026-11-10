@@ -18,6 +18,7 @@ import {
   ownSignInName,
   ownSignInReady,
   ownSignIns,
+  perAgentSignIn,
   planWordOf,
   reusableAccount,
   signInOf,
@@ -402,21 +403,21 @@ describe("an account for all of its owner's agents", () => {
     { id: "cy", ownerUserId: ana },
   ];
   const machine = { agents: ["ada", "theo", "lia", "bo"].map((id) => ({ id, name: id, handle: id })) };
-  const give = (over: Partial<MachineAccount> = {}, onKey: (id: string) => boolean = (id) => id === "lia") =>
+  const give = (over: Partial<MachineAccount> = {}) =>
     agentsToGive({
       account: login("s", { shared: true, usedBy: ["Ada"], usedByIds: ["ada"], ...over }),
       agents,
       machine,
       viewerId: ana,
-      onKey,
     }).map((a) => a.id);
 
-  test("Use for…: the owner's agents on its computer not on it yet, never one on the API key", () => {
-    // Theo; not Ada (on it), Lia (on the key), Bo (Bia's) nor Cy (another computer).
-    expect(give()).toEqual(["theo"]);
-    expect(give({}, () => false)).toEqual(["theo", "lia"]);
-    // One made for one agent, or someone else's: nothing to give.
-    expect(give({ shared: false })).toEqual([]);
+  test("Use for…: the owner's agents on its computer not on it yet, one on the API key too", () => {
+    // Theo and Lia (on the key: a plan keeps whom it answers); not Ada (on it), Bo (Bia's) nor Cy (another computer).
+    expect(give()).toEqual(["theo", "lia"]);
+    // One made for one agent gives the same agents, each to sign in to it; someone else's gives nothing.
+    expect(give({ shared: false })).toEqual(["theo", "lia"]);
+    expect(perAgentSignIn(login("s", { shared: false }))).toBe(true);
+    expect(perAgentSignIn(login("s", { shared: true }))).toBe(false);
     expect(give({ mine: false })).toEqual([]);
   });
 

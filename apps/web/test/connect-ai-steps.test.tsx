@@ -378,7 +378,7 @@ describe("Conectar uma IA: one picker, plans first", () => {
     // Back on the select, which names it; under it whom she answers, the plan named and its terms its maker's.
     expect(within(dialog).getByRole("combobox", { name: "Quem pensa" }).textContent).toContain("GLM Coding");
     const replies = hintOf("Atende outras pessoas", dialog).text;
-    expect(replies).toContain("A Ada só atende você, pelo seu plano GLM Coding.");
+    expect(replies).toContain("A Ada atende quem pode falar com ela, pelo seu plano GLM Coding.");
     expect(replies).toContain("Z.ai diz que o plano é só de quem assina.");
     await click(within(dialog).getByRole("button", { name: "Fechar" }));
     expect(screen().queryByRole("dialog")).toBeNull();
@@ -1267,7 +1267,31 @@ describe("All agents: one plan for the team, a login per agent", () => {
     expect(document.body.textContent).toContain("Ada agora pensa com Claude Max");
   });
 
-  test("an agent on the API key stays out of All agents: a plan would make it answer only its owner", async () => {
+  test("a login of the person's made for one agent: its row signs each agent in to that plan, nothing moved first", async () => {
+    const plus = account({
+      id: "acct_plus",
+      kind: "codex",
+      label: "ChatGPT",
+      plan: "plus",
+      provider: null,
+      keyHint: null,
+      email: "walt@acme.com",
+      usedBy: ["Atlas"],
+      shared: false,
+    });
+    const { state, dialog } = await connect({ crew: true, brain: { accounts: [plus] } });
+    await click(dialog.querySelector(".ai-flow__head button") as Element);
+    const rows = await openAiSelect(dialog, "Quem pensa");
+    const row = rows.find((o) => brainTitle(o).startsWith("ChatGPT")) as HTMLElement;
+    expect(row.getAttribute("aria-disabled")).not.toBe("true");
+    await click(row);
+    await settle(4);
+    expect(calls(state, "agents.setBrain")).toHaveLength(0);
+    const panel = within(dialog).getByRole("region", { name: "Seu plano do ChatGPT" });
+    expect(shownText(panel)).toContain("Um login por agente, com a mesma conta.");
+  });
+
+  test("an agent that got the API key meanwhile stays in: a plan keeps whom it answers (ADR 0059 §5, 2026-11-09)", async () => {
     const { state, dialog, choose, services } = await connect({ crew: true });
     state.aiStatus = {
       any: true,
@@ -1282,7 +1306,11 @@ describe("All agents: one plan for the team, a login per agent", () => {
     await choose("Kimi Code");
     const panel = within(dialog).getByRole("region", { name: "Kimi Code" });
     const who = panel.querySelector(".ai-panel__who") as HTMLElement;
-    expect([...who.querySelectorAll("li")].map((li) => li.textContent)).toEqual(["AdaEsperando", "LiaEsperando"]);
+    expect([...who.querySelectorAll("li")].map((li) => li.textContent)).toEqual([
+      "AdaEsperando",
+      "AtlasEsperando",
+      "LiaEsperando",
+    ]);
   });
 
   test("GLM for all: one paste, the key sealed to one login per agent (in no request), each agent on its own", async () => {

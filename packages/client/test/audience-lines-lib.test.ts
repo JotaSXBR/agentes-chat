@@ -1,6 +1,15 @@
 import { describe, expect, test } from "bun:test";
 import type { TFunction } from "i18next";
-import type { Agent, AgentSetupResult, ForeignMailbox, OrgRole, OrgSummary } from "../src/api/types";
+import type {
+  Agent,
+  AgentSetupResult,
+  BrainKind,
+  ForeignMailbox,
+  MachineAccount,
+  OrgRole,
+  OrgSummary,
+} from "../src/api/types";
+import type { AiRow } from "../src/lib/ai-select";
 import {
   agentsReach,
   audienceLines,
@@ -8,8 +17,11 @@ import {
   audienceWithMe,
   opensDetails,
   opensOthersPlan,
+  pickOpensPlan,
   setupPlanOpens,
   setupPlanQuestion,
+  severalAgentsReach,
+  severalWidenQuestion,
   unavailableNotice,
   widenQuestion,
 } from "../src/lib/audience";
@@ -121,6 +133,45 @@ describe("widenQuestion", () => {
       /^common\.joinSentences.*reach\.planOpen.*reach\.mailLoss/,
     );
   });
+
+  test("for several agents at once: nothing, one agent's own question, or all of theirs under one title", () => {
+    const leo = { name: "Leo", brain: { kind: "codex" } as Agent["brain"] };
+    const one = widenQuestion(t, ada, "Walter", []);
+    const two = widenQuestion(t, leo, null, [box]);
+    if (!one || !two) throw new Error("no question");
+    expect(severalWidenQuestion(t, [], 3)).toBeNull();
+    expect(severalWidenQuestion(t, [one], 3)).toEqual(one);
+    expect(severalWidenQuestion(t, [one, two], 3)).toEqual({
+      title: 'audience.several.askTitle{"count":3}',
+      description: `common.joinSentences${JSON.stringify({ a: one.description, b: two.description })}`,
+    });
+  });
+});
+
+describe("pickOpensPlan (Quem pensa)", () => {
+  const heitors = { id: "acct_h", kind: "claude_code", ownerId: "u-heitor", mine: false } as MachineAccount;
+  const row = (account: MachineAccount, act: AiRow["act"] = "use") => ({ act, kind: "claude_code", account }) as AiRow;
+  const view = (brain: BrainKind, account: string | null, accounts: MachineAccount[]) => ({ brain, account, accounts });
+  const onApi = view("model", null, [heitors]);
+  const open = agent({ audience: { mode: "everyone", userIds: [] } });
+  test("someone else's agent onto its owner's plan while it answers others is asked; its owner's own pick isn't", () => {
+    expect(pickOpensPlan(row(heitors), onApi, open, "u-caio")).toBe(true);
+    expect(pickOpensPlan(row(heitors), onApi, open, "u-heitor")).toBe(false);
+    // Answering only its owner, the plan opens to nobody.
+    const owners = agent({ audience: { mode: "owner", userIds: [] } });
+    expect(pickOpensPlan(row(heitors), onApi, owners, "u-caio")).toBe(false);
+    // The team's right hand starts any plan with its own switch off.
+    expect(pickOpensPlan(row(heitors), onApi, agent({ ...open, builtin: "right_hand" }), "u-caio")).toBe(false);
+  });
+  test("already on its owner's plan nothing opens; a lent plan asks as one; the viewer's own plan is theirs to give", () => {
+    const another = { ...heitors, id: "acct_h2" };
+    expect(pickOpensPlan(row(another), view("claude_code", "acct_h", [heitors, another]), open, "u-caio")).toBe(false);
+    // From someone else's plan given to it, back on its owner's: opened again.
+    const lent = { ...heitors, id: "acct_bia", ownerId: "u-bia" };
+    expect(pickOpensPlan(row(heitors), view("claude_code", "acct_bia", [lent, heitors]), open, "u-caio")).toBe(true);
+    expect(pickOpensPlan(row(lent, "lend"), onApi, open, "u-caio")).toBe(false);
+    expect(pickOpensPlan(row({ ...heitors, ownerId: "u-caio", mine: true }), onApi, open, "u-caio")).toBe(false);
+  });
 });
 
 describe("setupPlanQuestion (Usar em outros agentes)", () => {
@@ -192,6 +243,15 @@ describe("agentsReach: whether a narrowed audience holds for agents too", () => 
   test("on its owner's plan answering only its owner, nobody else, agents included", () => {
     expect(agentsReach(owner, true, "u-heitor")).toBe("plan");
     expect(agentsReach({ mode: "people", userIds: [] }, true, "u-heitor")).toBe("plan");
+  });
+  test("several agents keeping their own switch: the one line they all share, none when they differ", () => {
+    const open = agent({});
+    const shut = agent({ audience: { mode: "people", userIds: [], consultable: false } });
+    expect(severalAgentsReach("owner", [open, open])).toBe("consulted");
+    expect(severalAgentsReach("people", [shut, shut])).toBe("blocked");
+    expect(severalAgentsReach("owner", [open, shut])).toBeNull();
+    expect(severalAgentsReach("everyone", [open])).toBeNull();
+    expect(severalAgentsReach("owner", [])).toBeNull();
   });
 });
 

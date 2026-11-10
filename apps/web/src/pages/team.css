@@ -96,6 +96,15 @@
 .team-table__menu {
   width: 1%;
 }
+/* The pick column: a checkbox for each agent I may change, the head's for every one shown. */
+.team-table .team-table__pick {
+  width: 1%;
+  padding-right: var(--space-1);
+  line-height: 0;
+}
+.team-table__row[data-picked] td {
+  background: color-mix(in srgb, var(--ink) 4%, var(--raised));
+}
 /* Its rows are MediaRows (the kit's `.ac-mediarow`): Restaurar and Apagar go under the name by the card's width. A row's
    plate stands `--archived-pad` from every edge of the card, its corners the card's less that room (concentric). */
 .team-archived {

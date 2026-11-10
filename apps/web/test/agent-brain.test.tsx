@@ -316,7 +316,7 @@ describe("Quem pensa: one select (its dialog)", () => {
     expect(screen().getByRole("dialog", { name: "Quem pensa" })).toBeTruthy();
   });
 
-  test("from the API onto a plan: it answers only its owner from now on, said in the toast", async () => {
+  test("from the API onto a plan: it keeps whom it answers, the toast says what it thinks with", async () => {
     const state = seedState();
     const api = createFakeApi(state);
     pairMac(api, true);
@@ -330,7 +330,8 @@ describe("Quem pensa: one select (its dialog)", () => {
     await choose(d, /^Claude · Max/);
     await settle(6);
     expect(brainCalls(state).at(-1)).toEqual({ brain: "claude_code", account: null });
-    expect(document.body.textContent).toContain("A Ada agora pensa com Claude · Max e só atende você.");
+    expect(document.body.textContent).toContain("A Ada agora pensa com Claude · Max.");
+    expect(document.body.textContent).not.toContain("só atende você");
   });
 
   test("someone else's plan asks first, in the note under the select, with one button; its owner hears of it", async () => {

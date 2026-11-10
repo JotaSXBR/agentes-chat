@@ -1,7 +1,7 @@
 import type { PubSub } from "@agenteschat/adapters";
 import { and, asc, type Database, desc, eq, gte, inArray, isNull, lt, schema, sql } from "@agenteschat/db";
 import { MODEL_TIERS, type ModelTier } from "@agenteschat/providers";
-import { getAgent } from "./agents";
+import { getAgent, NEW_AGENT_AUDIENCES, type NewAgentAudience } from "./agents";
 import { decidableBySql } from "./approvals";
 import type { AutoModels } from "./auto-model";
 import { caches } from "./cache";
@@ -81,6 +81,8 @@ export interface OrgSettings extends MediaSettings {
   voiceMessages: boolean;
   /** Per provider, the models "Automático" picks per tier where the workspace chose its own (ADR 0087). */
   autoModels: AutoModels;
+  /** Who can talk to a new agent whoever made it didn't choose for (`newAgentAudience`): everyone by default. */
+  newAgentAudience: NewAgentAudience;
 }
 
 export const TEAM_SIZES = ["solo", "small", "medium", "large"] as const;
@@ -104,6 +106,7 @@ export async function getOrgSettings(db: Database, actorId: string, orgId: strin
     actionCheck: s?.actionCheck ?? true,
     voiceMessages: s?.voiceMessages ?? true,
     autoModels: (s?.autoModels ?? {}) as AutoModels,
+    newAgentAudience: s?.newAgentAudience ?? "everyone",
     ...mediaSettingsFrom(s),
   };
 }
@@ -155,6 +158,8 @@ export async function updateOrgSettings(
     throw new ValidationError(`gifRating must be one of ${GIF_RATINGS.join(", ")}`);
   if (input.agentMedia !== undefined && !AGENT_MEDIA_LEVELS.includes(input.agentMedia as AgentMediaLevel))
     throw new ValidationError(`agentMedia must be one of ${AGENT_MEDIA_LEVELS.join(", ")}`);
+  if (input.newAgentAudience !== undefined && !NEW_AGENT_AUDIENCES.includes(input.newAgentAudience))
+    throw new ValidationError(`newAgentAudience must be one of ${NEW_AGENT_AUDIENCES.join(", ")}`);
   for (const [provider, id] of Object.entries(input.defaultCredentialIds ?? {})) {
     if (!id) continue;
     const [cred] = await db
@@ -223,6 +228,7 @@ export async function updateOrgSettings(
       ...(input.gifRating !== undefined ? { gifRating: input.gifRating } : {}),
       ...(input.agentStickers !== undefined ? { agentStickers: input.agentStickers } : {}),
       ...(input.agentMedia !== undefined ? { agentMedia: input.agentMedia } : {}),
+      ...(input.newAgentAudience !== undefined ? { newAgentAudience: input.newAgentAudience } : {}),
       ...(input.autoModels !== undefined
         ? { autoModels: mergeAutoModels(await storedAutoModels(), input.autoModels) }
         : {}),

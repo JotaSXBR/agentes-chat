@@ -552,7 +552,7 @@ describe("who can talk to the agent", () => {
     expect(checked).toBe(90);
   });
 
-  test("an agent that thinks with its owner's plan: a DM from anyone else gets the notice until its owner lets everyone in", async () => {
+  test("an agent on its owner's plan answering only them: a DM from anyone else gets the notice until they let everyone in", async () => {
     const { bia } = await world();
     const dm = await openDm(f.db, bia.id, f.org.id, { agentId: f.agent.id }); // before the plan
     const { machineId } = await pairMachine(deps(), f.owner.id, f.org.id, {
@@ -565,7 +565,8 @@ describe("who can talk to the agent", () => {
       .set({ executors: { claude: { version: "2.1.304", loggedIn: true }, detectedAt: new Date().toISOString() } })
       .where(eq(schema.machines.id, machineId));
     await f.db.update(schema.agents).set({ machineId }).where(eq(schema.agents.id, f.agent.id));
-    await setAgentBrain({ db: f.db }, f.owner.id, f.org.id, f.agent.id, { brain: "claude_code" });
+    // Moved onto the plan with "Atende outras pessoas" off: only its owner.
+    await setAgentBrain({ db: f.db }, f.owner.id, f.org.id, f.agent.id, { brain: "claude_code", onlyOwner: true });
     const sent = await postPersonMessage(deps(), bia.id, f.org.id, dm.id, { body: "oi" });
     expect(sent.notices).toEqual([
       {

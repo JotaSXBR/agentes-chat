@@ -1632,7 +1632,14 @@
         "caresFor": "S'occupe de"
       },
       "noChannel": "Dans aucun canal",
-      "none": "Aucun agent ne correspond."
+      "none": "Aucun agent ne correspond.",
+      "pick": "Sélectionner {{name}}",
+      "pickAll": "Tout sélectionner",
+      "selection": "Agents sélectionnés",
+      "selected_one": "{{count}} sélectionné",
+      "selected_many": "{{count}} sélectionnés",
+      "selected_other": "{{count}} sélectionnés",
+      "clearSelection": "Effacer la sélection"
     },
     "chart": {
       "byLabel": "Organigramme par",
@@ -4496,8 +4503,6 @@
       "saved": {
         "brain": "{{name}} réfléchit maintenant avec {{brain}}.",
         "brain_female": "{{name}} réfléchit maintenant avec {{brain}}.",
-        "brainOwner": "{{name}} réfléchit maintenant avec {{brain}} et ne répond qu'à {{owner}}.",
-        "brainOwner_female": "{{name}} réfléchit maintenant avec {{brain}} et ne répond qu'à {{owner}}.",
         "computer": "{{name}} travaille maintenant sur {{computer}}.",
         "computer_female": "{{name}} travaille maintenant sur {{computer}}.",
         "none": "{{name}} n'a plus d'ordinateur.",
@@ -9012,6 +9017,8 @@
       "useFor": "Utiliser aussi pour {{name}}",
       "useFor_female": "Utiliser aussi pour {{name}}",
       "useForMenu": "Utiliser pour…",
+      "useForAll": "Tous les agents",
+      "useForAllAgents": "Utiliser pour tous les agents",
       "revokeOnClaude": "Pour y mettre fin aussi sur Claude, révoquez-le dans les paramètres de Claude."
     },
     "usage": {
@@ -9088,6 +9095,32 @@
     "search": "Rechercher des rôles et des personnes",
     "noMatch": "Aucun rôle ni aucune personne de ce nom.",
     "pickSomeone": "Choisissez au moins une personne ou un rôle.",
+    "several": {
+      "title_one": "Qui peut parler à {{count}} agent",
+      "title_many": "Qui peut parler à {{count}} agents",
+      "title_other": "Qui peut parler à {{count}} agents",
+      "modeText": {
+        "everyone": "Tout le monde dans l'espace de travail peut appeler ces agents.",
+        "people": "Choisissez les personnes et les rôles qui peuvent leur parler.",
+        "owner": "Chaque agent ne parle qu'à son propriétaire."
+      },
+      "ownerAlways": "Le propriétaire de chaque agent peut toujours.",
+      "consultable": "Les autres agents peuvent les consulter",
+      "consultableHint": "Pour les personnes absentes de la liste, ils ne répondent qu'à l'agent qui a demandé, jamais directement à elles. Les actions sensibles nécessitent toujours l'approbation du propriétaire de chacun.",
+      "agents": {
+        "consulted": "Cela ne vaut que pour les personnes. Les autres agents peuvent toujours les consulter pour les personnes absentes de la liste.",
+        "blocked": "Cela vaut aussi pour les agents. Aucun autre agent ne peut les joindre pour les personnes absentes de la liste."
+      },
+      "askTitle_one": "Changer qui peut parler à {{count}} agent ?",
+      "askTitle_many": "Changer qui peut parler à {{count}} agents ?",
+      "askTitle_other": "Changer qui peut parler à {{count}} agents ?",
+      "saved_one": "Qui peut parler a changé pour {{count}} agent.",
+      "saved_many": "Qui peut parler a changé pour {{count}} agents.",
+      "saved_other": "Qui peut parler a changé pour {{count}} agents.",
+      "failed_one": "{{count}} agent n'a pas pu être modifié. Réessayez.",
+      "failed_many": "{{count}} agents n'ont pas pu être modifiés. Réessayez.",
+      "failed_other": "{{count}} agents n'ont pas pu être modifiés. Réessayez."
+    },
     "chip": {
       "owner": "Personnel",
       "people": "Restreint"
@@ -10191,6 +10224,11 @@
   },
   "access": {
     "matrixTitle": "Accès des agents",
+    "newAgents": {
+      "title": "Nouveaux agents",
+      "hint": "Cela vaut pour les agents créés, importés ou proposés à partir de maintenant.",
+      "existing": "Pour changer ceux qui existent déjà, sélectionnez-en plusieurs dans Équipe."
+    },
     "matrixHint": "Les actions sensibles (merge, déploiement, partage, paiement) demandent toujours une approbation, quel que soit le niveau. Pour régler outil par outil, ouvrez les Outils du connecteur.",
     "matrixHow": "Cliquez sur une case pour la modifier :",
     "kindLabel": "Afficher",

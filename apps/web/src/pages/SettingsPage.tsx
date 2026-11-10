@@ -88,6 +88,7 @@ import { BillingMeters } from "@/components/Limits";
 import { ErrorState, LoadingLine, LoadingList } from "@/components/Loading";
 import { MachinePage } from "@/components/Machines";
 import { MediaSettingsSection } from "@/components/MediaSettings";
+import { NewAgentsAudienceCard } from "@/components/NewAgentsAudience";
 import { NoticePrefsSection } from "@/components/NoticePrefs";
 import { useOrg } from "@/components/org-context";
 import { UsageTabs } from "@/components/PeopleUsage";
@@ -248,7 +249,12 @@ function Settings({
         {current === "audit" && <AuditSection agent={agent} />}
         {current === "media" && <MediaSettingsSection />}
         {current === "voice" && <VoiceSettingsSection />}
-        {current === "access" && <AccessMatrixSection />}
+        {current === "access" && (
+          <>
+            <NewAgentsAudienceCard />
+            <AccessMatrixSection />
+          </>
+        )}
         {current === "connectors" && (
           <ConnectorsSection connected={connected} outcome={outcome} review={review} mail={mail} account={account} />
         )}

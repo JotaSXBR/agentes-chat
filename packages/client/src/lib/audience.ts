@@ -3,12 +3,14 @@ import type { TFunction } from "i18next";
 import type {
   Agent,
   AgentAudience,
+  AgentBrain,
   AgentSetupResult,
   AudienceMode,
   ForeignMailbox,
   OrgRole,
   OrgSummary,
 } from "../api/types";
+import type { AiRow } from "./ai-select";
 import { engineOfBrain } from "./brain";
 import { joinNames } from "./format";
 import { agentGrammar } from "./grammar";
@@ -126,6 +128,16 @@ export const agentsReach = (
         ? "blocked"
         : "consulted";
 
+/**
+ * `agentsReach` for one mode given to several agents that each keep their own consultations switch (the phone's choice
+ * for several): the same line when every one says the same, null when they differ or nobody is left out.
+ */
+export function severalAgentsReach(mode: AudienceMode, agents: readonly Agent[]): "consulted" | "blocked" | null {
+  if (mode === "everyone" || agents.length === 0) return null;
+  const open = agents.map((a) => audienceOf(a).consultable);
+  return open.every(Boolean) ? "consulted" : open.some(Boolean) ? null : "blocked";
+}
+
 /** On a plan only its owner turns the switch back on (ADR 0059 §5); anyone else may only turn it off. */
 export const consultableLocked = (saved: AgentAudience, viewer: { owner: boolean; onPlan: boolean }) =>
   viewer.onPlan && !viewer.owner && saved.consultable === false;
@@ -162,6 +174,25 @@ export const opensOthersPlan = (agent: Agent, next: AgentAudience, myUserId: str
   audienceWidens(audienceOf(agent), next, agent.ownerUserId);
 
 /**
+ * Picking `row` in the AI select puts someone else's agent on its owner's plan, one it didn't think with, while it
+ * answers other people: that plan opens to them, so the apps ask first (`widenQuestion`), as for turning "Atende outras
+ * pessoas" on, and the server emails its owner (ADR 0059 §5). A row of anyone else's plan asks as a lent one (`lend`).
+ * The team's right hand starts any plan with its own switch off: nothing opens.
+ */
+export function pickOpensPlan(
+  row: Pick<AiRow, "act" | "kind" | "account">,
+  view: Pick<AgentBrain, "brain" | "account" | "accounts">,
+  agent: Agent | undefined,
+  myUserId: string,
+): boolean {
+  const a = row.account;
+  if (row.act !== "use" || !a || a.mine || !agent?.ownerUserId || agent.ownerUserId === myUserId) return false;
+  if (agent.builtin === "right_hand") return false;
+  const now = view.accounts.find((x) => x.id === view.account);
+  return (row.kind !== view.brain || now?.ownerId !== a.ownerId) && answersOthers(audienceOf(agent), agent.ownerUserId);
+}
+
+/**
  * "Let me talk to it": its audience with me let in, when it keeps me out and I may change it (its owner or who manages
  * agents) and I talk to agents at all; null otherwise. On someone else's plan the save asks first (`opensOthersPlan`).
  */
@@ -180,11 +211,11 @@ export const mailLossText = (t: TFunction, agent: Pick<Agent, "name">, mailboxes
 /**
  * The one question before widening its audience, or null when there is nothing to ask: on someone else's plan
  * (`planOwner`: their name, from `opensOthersPlan`), whose plan and limits it uses and that they get an email, and the
- * mailboxes it loses (`mailLossText`).
+ * mailboxes it loses (`mailLossText`). `brain`: the plan it thinks with, or the one a pick moves it onto.
  */
 export function widenQuestion(
   t: TFunction,
-  agent: Pick<Agent, "name" | "brain">,
+  agent: Pick<Agent, "name"> & { brain?: Pick<NonNullable<Agent["brain"]>, "kind" | "provider"> | null },
   planOwner: string | null,
   mailboxes: readonly ForeignMailbox[],
 ): { title: string; description: string } | null {
@@ -194,6 +225,24 @@ export function widenQuestion(
   return {
     title: t("reach.planTitle", { owner: planOwner }),
     description: mail ? t("common.joinSentences", { a: why, b: mail }) : why,
+  };
+}
+
+/**
+ * One question before a change of several agents' audience at once (Equipe's selection): each one's `widenQuestion`,
+ * one alone as it is, more under one title. Null when there is nothing to ask.
+ */
+export function severalWidenQuestion(
+  t: TFunction,
+  questions: readonly { title: string; description: string }[],
+  agents: number,
+): { title: string; description: string } | null {
+  const [only, ...more] = questions;
+  if (!only || more.length === 0) return only ?? null;
+  return {
+    title: t("audience.several.askTitle", { count: agents }),
+    // Joined as the language joins sentences (no space in Japanese or Chinese).
+    description: more.reduce((a, q) => t("common.joinSentences", { a, b: q.description }), only.description),
   };
 }
 

@@ -38,6 +38,7 @@ import {
   mySidebarOrder,
   mySidebarToolOrder,
   mySidebarView,
+  NEW_AGENT_AUDIENCES,
   orgOverview,
   pickerEndpoint,
   pickerModels,
@@ -186,6 +187,10 @@ const Settings = z
     }),
     voiceMessages: z.boolean().openapi({
       description: "People can send voice messages (ADR 0100); they also need `voiceAvailable`. On by default.",
+    }),
+    newAgentAudience: z.enum(NEW_AGENT_AUDIENCES).openapi({
+      description:
+        "Who can talk to a new agent whoever made it didn't choose for (an import, a team proposal, the API): `everyone` (the default) or `owner`, only the person responsible for it. Criar agente starts its own choice here.",
     }),
     voiceAvailable: z.boolean().openapi({
       description: "Read only: this server has a speech engine now, from its environment or from its owner's Settings.",
@@ -574,6 +579,7 @@ export function managementRoutes(deps: AppDeps) {
             gifRating: z.enum(GIF_RATINGS).optional(),
             agentStickers: z.boolean().optional(),
             agentMedia: z.enum(AGENT_MEDIA_LEVELS).optional(),
+            newAgentAudience: z.enum(NEW_AGENT_AUDIENCES).optional(),
           }),
         ),
       },

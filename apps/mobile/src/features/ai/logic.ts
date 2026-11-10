@@ -25,6 +25,16 @@ export const offersKeyNow = (gate: PlanGate, held: boolean) =>
     ? gate.view !== null && !held
     : !held && (gate.state === "offline" || gate.state === "missing" || gate.state === "unsupported");
 
+/**
+ * "Atende outras pessoas" on a plan's page (ADR 0059 §5, amended 2026-11-09). Already on this plan (`live`), the
+ * agent's own. Before the move, what the person switched it to (`set`), else whom the agent answers now
+ * (`onlyOwner`), which the move keeps. `move` carries only a change the person made.
+ */
+export const repliesState = (o: { live: boolean; onlyOwner: boolean | undefined; set: boolean | null }) => ({
+  on: o.live ? !o.onlyOwner : (o.set ?? !o.onlyOwner),
+  move: o.live || o.set === null ? {} : { onlyOwner: !o.set },
+});
+
 /** Where the flow is: the first page, the plans, one plan's page, the API key's, or that key's makers. */
 export type FlowView =
   | { page: "home" }

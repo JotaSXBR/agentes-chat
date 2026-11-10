@@ -486,4 +486,84 @@ describe("Contas de IA: a plan with a login per agent", () => {
     const dialog = screen().getByRole("dialog");
     expect(dialog.textContent).toContain("Para encerrar também no Claude, revogue nas configurações do Claude.");
   });
+
+  /** Walter's three agents on the MacBook, Ada on the account; `shared`: made for all of his agents there. */
+  async function three(account: Partial<AiAccounts["accounts"][number]>) {
+    const state = seedState();
+    const [ada, atlas] = state.agents as [(typeof state.agents)[number], (typeof state.agents)[number]];
+    state.agents.push({ ...atlas, id: "00000000-0000-4000-8000-0000000000a3", name: "Iris", handle: "iris" });
+    for (const a of state.agents) a.ownerUserId = "u-walter";
+    const api = createFakeApi(state);
+    const machines = fakeMachinesOf.get(api);
+    machines?.pair({
+      id: "machine_1",
+      name: "MacBook",
+      mode: "system",
+      agents: state.agents.map((a) => ({ id: a.id, name: a.name, handle: a.handle })),
+    });
+    const login = { ...base, id: "acct_x", label: "Conta", email: null, usedBy: [ada.name], usedByIds: [ada.id] };
+    machines?.setAiAccounts({ accounts: [{ ...login, ...account }], computers: [MAC] });
+    await renderApp(`/org/${ORG_ID}/settings/keys`, { api });
+    await settle(6);
+    const row = document.querySelector(".ai-accounts__row") as HTMLElement;
+    // A Radix menu opens from the keyboard in the DOM tests.
+    const trigger = within(row).getByRole("button", { name: "Usar para…" });
+    trigger.focus();
+    await act(async () => {
+      fireEvent.keyDown(trigger, { key: "Enter" });
+      fireEvent.keyUp(trigger, { key: "Enter" });
+    });
+    await settle(2);
+    return { state, menu: screen().getByRole("menu") };
+  }
+
+  test("Usar para…: Todos os agentes first, then each agent; made for all of them, no sign-in", async () => {
+    const { state, menu } = await three({ shared: true });
+    const items = within(menu).getAllByRole("menuitem");
+    expect(items.map((i) => i.textContent?.trim().endsWith("Atlas") || i.textContent?.trim().endsWith("Iris"))).toEqual(
+      [false, true, true],
+    );
+    expect(items[0]?.textContent).toContain("Todos os agentes");
+    await click(within(menu).getByRole("menuitem", { name: "Todos os agentes" }));
+    await settle(4);
+    expect(state.calls.filter((c) => c.method === "agents.setBrain").map((c) => c.args[1])).toEqual([
+      ATLAS_ID,
+      "00000000-0000-4000-8000-0000000000a3",
+    ]);
+    expect(document.body.textContent).toContain("Atlas e Iris agora pensam com Conta.");
+  });
+
+  test("a sign-in that thinks for one agent (ChatGPT, Cursor): the menu says a login per agent and signs each in", async () => {
+    const { state, menu } = await three({ kind: "codex", shared: false });
+    expect(menu.textContent).toContain("Um login por agente, com a mesma conta.");
+    await click(within(menu).getByRole("menuitem", { name: "Todos os agentes" }));
+    await settle(4);
+    // Nothing moves before each one signs in: Conectar uma IA opens for both, on ChatGPT.
+    expect(state.calls.some((c) => c.method === "agents.setBrain")).toBe(false);
+    const dialog = screen().getByRole("dialog", { name: "Conectar uma IA" });
+    expect(dialog.textContent).toContain("Para Atlas e Iris");
+    expect(dialog.textContent).toContain("ChatGPT");
+  });
+
+  test("such a sign-in with one more agent to give: its button signs that one in, as the phone's", async () => {
+    const state = seedState();
+    for (const a of state.agents) a.ownerUserId = "u-walter";
+    const api = createFakeApi(state);
+    const machines = fakeMachinesOf.get(api);
+    machines?.pair({
+      id: "machine_1",
+      name: "MacBook",
+      mode: "system",
+      agents: state.agents.slice(0, 2).map((a) => ({ id: a.id, name: a.name, handle: a.handle })),
+    });
+    const login = { ...base, id: "acct_x", kind: "codex" as const, label: "Conta", email: null, shared: false };
+    machines?.setAiAccounts({ accounts: [{ ...login, usedBy: ["Ada"], usedByIds: [ADA_ID] }], computers: [MAC] });
+    await renderApp(`/org/${ORG_ID}/settings/keys`, { api });
+    await settle(6);
+    const row = document.querySelector(".ai-accounts__row") as HTMLElement;
+    await click(within(row).getByRole("button", { name: "Fazer login para o Atlas" }));
+    await settle(4);
+    expect(state.calls.some((c) => c.method === "agents.setBrain")).toBe(false);
+    expect(screen().getByRole("dialog", { name: "Conectar uma IA para o Atlas" })).toBeTruthy();
+  });
 });

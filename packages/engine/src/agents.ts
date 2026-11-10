@@ -38,6 +38,10 @@ const { agents, importItems, machines, organizationMembers, providerCredentials 
 
 export type Agent = typeof agents.$inferSelect;
 
+/** Who a new agent answers when whoever made it didn't choose: the workspace's default (Configurações › Agentes). */
+export const NEW_AGENT_AUDIENCES = ["everyone", "owner"] as const;
+export type NewAgentAudience = (typeof NEW_AGENT_AUDIENCES)[number];
+
 export const HANDLE_PATTERN = /^[a-z0-9][a-z0-9_-]{1,31}$/;
 
 /** Every handle an agent can't take: the other agents' (archived and deleted ones too), the ones they had, people's. */
@@ -139,7 +143,7 @@ export const NEW_AGENT_DEFAULTS = { model: AUTO_MODEL } as const;
 
 /**
  * An agent's "Quem pensa" and its Autonomia as new agents take them (ADR 0094). Who it answers stays out: a new agent
- * on a plan answers only its owner (ADR 0059 §5).
+ * answers whom the workspace's new agents answer (`newAgentAudience`).
  */
 export function setupOfAgent(a: Agent): schema.AgentSetup {
   const autonomy = a.missionCommandApproval;
@@ -173,6 +177,15 @@ export async function rememberAgentSetup(db: Executor, membership: Membership, s
     });
 }
 
+/** Who can talk to the workspace's new agents (`organization_settings.new_agent_audience`): everyone until narrowed. */
+export async function newAgentAudience(db: Executor, orgId: string): Promise<NewAgentAudience> {
+  const [row] = await db
+    .select({ mode: schema.organizationSettings.newAgentAudience })
+    .from(schema.organizationSettings)
+    .where(eq(schema.organizationSettings.orgId, orgId));
+  return row?.mode ?? "everyone";
+}
+
 export async function createAgent(
   db: Database,
   actorId: string,
@@ -197,6 +210,9 @@ export async function createAgent(
   const values = { ...fields, handle: fields.handle.toLowerCase(), model: fields.model ?? defaults.model };
   await validateAgentFields(db, orgId, values);
   const ownerUserId = input.ownerUserId === undefined ? actorId : input.ownerUserId;
+  // Whoever made it chose, else the workspace's default (open unless an admin narrowed it). With no owner to answer,
+  // "only its owner" would leave it answering nobody.
+  const audience = audienceMode ?? (ownerUserId ? await newAgentAudience(db, orgId) : "everyone");
   // Another agent's old handle still names that agent.
   const [held] = await db
     .select({ id: agents.id })
@@ -233,7 +249,7 @@ export async function createAgent(
         // Every new agent starts with its setup checklist, whichever way it was made (ADR 0155 §2).
         setup: newSetup(setup?.role),
         ...(autonomy ? { missionCommandApproval: autonomy } : {}),
-        ...(audienceMode ? { audienceMode } : {}),
+        audienceMode: audience,
       })
       .returning();
     if (!agent) throw new Error("agent insert returned nothing");

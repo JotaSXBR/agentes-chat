@@ -1570,6 +1570,13 @@ export const ptBR = {
       },
       noChannel: "Em nenhum canal",
       none: "Nenhum agente encontrado.",
+      /** Choosing agents for one change at once ("Quem pode falar"). */
+      pick: "Selecionar {{name}}",
+      pickAll: "Selecionar todos",
+      selection: "Agentes selecionados",
+      selected_one: "{{count}} selecionado",
+      selected_other: "{{count}} selecionados",
+      clearSelection: "Limpar seleção",
     },
     chart: {
       byLabel: "Organograma por",
@@ -4454,8 +4461,6 @@ export const ptBR = {
         brain: "O {{name}} agora pensa com {{brain}}.",
         brain_female: "A {{name}} agora pensa com {{brain}}.",
         /** From the API onto a plan, it answers only its owner (ADR 0059 §5): "você", or their name. */
-        brainOwner: "O {{name}} agora pensa com {{brain}} e só atende {{owner}}.",
-        brainOwner_female: "A {{name}} agora pensa com {{brain}} e só atende {{owner}}.",
         computer: "O {{name}} agora trabalha no {{computer}}.",
         computer_female: "A {{name}} agora trabalha no {{computer}}.",
         none: "O {{name}} agora está sem computador.",
@@ -8749,6 +8754,9 @@ export const ptBR = {
       useFor: "Usar também para o {{name}}",
       useFor_female: "Usar também para a {{name}}",
       useForMenu: "Usar para…",
+      /** "Usar para…" for every agent at once: the menu's first item, and the phone's action. */
+      useForAll: "Todos os agentes",
+      useForAllAgents: "Usar para todos os agentes",
       revokeOnClaude: "Para encerrar também no Claude, revogue nas configurações do Claude.",
     },
     usage: {
@@ -8829,6 +8837,31 @@ export const ptBR = {
     search: "Buscar papéis e pessoas",
     noMatch: "Nenhum papel ou pessoa com esse nome.",
     pickSomeone: "Escolha pelo menos uma pessoa ou papel.",
+    /** One choice for several agents at once (Equipe's selection), each with its own responsible person. */
+    several: {
+      title_one: "Quem pode falar com {{count}} agente",
+      title_other: "Quem pode falar com {{count}} agentes",
+      modeText: {
+        everyone: "Qualquer pessoa do workspace pode chamar esses agentes.",
+        people: "Escolha as pessoas e os papéis que podem falar com eles.",
+        owner: "Cada agente fala só com o responsável por ele.",
+      },
+      ownerAlways: "O responsável por cada agente sempre pode.",
+      consultable: "Outros agentes podem consultá-los",
+      consultableHint:
+        "Para quem não está na lista, eles respondem só ao agente que perguntou, nunca direto à pessoa. Ações sensíveis continuam pedindo aprovação do responsável por cada um.",
+      agents: {
+        consulted: "Vale só para pessoas. Outros agentes ainda podem consultá-los por quem não está na lista.",
+        blocked: "Vale para agentes também. Nenhum outro agente consegue falar com eles por quem não está na lista.",
+      },
+      /** Before the save, when it opens someone's plan or takes mailboxes from more than one of them. */
+      askTitle_one: "Mudar quem pode falar com {{count}} agente?",
+      askTitle_other: "Mudar quem pode falar com {{count}} agentes?",
+      saved_one: "Quem pode falar mudou para {{count}} agente.",
+      saved_other: "Quem pode falar mudou para {{count}} agentes.",
+      failed_one: "Não deu para mudar {{count}} agente. Tente de novo.",
+      failed_other: "Não deu para mudar {{count}} agentes. Tente de novo.",
+    },
     chip: { owner: "Pessoal", people: "Restrito" },
     summary: {
       everyone: "Todos do workspace",
@@ -9914,6 +9947,13 @@ export const ptBR = {
   },
   access: {
     matrixTitle: "Acesso dos agentes",
+    /** Who can talk to the workspace's new agents (`newAgentAudience`), for who configures it. */
+    newAgents: {
+      title: "Novos agentes",
+      hint: "Vale para os agentes criados, importados ou propostos daqui em diante.",
+      /** The web's way to the agents that exist: Equipe's selection (the phone's is in Agentes' bar). */
+      existing: "Para mudar os que já existem, selecione vários em Equipe.",
+    },
     matrixHint:
       "Ações sensíveis (merge, deploy, compartilhar, pagar) sempre pedem aprovação, em qualquer nível. Para ajustar ferramenta por ferramenta, abra Ferramentas no conector.",
     matrixHow: "Clique numa célula para trocar:",

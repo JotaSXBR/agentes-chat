@@ -1529,7 +1529,12 @@
         "caresFor": "负责"
       },
       "noChannel": "不在任何频道",
-      "none": "没有匹配的智能体。"
+      "none": "没有匹配的智能体。",
+      "pick": "选择 {{name}}",
+      "pickAll": "全选",
+      "selection": "已选智能体",
+      "selected_other": "已选 {{count}} 个",
+      "clearSelection": "清除选择"
     },
     "chart": {
       "byLabel": "组织架构图方式",
@@ -4202,8 +4207,6 @@
       "saved": {
         "brain": "{{name}} 现在使用 {{brain}} 思考。",
         "brain_female": "{{name}} 现在使用 {{brain}} 思考。",
-        "brainOwner": "{{name}} 现在使用 {{brain}} 思考，并且只回复 {{owner}}。",
-        "brainOwner_female": "{{name}} 现在使用 {{brain}} 思考，并且只回复 {{owner}}。",
         "computer": "{{name}} 现在在 {{computer}} 上工作。",
         "computer_female": "{{name}} 现在在 {{computer}} 上工作。",
         "none": "{{name}} 现在没有电脑。",
@@ -8385,6 +8388,8 @@
       "useFor": "也用于 {{name}}",
       "useFor_female": "也用于 {{name}}",
       "useForMenu": "用于…",
+      "useForAll": "所有智能体",
+      "useForAllAgents": "用于所有智能体",
       "revokeOnClaude": "要在 Claude 那边也终止，请在 Claude 的设置中撤销。"
     },
     "usage": {
@@ -8459,6 +8464,24 @@
     "search": "搜索角色和成员",
     "noMatch": "没有这个名称的角色或成员。",
     "pickSomeone": "请至少选择一位成员或一个角色。",
+    "several": {
+      "title_other": "谁可以和这 {{count}} 个智能体对话",
+      "modeText": {
+        "everyone": "工作区中的任何人都可以呼叫这些智能体。",
+        "people": "选择可以和它们对话的成员和角色。",
+        "owner": "每个智能体只和自己的所有者对话。"
+      },
+      "ownerAlways": "每个智能体的所有者始终可以对话。",
+      "consultable": "其他智能体可以咨询它们",
+      "consultableHint": "对于不在名单上的人，它们只回复发起询问的智能体，绝不直接回复他们。敏感操作仍需每个智能体的所有者审批。",
+      "agents": {
+        "consulted": "这只适用于人。对于不在名单上的人，其他智能体仍然可以咨询它们。",
+        "blocked": "这也适用于智能体。对于不在名单上的人，其他智能体都无法联系它们。"
+      },
+      "askTitle_other": "要更改谁可以和这 {{count}} 个智能体对话吗？",
+      "saved_other": "已更改谁可以和这 {{count}} 个智能体对话。",
+      "failed_other": "{{count}} 个智能体未能更改。请重试。"
+    },
     "chip": {
       "owner": "个人",
       "people": "受限"
@@ -9469,6 +9492,11 @@
   },
   "access": {
     "matrixTitle": "智能体权限",
+    "newAgents": {
+      "title": "新智能体",
+      "hint": "适用于从现在起创建、导入或提议的智能体。",
+      "existing": "要更改现有的智能体，请在团队中选择多个。"
+    },
     "matrixHint": "敏感操作（合并、部署、分享、付款）在任何级别下都需要审批。如需逐个工具设置，请打开连接器的“工具”。",
     "matrixHow": "点击单元格即可更改：",
     "kindLabel": "显示",

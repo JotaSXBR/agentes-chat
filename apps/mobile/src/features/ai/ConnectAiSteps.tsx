@@ -62,7 +62,7 @@ import { AddAccount } from "./AddAccount";
 import { AiPickGroups, useAiPick, useAiRowsOf } from "./AiPick";
 import type { ConnectKey } from "./ConnectAi";
 import { EndpointForm } from "./EndpointForm";
-import { type FlowView, flowBack, offersKeyNow, PLAN_POLL_MS, pollsPlan } from "./logic";
+import { type FlowView, flowBack, offersKeyNow, PLAN_POLL_MS, pollsPlan, repliesState } from "./logic";
 import { useAiOrg } from "./org";
 import { Note, OpenPage, PasteField, PlanHoldNote, PlanReplies, Step, StepsCard, usePlanHold } from "./parts";
 
@@ -492,9 +492,10 @@ function InfoCard({
 }
 
 /**
- * "Atende outras pessoas" for the agent a plan's page is for (ADR 0059 §5): on this plan's brain it is the agent's
- * own, changed at once; before the move it waits, and the move carries it (`move`), else the agent starts on its
- * owner alone. `plan`: the plan of the sign-in it thinks with there, an account's or the computer's own.
+ * "Atende outras pessoas" for the agent a plan's page is for (ADR 0059 §5, amended 2026-11-09): on this plan's brain
+ * it is the agent's own, changed at once; before the move it says whom the agent answers now, which the move keeps,
+ * and a change waits for the move to carry it (`move`). `plan`: the plan of the sign-in it thinks with there, an
+ * account's or the computer's own.
  */
 function useReplies(gates: PlanGates, agentId: string | undefined, kind: MachineAccountKind) {
   const { t } = useTranslation();
@@ -502,15 +503,17 @@ function useReplies(gates: PlanGates, agentId: string | undefined, kind: Machine
   const api = useApi();
   const qc = useQueryClient();
   const toast = useToast();
-  // The agent it was switched on for, before its move.
-  const [waiting, setWaiting] = useState<string | null>(null);
+  // What it was switched to for that agent, before its move.
+  const [waiting, setWaiting] = useState<{ agentId: string; on: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
   const { view } = gates;
-  const live = view !== undefined && view.agentId === agentId && view.brain === kind;
-  const on = live ? !view.onlyOwner : waiting !== null && waiting === agentId;
+  const mine = view !== undefined && view.agentId === agentId;
+  const live = mine && view.brain === kind;
+  const set = waiting !== null && waiting.agentId === agentId ? waiting.on : null;
+  const { on, move } = repliesState({ live, onlyOwner: mine ? view.onlyOwner : undefined, set });
   const change = async (next: boolean) => {
     if (!agentId) return;
-    if (!live) return setWaiting(next ? agentId : null);
+    if (!live) return setWaiting({ agentId, on: next });
     setBusy(true);
     try {
       qc.setQueryData(keys.agentBrain(orgId, agentId), await api.agents.setBrain(orgId, agentId, { onlyOwner: !next }));
@@ -521,7 +524,7 @@ function useReplies(gates: PlanGates, agentId: string | undefined, kind: Machine
     }
   };
   const plan = live ? signInPlan(view, gates.row, kind) : null;
-  return { on, change, busy, move: on ? { onlyOwner: false } : {}, plan };
+  return { on, change, busy, move, plan };
 }
 
 /** One plan's page: its mark, for which agent, then its steps on the agent's computer. */

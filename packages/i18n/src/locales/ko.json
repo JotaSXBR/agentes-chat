@@ -1529,7 +1529,12 @@
         "caresFor": "담당"
       },
       "noChannel": "어느 채널에도 없음",
-      "none": "일치하는 에이전트가 없어요."
+      "none": "일치하는 에이전트가 없어요.",
+      "pick": "{{name}} 선택",
+      "pickAll": "모두 선택",
+      "selection": "선택한 에이전트",
+      "selected_other": "{{count}}개 선택됨",
+      "clearSelection": "선택 지우기"
     },
     "chart": {
       "byLabel": "조직도 기준",
@@ -4189,7 +4194,6 @@
       },
       "saved": {
         "brain": "이제 {{name}}은(는) {{brain}}(으)로 생각해요.",
-        "brainOwner": "이제 {{name}}은(는) {{brain}}(으)로 생각하고 {{owner}}에게만 답해요.",
         "computer": "이제 {{name}}은(는) {{computer}}에서 일해요.",
         "none": "이제 {{name}}에게 컴퓨터가 없어요.",
         "browserOn": "이제 {{name}}은(는) 웹사이트를 탐색할 수 있어요.",
@@ -8331,6 +8335,8 @@
       "disconnected": "{{label}} 연결을 해제했어요.",
       "useFor": "{{name}}에도 사용",
       "useForMenu": "다음에 사용…",
+      "useForAll": "모든 에이전트",
+      "useForAllAgents": "모든 에이전트에 사용",
       "revokeOnClaude": "Claude에서도 끝내려면 Claude 설정에서 해지하세요."
     },
     "usage": {
@@ -8400,6 +8406,24 @@
     "search": "역할과 사람 검색",
     "noMatch": "그 이름의 역할이나 사람이 없어요.",
     "pickSomeone": "사람이나 역할을 하나 이상 고르세요.",
+    "several": {
+      "title_other": "에이전트 {{count}}개와 대화할 수 있는 사람",
+      "modeText": {
+        "everyone": "워크스페이스의 누구나 이 에이전트들을 부를 수 있어요.",
+        "people": "이 에이전트들과 대화할 수 있는 사람과 역할을 고르세요.",
+        "owner": "각 에이전트는 소유자와만 대화해요."
+      },
+      "ownerAlways": "각 에이전트의 소유자는 항상 대화할 수 있어요.",
+      "consultable": "다른 에이전트가 이 에이전트들에게 물어볼 수 있어요",
+      "consultableHint": "목록에 없는 사람의 경우, 물어본 에이전트에게만 답하고 그 사람에게 직접 답하지는 않아요. 민감한 작업은 여전히 각 에이전트 소유자의 승인이 필요해요.",
+      "agents": {
+        "consulted": "사람에게만 적용돼요. 목록에 없는 사람을 위해 다른 에이전트는 계속 이 에이전트들에게 물어볼 수 있어요.",
+        "blocked": "에이전트에게도 적용돼요. 목록에 없는 사람을 위해 이 에이전트들에게 연락할 수 있는 다른 에이전트는 없어요."
+      },
+      "askTitle_other": "에이전트 {{count}}개와 대화할 수 있는 사람을 바꿀까요?",
+      "saved_other": "에이전트 {{count}}개와 대화할 수 있는 사람을 바꿨어요.",
+      "failed_other": "에이전트 {{count}}개를 바꾸지 못했어요. 다시 시도해 주세요."
+    },
     "chip": {
       "owner": "개인",
       "people": "제한됨"
@@ -9405,6 +9429,11 @@
   },
   "access": {
     "matrixTitle": "에이전트 접근 권한",
+    "newAgents": {
+      "title": "새 에이전트",
+      "hint": "앞으로 만들거나 가져오거나 제안되는 에이전트에 적용돼요.",
+      "existing": "기존 에이전트를 바꾸려면 팀에서 여러 개를 선택하세요."
+    },
     "matrixHint": "민감한 작업(머지, 배포, 공유, 결제)은 어떤 수준에서든 항상 승인을 요청해요. 도구별로 설정하려면 커넥터의 도구를 여세요.",
     "matrixHow": "셀을 클릭해 변경하세요:",
     "kindLabel": "표시",

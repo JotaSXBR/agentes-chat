@@ -232,8 +232,8 @@ describe("Aprovar sempre on work a routine's report woke", () => {
 });
 
 describe("an agent's approval level (a hook, no setting yet)", () => {
-  test("at risky, a low-risk write runs without a card and without a reason; a merge still asks", async () => {
-    const { github, gateway } = await world("risky");
+  test("at never, a low-risk write runs without a card and without a reason; a merge still asks", async () => {
+    const { github, gateway } = await world("never");
     const ctx = await fedRun();
     expect((await call(gateway, ctx, "github_add_issue_comment", { ...PR, issue_number: 7, body: "ok" })).type).toBe(
       "result",
@@ -277,7 +277,7 @@ describe("a message someone outside the company receives is never approved for g
   });
 
   test("work a routine's report woke: the rule still covers a comment that stays inside, never one the public sees", async () => {
-    const { github, gateway, connectionId } = await world("risky", judge());
+    const { github, gateway, connectionId } = await world("never", judge());
     await rule(connectionId);
     const ctx = await fedRun();
     const internal = { ...PR, issue_number: 7, body: "Linked to the release checklist." };

@@ -185,12 +185,13 @@ export function rememberable(
 }
 
 /**
- * How much an agent asks before acting, pending the owner's answer (ask always, ask on risky, never ask): no setting
- * yet, so the gateway asks as the run's policy and the tools say. `risky`, the one level a hook may return now: a call
- * of a kind a person could approve for good (`rememberable`) that isn't high risk (`lowRisk`) runs without a card;
- * merges, deploys, rollbacks, publishing and raw requests ask at every level (`alwaysAsks`).
+ * How much an agent asks before acting ("Perguntar sempre", "Perguntar só no arriscado", "Nunca perguntar"): no setting
+ * yet, so the gateway asks as the run's policy and the tools say, which is all `risky` keeps. `never`, the one level a
+ * hook may return now: a call of a kind a person could approve for good (`rememberable`) that isn't high risk
+ * (`lowRisk`) runs without a card; merges, deploys, rollbacks, publishing and raw requests ask at every level
+ * (`alwaysAsks`).
  */
-export type ApprovalLevel = "risky";
+export type ApprovalLevel = "never";
 
 /**
  * Names of deletions, money and a pull request's approval, which "Sempre nesta rotina" never covers; a routine's send
@@ -1291,7 +1292,7 @@ export function createToolGateway(deps: {
       }
       const levelLets =
         approves && remember && deps.approvalLevel && lowRisk(tool, tool.rememberAs ? remember.actions : [])
-          ? (await deps.approvalLevel(ctx)) === "risky"
+          ? (await deps.approvalLevel(ctx)) === "never"
           : false;
       if (levelLets) approves = false;
       // The routine's own job: an action its creator allowed when they set it up runs like an allowed one, every run.

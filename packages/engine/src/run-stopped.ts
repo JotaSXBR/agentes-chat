@@ -35,7 +35,10 @@ export interface StoppedRefs {
   reason?: string;
   /** The agents it had asked, stopped with it ("@ada, @rio"). */
   helpers?: string;
-  /** It hadn't started and its message was the stopper's own: that message still stands as their instruction. */
+  /**
+   * It hadn't started, its message was the stopper's own, and the agent had other work under way there: that message
+   * still stands as their instruction.
+   */
   own?: "1";
 }
 
@@ -99,14 +102,25 @@ export async function tellAgentStopped(
   const [person] = await db.select({ name: users.name }).from(users).where(eq(users.id, byUserId));
   const [agent] = byAgentId ? await db.select({ name: agents.name }).from(agents).where(eq(agents.id, byAgentId)) : [];
   const was = computerWaitOf(run) ? "waiting" : wasOf(previous);
-  // Stopped by hand before it started, their own message still stands: that stop was most likely meant for the work
-  // under way. A stop they asked the right hand for, in words, drops it.
-  const [trigger] =
+  // Stopped by hand before it started, their own message, while the agent had other work under way there: that stop
+  // was most likely meant for that work, so their message still stands. With nothing else under way the stop took
+  // their message back, and so does a stop they asked the right hand for in words.
+  const [own] =
     was === "queued" && !byAgentId
       ? await db
-          .select({ userId: messages.authorUserId })
+          .select({ id: messages.id })
           .from(messages)
-          .where(and(eq(messages.orgId, run.orgId), eq(messages.id, run.triggerMessageId)))
+          .where(
+            and(
+              eq(messages.orgId, run.orgId),
+              eq(messages.id, run.triggerMessageId),
+              eq(messages.authorUserId, byUserId),
+              sql`exists (select 1 from ${agentRuns} o where o.org_id = ${run.orgId}::uuid
+                and o.agent_id = ${run.agentId}::uuid and o.channel_id = ${run.channelId}::uuid
+                and o.id <> ${run.id}::uuid and not o.background
+                and o.status in ('running', 'waiting_approval', 'waiting_input'))`,
+            ),
+          )
       : [];
   const refs: StoppedRefs = {
     runId: run.id,
@@ -117,7 +131,7 @@ export async function tellAgentStopped(
     was,
     ...(cleanReason(reason) ? { reason: cleanReason(reason) } : {}),
     ...(helpers.length ? { helpers: helpers.join(", ") } : {}),
-    ...(trigger?.userId === byUserId ? { own: "1" as const } : {}),
+    ...(own ? { own: "1" as const } : {}),
   };
   const notice: Notice = { kind: "run_stopped", text: stoppedText(refs), refs: refsOf(refs) };
   const delivered = await db.transaction((tx) =>

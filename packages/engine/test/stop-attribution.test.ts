@@ -268,9 +268,15 @@ describe("the system's stop: its cause, nobody's name", () => {
 });
 
 describe("a person's own message stopped before its run started", () => {
-  test("it still stands for the agent; another person's, or one stopped through the right hand, is dropped", async () => {
+  test("while the agent's other work there went on, it still stands; another person's, or through the right hand, is dropped", async () => {
     f = await setup({ rightHand: true });
     const lodi = await lodiOf();
+    // Dev is at work here on an earlier ask, waiting on a colleague's answer.
+    const earlier = await ask("@dev confere com o fornecedor a receita de ontem");
+    await f.db
+      .update(schema.agentRuns)
+      .set({ status: "waiting_input" })
+      .where(eq(schema.agentRuns.id, (await runOf(earlier.id)).id));
     const mine = await ask("@dev chama a API, não o fornecedor");
     await cancelRun(deps(), f.owner.id, f.org.id, (await runOf(mine.id)).id);
     const bia = await addMember(f.db, f.org.id, "member", "Bia");
@@ -290,5 +296,16 @@ describe("a person's own message stopped before its run started", () => {
       expect(refsOf(dropped).own).toBeUndefined();
       expect(dropped?.body).toContain("Don't pick it up again on your own");
     }
+  });
+
+  test("with nothing else under way there, the stop took the message back", async () => {
+    f = await setup();
+    const mine = await ask("@dev apaga a branch antiga");
+    await cancelRun(deps(), f.owner.id, f.org.id, (await runOf(mine.id)).id);
+
+    const [notice] = await stopNotices();
+    expect(refsOf(notice)).toMatchObject({ was: "queued" });
+    expect(refsOf(notice).own).toBeUndefined();
+    expect(notice?.body).toContain("Don't pick it up again on your own");
   });
 });

@@ -850,6 +850,10 @@ export async function insertMessageWithRuns(
                 -- Named: a mention of everyone is no answer to whatever each agent asked.
                 or oq.agent_id in (select id from named)
                 or ${askedIt})
+              -- In a DM, only the DM's own agent's card: another agent's placed here (one it consulted) is answered on
+              -- the card, and the message goes to the DM's agent.
+              and not exists (select 1 from ${channels} dc where dc.id = ${input.channelId}::uuid and dc.kind = 'dm'
+                and position(('a:' || oq.agent_id::text) in coalesce(dc.dm_key, '')) = 0)
             order by oq.created_at desc limit 1)
           and not ${forAnother(sql`q.agent_id`)}
           and q.agent_id not in (select agent_id from muted)

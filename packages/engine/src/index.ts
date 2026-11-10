@@ -203,6 +203,7 @@ export * from "./organizations";
 export * from "./out-of-office";
 export * from "./outbound";
 export * from "./outbox";
+export * from "./outside-sends";
 export * from "./parked-asks";
 export * from "./pdf";
 export * from "./permissions";

@@ -500,14 +500,14 @@ export async function triageItem(judge: Judge, input: { orgId: string; agentId: 
  * agent's own work): per agent, open work on the same item takes it (`linked`, a note to that run), an item it already
  * tried `LOOP_MAX` times in a day stops (`loop`, one summary to a person), noise waits for the digest (`digest`), and
  * an agent at its cap of unrequested runs, or (for a routine's or a webhook's item) whose computer has turns waiting for
- * room, looks again later (`later`).
+ * room, looks again later (`later`). `triage: false`: work an agent handed on on purpose (`tell_agent`), never noise.
  * Returns the agents to wake now; every outcome is recorded (`autonomy_signals`).
  */
 export async function brakeWakes(
   deps: { db: Database; pubsub?: PubSub; judge?: Judge | null },
   message: Message,
   agentIds: string[],
-  options: { look?: number; reportIn?: BrakeReport } = {},
+  options: { look?: number; reportIn?: BrakeReport; triage?: boolean } = {},
 ): Promise<{ wake: string[]; held: Map<string, BrakeOutcome> }> {
   const held = new Map<string, BrakeOutcome>();
   if (agentIds.length === 0) return { wake: [], held };
@@ -531,11 +531,12 @@ export async function brakeWakes(
       crowded.has(agentId),
       async () => {
         if (triage === null)
-          triage = deps.judge
-            ? await triageItem(deps.judge, { orgId: message.orgId, agentId, body: message.body }).catch(
-                () => "work" as const,
-              )
-            : "work";
+          triage =
+            deps.judge && options.triage !== false
+              ? await triageItem(deps.judge, { orgId: message.orgId, agentId, body: message.body }).catch(
+                  () => "work" as const,
+                )
+              : "work";
         return triage;
       },
       options.look ?? 0,
@@ -684,7 +685,10 @@ async function brakeOne(
   return null;
 }
 
-/** Whether an agent already has as many unrequested runs going as its settings allow. */
+/**
+ * Whether an agent already has as many unrequested runs going as its settings allow. Only runs at work count: one
+ * parked on a person, an approval, its plan or its computer's line holds no capacity, so other work goes on.
+ */
 async function unrequestedAtCap(db: Executor, orgId: string, agentId: string) {
   const [agent] = await db
     .select({ autonomy: agents.autonomyBrakes })
@@ -703,7 +707,7 @@ async function unrequestedAtCap(db: Executor, orgId: string, agentId: string) {
         eq(autonomySignals.orgId, orgId),
         eq(autonomySignals.agentId, agentId),
         eq(autonomySignals.kind, "wake"),
-        inArray(agentRuns.status, [...ACTIVE_RUN_STATUSES]),
+        inArray(agentRuns.status, ["queued", "running"]),
       ),
     );
   return Number(row?.n ?? 0) >= max;

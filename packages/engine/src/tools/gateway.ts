@@ -23,7 +23,9 @@ import { sha256 } from "../crypto";
 import { provenReadOnly } from "../databases/guard";
 import { cutMarked, cutText, pgSafeJson, pgSafeText } from "../format";
 import { mergeReposOfCall, recordMergeDone, reposOfGithubCall } from "../git/repos";
+import type { Judge } from "../judge";
 import { recordRead } from "../outbound";
+import { codeWrites, envSecretsNamed, isRunCode, storedKeysOf, toCustomer } from "../outside-sends";
 import { routineCreatorOf } from "../requester";
 import { FIXED_GRANTS, RIGHT_HAND_REFUSAL } from "../right-hand";
 import type { RoutineBrief } from "../routine-brief";
@@ -47,7 +49,17 @@ import { connectorFirst } from "./connector-first";
 import { type BlockedTool, compactSchema, presentTools, resolveCall } from "./directory";
 import { canonicalJson, validateJson } from "./json-schema";
 import { missingPermissions, REQUEST_PERMISSION_TOOL } from "./permission";
-import { approvalOrigin, type PolicyDecision, takeWhy, toolKind, toolPolicy, WHY_REFUSAL, withWhy } from "./run-policy";
+import {
+  approvalOrigin,
+  type PolicyDecision,
+  takeWhy,
+  toolKind,
+  toolPolicy,
+  WHY_MAX_CHARS,
+  WHY_MIN_CHARS,
+  WHY_REFUSAL,
+  withWhy,
+} from "./run-policy";
 import {
   accessWithNeeds,
   BUILTIN_SCOPES,
@@ -261,6 +273,14 @@ const ranBefore = (approval: { result: unknown }): ToolOutput =>
 export const CREDENTIAL_REFUSAL =
   "Refused: this call carries what looks like a key, token or private key. Work that comes from a routine's background work never sends credentials anywhere: leave the value out (you may say one was found, and where).";
 
+/** What the agent reads when a message someone outside receives waits for a person (`asksFirst`). */
+export const CUSTOMER_MESSAGE_ASK =
+  "Not sent: this goes to a customer or someone outside the company, so a person sees the exact text first. Call it again with the same input and `why` (who it answers and why, in their language): a person decides on the card. Tell the person it waits for their OK.";
+
+/** What a run a routine's reading feeds reads when its command names a saved key (`asksFirst`). */
+const routineKeyAsk = (names: string[]) =>
+  `Not run: this command uses the saved key ${names.join(", ")}, and work a routine started never uses a saved key without a person's go. Call run_code again with the same code and \`why\` (what it sends where, and why): a person decides on the card.`;
+
 /** `ask_user` (questions.ts): it waits for a person, so it carries a `why` like an approval. */
 const ASK_USER = "ask_user";
 
@@ -461,8 +481,54 @@ export function createToolGateway(deps: {
   catalog?: ServerCatalog;
   /** Live events (the autonomy brakes' proposal card, ADR 0131). */
   pubsub?: PubSub;
+  /** Reads whether a write reaches a customer (`asksFirst`). None: only the tools' own rules ask. */
+  judge?: Judge | null;
 }) {
   const now = deps.now ?? (() => new Date());
+
+  /** What the person behind the run wrote to start it, for the judge to see whether they gave a text to send. */
+  async function askedText(ctx: ToolContext): Promise<string | null> {
+    const [m] = await ctx.db
+      .select({ body: schema.messages.body, authorType: schema.messages.authorType })
+      .from(schema.messages)
+      .where(and(eq(schema.messages.orgId, ctx.orgId), eq(schema.messages.id, ctx.triggerMessageId)));
+    return m?.authorType === "person" ? m.body : null;
+  }
+
+  /**
+   * Why a call that wouldn't ask a person must, or null (`outside-sends.ts`). On a run a routine's reading feeds: a
+   * command that names an env secret the agent holds, since such work never uses a saved key on its own (ADR 0053
+   * §3, ADR 0144 §2). On any other run: a message a customer or someone outside the company receives, sent by a
+   * connected app's write or by a command that writes with a stored key, unless the person gave that exact text.
+   */
+  async function asksFirst(
+    ctx: ToolContext,
+    authority: RunAuthority | null,
+    tool: ToolDefinition,
+    input: Record<string, unknown>,
+  ): Promise<{ code: string; content: string } | null> {
+    const code = isRunCode(tool) && typeof input.code === "string" ? input.code : "";
+    if (fedByRoutine(authority)) {
+      const named = code ? await envSecretsNamed(ctx.db, ctx.orgId, ctx.agentId, code) : [];
+      return named.length > 0 ? { code: "tool.routine_key", content: routineKeyAsk(named) } : null;
+    }
+    if (!deps.judge) return null;
+    // A mailbox's sends follow its own rule (who may receive mail without a card), set by its owner.
+    const writes = tool.connectionId
+      ? !tool.scope.startsWith("mail:") && toolKind(tool).kind === "external"
+      : code !== "" && codeWrites(code) && (await storedKeysOf(ctx.db, ctx, input)).length > 0;
+    if (!writes) return null;
+    const customer = await toCustomer(deps.judge, {
+      orgId: ctx.orgId,
+      agentId: ctx.agentId,
+      ...(ctx.runId ? { runId: ctx.runId } : {}),
+      tool: tool.name,
+      about: tool.description,
+      call: input,
+      asked: authority?.kind === "person" ? await askedText(ctx) : null,
+    }).catch(() => false);
+    return customer ? { code: "tool.customer_message", content: CUSTOMER_MESSAGE_ASK } : null;
+  }
 
   async function allTools(ctx: ToolContext) {
     const byName = new Map<string, ToolDefinition>();
@@ -1142,6 +1208,15 @@ export function createToolGateway(deps: {
       const script = askedByWhy ? tool.rememberCommand?.(call.input) : null;
       const computerDecides = Boolean(script && loneMerge(script)) && (await mergeReposOfCall(ctx)).length > 0;
       if (computerDecides) approves = false;
+      // A message someone outside the company receives, or a saved key in work a routine started: a person's go first.
+      const first = approves ? null : await asksFirst(ctx, authority, tool, call.input);
+      if (first) {
+        approves = true;
+        // A connected app's tool has no `why` of its own: the one the call gave was set aside above.
+        const given = repeatWhy?.trim() ?? "";
+        why = given.length >= WHY_MIN_CHARS && given.length <= WHY_MAX_CHARS ? given : "";
+        whyMissing = !why;
+      }
       // "Aprovar sempre": a call of a kind someone approved for good runs like an allowed one, why or not.
       const remember = !approves
         ? null
@@ -1187,7 +1262,11 @@ export function createToolGateway(deps: {
         return finish({ content: AHEAD_REFUSED, isError: true, data: { code: "approval.ahead_refused" } }, "refused");
       }
       if (whyMissing && !approvedBy && !ahead && !ownJob && !mergeAlone)
-        return finish({ content: WHY_REFUSAL, isError: true, data: { code: "tool.why_missing" } });
+        return finish({
+          content: first?.content ?? WHY_REFUSAL,
+          isError: true,
+          data: { code: first?.code ?? "tool.why_missing" },
+        });
       // Costly work nobody asked for directly (ADR 0131 §3): a person's go first, on every brain.
       const isPrompt = tool.name === PERMISSION_TOOL && builtIn;
       const cost = ctx.runId && unrequested(authority) ? await costOf(ctx, tool.name, call.input) : null;

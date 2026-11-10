@@ -404,7 +404,7 @@ export interface RoutineDeps {
   connectors?: ConnectorTriggerDeps;
 }
 
-type RoutineRow = typeof routines.$inferSelect;
+export type RoutineRow = typeof routines.$inferSelect;
 type RunRow = typeof routineRuns.$inferSelect;
 
 const targetOf = (r: RoutineRow) => r.target as unknown as RoutineTarget;
@@ -1541,7 +1541,7 @@ async function loadRoutine(db: Database, orgId: string, id: string, options: { d
 }
 
 /** Edit: its creator, admins, or the agent's owner. */
-async function requireRoutineEditor(db: Database, actorId: string, orgId: string, routine: RoutineRow) {
+export async function requireRoutineEditor(db: Database, actorId: string, orgId: string, routine: RoutineRow) {
   const membership = await requirePermission(db, actorId, orgId, "read");
   if (routine.createdByUserId === actorId || can(membership, "manage_routines")) return;
   const agent = await getAgent(db, orgId, routine.agentId);

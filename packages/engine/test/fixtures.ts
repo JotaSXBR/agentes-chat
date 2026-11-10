@@ -386,7 +386,7 @@ export async function setup(
     ...(options.toolSources ?? []),
   ];
   const tools: ToolGateway | undefined =
-    sources.length > 0 ? createToolGateway({ sources, catalog: options.catalog }) : undefined;
+    sources.length > 0 ? createToolGateway({ sources, catalog: options.catalog, judge: context.judge }) : undefined;
   machineHub?.setMissionHooks(createMissionHooks({ db, ...missionDeps, tools }));
   const jobDeps = {
     db,

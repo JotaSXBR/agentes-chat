@@ -1311,12 +1311,14 @@ export async function startTakeover(
 
 /**
  * Before an agent acts on one of its screens: a person in control of it (or of
- * the screen showing the same window), or asked to take it, makes the call wait (the run pauses on that handoff and resumes when
+ * the screen showing the same window) makes the call wait (the run pauses on that handoff and resumes when
  * it ends); another run of the agent is refused while the run the handoff
- * belongs to still goes on. A handoff whose run ended (done, failed,
+ * belongs to still goes on. A request nobody has taken yet holds only the run
+ * that asked: the agent's other runs go on using the screen until a person
+ * takes it. A handoff whose run ended (done, failed,
  * canceled) while it stayed open (a person kept control, or the run read a
  * message instead of waiting for the help it asked, `waits.ts`) is this
- * run's to wait on: it moves here (a take over's card with it). Null: go
+ * run's to wait on once a person has it: it moves here (a take over's card with it). Null: go
  * on. For the browser tools (`tools.ts`).
  */
 export async function waitIfPersonInControl(
@@ -1327,6 +1329,7 @@ export async function waitIfPersonInControl(
 ): Promise<ToolOutput | null> {
   const open = await openHandoffOn(db, ctx.orgId, ctx.agentId, screen);
   if (!open) return null;
+  if (open.status === "pending" && open.runId !== ctx.runId) return null;
   const busy = `A person has control of your ${SCREENS[open.screen].what}, or has been asked to take it.`;
   if (open.runId !== ctx.runId) {
     const from = open.runId;

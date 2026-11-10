@@ -407,10 +407,11 @@ export const DEEP_WAKE_HOP = 4;
 /**
  * An agent's message @mentions other agents: for each, does it need nothing from that agent (ADR 0089)? Nothing is
  * a thanks, an "ok", agreement or a sign-off, a quote or a name ("as @x said", "@x already deployed", "talk to @x"),
- * a report of what it couldn't do or that it won't be called again,
- * or a plan or an offer that waits for a person ("if you agree, I'll ask @x"). Work, a question, a delivery (a file,
- * a handover, results, a summary, a verdict) and "I'll ask @x to…" need it. `answering`: the message it answers, so a
- * hand-back or a question back reads as one. Probability per agent id, in any language; who wakes is `jobs.ts`'s.
+ * a report of what it couldn't do or that it won't be called again, a recap or status written for the people (who has
+ * what, "@x is on it", "@x's summary is outdated"), or a plan or an offer that waits for a person ("if you agree, I'll
+ * ask @x"). Work, a question, a delivery it must act on (a file, a handover, results, a verdict), work pointed at it
+ * that nobody handed it yet ("the upload is @x's") and "I'll ask @x to…" need it. `answering`: the message it answers,
+ * so a hand-back or a question back reads as one. Probability per agent id, in any language; who wakes is `jobs.ts`'s.
  */
 export async function mentionNeedsNothing(
   judge: Judge,
@@ -432,12 +433,12 @@ export async function mentionNeedsNothing(
       instructions: {
         agent: { handle: `@${t.handle}`, name: t.name, role: t.role },
         question:
-          "Does `message` need nothing from `agent`, so `agent` can ignore it? It needs nothing only when, toward `agent`, it just thanks, acknowledges, agrees or signs off, quotes or names it, reports to others what `agent` did or couldn't do (not results or a verdict it hands to `agent`), says it won't call on `agent` (again), tells a person to talk to it, or offers a person to involve it later. Anything it gives `agent` to do, answer, read or act on needs it, also when it hands back work `agent` asked for. `answering` is the message it replies to, when there is one.",
+          "Does `message` need nothing from `agent`, so `agent` can ignore it? It needs nothing only when, toward `agent`, it just thanks, acknowledges, agrees or signs off, quotes or names it, reports to others what `agent` did or couldn't do (not results or a verdict it hands to `agent`), recaps for the people who has what or where things stand (also that `agent` already has the work, or that something `agent` wrote is outdated), says it won't call on `agent` (again), tells a person to talk to it, or offers a person to involve it later. Anything it gives `agent` to do, answer, read or act on needs it, also when it hands back work `agent` asked for or points work nobody handed `agent` yet at it. `answering` is the message it replies to, when there is one.",
       },
       criteria: {
-        true: "Nothing for the agent: thanks, 'ok' or 👍, agreement or a sign-off, even addressed to it; or it only names the agent: what it said, did, couldn't do or can do ('as @agent said', '@agent already deployed', '@agent couldn't open the file, so I won't ask it again'), 'talk to @agent', or a plan or offer that waits for a person to decide ('if you agree, I'll open an issue for @agent', 'want me to ask @agent?').",
+        true: "Nothing for the agent: thanks, 'ok' or 👍, agreement or a sign-off, even addressed to it; or it only names the agent: what it said, did, couldn't do or can do ('as @agent said', '@agent already deployed', '@agent couldn't open the file, so I won't ask it again'), 'talk to @agent', a recap or status report written for the people ('@agent is on the upload, I handed it over', '@agent's summary is outdated', 'pending: @agent's review'), or a plan or offer that waits for a person to decide ('if you agree, I'll open an issue for @agent', 'want me to ask @agent?').",
         false:
-          "Something for the agent: work, a request, an assignment, a question, or a delivery for it to read or act on (a file, a handover, results, a summary, a verdict, a review), also in the last line of a long message; or the author says it will ask the agent to do something, with no person to decide first ('I'll ask @agent to review it').",
+          "Something for the agent: work, a request, an assignment, a question, or a delivery for it to read or act on (a file, a handover, results, a verdict, a review), also in the last line of a long message; work pointed at it that nobody handed it yet ('the upload is @agent's job'); or the author says it will ask the agent to do something, with no person to decide first ('I'll ask @agent to review it').",
       },
     };
   });

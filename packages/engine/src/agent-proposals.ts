@@ -1058,7 +1058,7 @@ async function giveLines(
 
   // In words, for the agent that proposed it.
   const mail = draft.mail ?? [];
-  // A plan thinks only for its owner's agents: a mailbox's owner who can't talk to it can't give it either, yet.
+  // A mailbox's owner it doesn't answer can't give it either, yet.
   const now = (await getAgent(db, orgId, agent.id)) ?? agent;
   const unheard = new Set<string>();
   for (const m of mail) {
@@ -1119,7 +1119,7 @@ async function giveLines(
       .map((m) => {
         const owner = owners.find((o) => o.id === m.ownerUserId)?.name ?? "its owner";
         return unheard.has(m.ownerUserId)
-          ? `the mailbox ${m.address} (only ${owner} gives it, once it answers ${owner}: it thinks with its owner's plan, so its owner lets ${owner} talk to it first)`
+          ? `the mailbox ${m.address} (only ${owner} gives it, once it answers ${owner}: its owner lets ${owner} talk to it first)`
           : `the mailbox ${m.address} (only ${owner} gives it)`;
       }),
   ];

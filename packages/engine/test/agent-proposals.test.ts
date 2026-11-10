@@ -27,6 +27,7 @@ import {
   suggestAgentAi,
   type ToolContext,
   updateAgent,
+  updateOrgSettings,
 } from "../src";
 import { addMember, type Fixture, makeAdmin, setup } from "./fixtures";
 import { pairMachine } from "./machine-fixtures";
@@ -776,7 +777,9 @@ describe("one request, one card: channels, mailboxes and a routine", () => {
     ).map((m) => (m.meta.notice as { text: string }).text);
     expect(texts[0]).toContain("Not given yet: the mailbox ana@acme.com (only ana gives it).");
     expect(texts[1]).toContain("GitHub (an admin)");
-    // Caio's own plan account thinks for the next one, which then answers only Caio: Ana gives it once it answers her.
+    // Caio's own plan account thinks for the next one, and the workspace's new agents answer only their owner: Ana
+    // gives her mailbox once it answers her.
+    await updateOrgSettings(f.db, f.owner.id, f.org.id, { newAgentAudience: "owner" });
     const { machineId } = await pairMachine({ db: f.db, pubsub: f.pubsub }, caio.id, f.org.id, {
       name: "MacBook",
       exec: true,

@@ -576,7 +576,9 @@ export function issueRoutes(deps: AppDeps) {
       request: { params: OrgParams.extend({ messageId: z.uuid() }) },
       responses: {
         200: json(
-          z.object({ started: z.number().openapi({ description: "Tasks that got the go (0: someone pressed it already)." }) }),
+          z.object({
+            started: z.number().openapi({ description: "Tasks that got the go (0: someone pressed it already)." }),
+          }),
         ),
         ...errors,
       },

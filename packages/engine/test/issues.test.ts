@@ -658,7 +658,9 @@ describe("issues", () => {
     // The same assignee kept, or a change of its own: nothing to say.
     expect(await run("update_issue", { issue: ref, priority: "high" })).not.toContain("Começar estas");
     // To itself: its queue waits for the go too, and working on it now is fine.
-    expect(await run("update_issue", { issue: ref, assignee: "me" })).toContain("working on it now, in this run, is fine");
+    expect(await run("update_issue", { issue: ref, assignee: "me" })).toContain(
+      "working on it now, in this run, is fine",
+    );
     expect(await run("update_issue", { issue: ref, assignee: "@bia" })).toContain("starts nothing yet");
     expect(await run("update_issue", { issue: ref, assignee: "@bia", status: "in_progress" })).not.toContain(
       "Começar estas",
@@ -684,7 +686,9 @@ describe("issues", () => {
       title: "Rotate the API keys",
       assignee: { type: "agent", id: f.agent.id },
     });
-    expect((await run({ issue: `#${issue.number}`, blocked: "Needs the vault password from Ana" }))?.isError).toBeFalsy();
+    expect(
+      (await run({ issue: `#${issue.number}`, blocked: "Needs the vault password from Ana" }))?.isError,
+    ).toBeFalsy();
     const blocked = await getIssue(f.db, person(f.owner.id), f.org.id, { id: issue.id });
     expect(blocked.blocked).toMatchObject({ reason: "agent", text: "Needs the vault password from Ana" });
     expect(blocked.queue).toBeNull();

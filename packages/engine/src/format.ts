@@ -136,8 +136,15 @@ const CONNECTORS = new Set(
  * plural's final s, once each and sorted. "Migrate the billing access" and "migrate billing access" share it.
  */
 export function meaningKey(text: string) {
-  const words = text.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
-  const kept = words.filter((w) => !CONNECTORS.has(w)).map((w) => (w.length > 3 && w.endsWith("s") ? w.slice(0, -1) : w));
+  const words =
+    text
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .toLowerCase()
+      .match(/[\p{L}\p{N}]+/gu) ?? [];
+  const kept = words
+    .filter((w) => !CONNECTORS.has(w))
+    .map((w) => (w.length > 3 && w.endsWith("s") ? w.slice(0, -1) : w));
   return [...new Set(kept)].sort().join(" ");
 }
 

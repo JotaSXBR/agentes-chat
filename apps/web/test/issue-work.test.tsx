@@ -95,10 +95,13 @@ describe("asking an agent to implement an issue", () => {
     expect(state.calls.some((c) => c.method === "issues.startTasks" && c.args[1] === "m-tasks")).toBe(true);
 
     view.unmount();
-    await renderPage(<HandedTaskChips message={{ ...message, meta: { ...message.meta, tasksStarted: { byUserId: "nobody" } } }} />, {
-      api,
-      org: true,
-    });
+    await renderPage(
+      <HandedTaskChips message={{ ...message, meta: { ...message.meta, tasksStarted: { byUserId: "nobody" } } }} />,
+      {
+        api,
+        org: true,
+      },
+    );
     await settle(2);
     expect(document.body.textContent).toContain("Alguém deu o ok");
     expect([...document.querySelectorAll("button")].some((b) => b.textContent === "Começar estas")).toBe(false);

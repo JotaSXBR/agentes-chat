@@ -47,13 +47,13 @@ import { membersWhoMaySql } from "./permissions";
 import { fireRoutineEvent } from "./routines";
 import { agentSearchChannels, enqueueIndex, registerDocumentBuilder } from "./search";
 import { AUDIENCE_MAX, type Audience, admitTaskAgents, taskSeenSql } from "./task-access";
-import { kickTaskPump, taskQueues } from "./task-pump";
 import {
   ensureTaskConversation,
   type TaskConversationRef,
   type TaskConversationSummary,
   taskConversationSummaries,
 } from "./task-conversation";
+import { kickTaskPump, taskQueues } from "./task-pump";
 import { promptAnswer, promptPoll, toolDetail } from "./tool-detail";
 import { syncWikiLinks, withWikiLinks } from "./wiki-links";
 import { type WorkRow, type WorkView, workViews } from "./works";
@@ -804,7 +804,8 @@ function eventDetail(event: string | null, data: Record<string, unknown>) {
       return out(event);
     case "agent_asked":
       // Its agent's queue took it (`task-pump.ts`).
-      if (data.auto === true) return s(data.agentName) ? out("agent_queued", { name: s(data.agentName) as string }) : {};
+      if (data.auto === true)
+        return s(data.agentName) ? out("agent_queued", { name: s(data.agentName) as string }) : {};
       // `threadId`: the requester's DM thread where the work lives (only they can open it).
       return s(data.agentName)
         ? out(event, {

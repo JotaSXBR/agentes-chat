@@ -8,8 +8,8 @@ import {
   drainOutbox,
   enqueueTaskPumps,
   getIssue,
-  insertMessage,
   type IssueView,
+  insertMessage,
   listIssues,
   openTaskConversation,
   personAskedLately,
@@ -30,14 +30,21 @@ const { agentRuns, issues, messages } = schema;
 const deps = () => ({ db: f.db, pubsub: f.pubsub });
 const person = (userId: string) => ({ type: "person" as const, userId });
 const pump = (now = new Date(), startsPerDay?: number) =>
-  pumpTasks({ ...deps(), ai: { db: f.db, gateway: f.gateway }, ...(startsPerDay !== undefined ? { startsPerDay } : {}) }, f.org.id, now);
+  pumpTasks(
+    { ...deps(), ai: { db: f.db, gateway: f.gateway }, ...(startsPerDay !== undefined ? { startsPerDay } : {}) },
+    f.org.id,
+    now,
+  );
 
 /** A task a person gives an agent, as the board does. */
 const give = (title: string, agentId = f.agent.id, extra: Record<string, unknown> = {}, by = f.owner.id) =>
   createIssue(deps(), person(by), f.org.id, { title, assignee: { type: "agent", id: agentId }, ...extra });
 
 const runsOf = (agentId = f.agent.id) =>
-  f.db.select().from(agentRuns).where(and(eq(agentRuns.orgId, f.org.id), eq(agentRuns.agentId, agentId)));
+  f.db
+    .select()
+    .from(agentRuns)
+    .where(and(eq(agentRuns.orgId, f.org.id), eq(agentRuns.agentId, agentId)));
 
 /** Its runs end (done), `ago` ms back. */
 async function finish(runIds: string[], ago = 0) {
@@ -75,7 +82,10 @@ describe("the task pump: an agent takes its next task as room frees (24h build f
     const runs = await runsOf();
     expect(runs.length).toBe(2);
     for (const run of runs) {
-      const [task] = await f.db.select().from(issues).where(eq(issues.id, run.issueId ?? ""));
+      const [task] = await f.db
+        .select()
+        .from(issues)
+        .where(eq(issues.id, run.issueId ?? ""));
       expect(run.channelId).toBe(task?.conversationChannelId ?? "");
       expect(run.status).toBe("queued");
       const [start] = await f.db.select().from(messages).where(eq(messages.id, run.triggerMessageId));
@@ -104,7 +114,10 @@ describe("the task pump: an agent takes its next task as room frees (24h build f
     const third = await give("Three");
     await pump();
     const [first] = await runsOf();
-    await f.db.update(agentRuns).set({ status: "waiting_input" }).where(eq(agentRuns.id, first?.id ?? ""));
+    await f.db
+      .update(agentRuns)
+      .set({ status: "waiting_input" })
+      .where(eq(agentRuns.id, first?.id ?? ""));
     expect(await pump()).toBe(1);
     expect((await runsOf()).some((r) => r.issueId === third.id)).toBe(true);
   });
@@ -188,7 +201,10 @@ describe("the task pump: an agent takes its next task as room frees (24h build f
     await finish([run?.id ?? ""], TASK_IDLE_MS + 60_000);
     expect(await pump()).toBe(1);
     const resumed = (await runsOf()).find((r) => r.id !== run?.id);
-    const [notice] = await f.db.select().from(messages).where(eq(messages.id, resumed?.triggerMessageId ?? ""));
+    const [notice] = await f.db
+      .select()
+      .from(messages)
+      .where(eq(messages.id, resumed?.triggerMessageId ?? ""));
     expect(notice?.meta.notice).toMatchObject({ kind: "task_start", refs: { line: "resume" } });
     expect(notice?.body).toContain("still in progress");
     // Its first start counts: one more comeback today, then it waits for a person.
@@ -216,7 +232,10 @@ describe("the task pump: an agent takes its next task as room frees (24h build f
       { blocked: "Needs the new vault password from Ana" },
     );
     await finish([run?.id ?? ""], TASK_IDLE_MS + 60_000);
-    expect((await viewOf(task)).blocked).toMatchObject({ reason: "agent", text: "Needs the new vault password from Ana" });
+    expect((await viewOf(task)).blocked).toMatchObject({
+      reason: "agent",
+      text: "Needs the new vault password from Ana",
+    });
     expect(await pump()).toBe(0);
 
     const conversation = await openTaskConversation(f.db, person(f.owner.id), f.org.id, task.id);
@@ -285,7 +304,10 @@ describe("the task pump: an agent takes its next task as room frees (24h build f
     expect(await enqueueTaskPumps(f.db)).toBe(0);
 
     await updateOrgSettings(f.db, f.owner.id, f.org.id, { taskPump: true });
-    await f.db.update(schema.agents).set({ autonomyBrakes: { tasks: false } }).where(eq(schema.agents.id, ops.id));
+    await f.db
+      .update(schema.agents)
+      .set({ autonomyBrakes: { tasks: false } })
+      .where(eq(schema.agents.id, ops.id));
     expect(await pump()).toBe(1);
     expect((await runsOf(ops.id)).length).toBe(0);
   });
@@ -326,13 +348,16 @@ describe("the task pump: an agent takes its next task as room frees (24h build f
       .select()
       .from(messages)
       .where(and(eq(messages.agentRunId, run?.id ?? ""), eq(messages.authorAgentId, f.agent.id)));
-    expect(reply?.channelId).toBe((await f.db.select().from(issues).where(eq(issues.id, task.id)))[0]?.conversationChannelId ?? "");
+    expect(reply?.channelId).toBe(
+      (await f.db.select().from(issues).where(eq(issues.id, task.id)))[0]?.conversationChannelId ?? "",
+    );
   });
 
   test("five tasks given at night are done by morning, two at a time", async () => {
     f = await setup();
     const tasks = [];
-    for (const title of ["Night one", "Night two", "Night three", "Night four", "Night five"]) tasks.push(await give(title));
+    for (const title of ["Night one", "Night two", "Night three", "Night four", "Night five"])
+      tasks.push(await give(title));
     let most = 0;
     for (let round = 0; round < 10; round++) {
       await pump();
@@ -344,7 +369,12 @@ describe("the task pump: an agent takes its next task as room frees (24h build f
       await f.db
         .update(issues)
         .set({ status: "done" })
-        .where(inArray(issues.id, live.map((r) => r.issueId ?? "")));
+        .where(
+          inArray(
+            issues.id,
+            live.map((r) => r.issueId ?? ""),
+          ),
+        );
     }
     expect(most).toBe(2);
     for (const t of tasks) expect(await statusOf(t.id)).toBe("done");

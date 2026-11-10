@@ -6,6 +6,8 @@ import { type ArtifactDeps, fileRefOf, shareArtifact } from "./artifacts";
 import { canTalkTo, speakerFor } from "./audience";
 import { runChain, UUID } from "./authority";
 import { callableAgents, notCallableText } from "./brakes";
+import { meaningKey } from "./format";
+import { taskOriginText } from "./issue-work";
 import {
   commentIssue,
   createIssue,
@@ -21,8 +23,6 @@ import {
   updateIssue,
   type WorkActor,
 } from "./issues";
-import { taskOriginText } from "./issue-work";
-import { meaningKey } from "./format";
 import { fileIdsOf, getMessage } from "./messages";
 import { can, getMembership, listMembers } from "./organizations";
 import { chosenAudience, personBehindCall, visibleToField } from "./requester";
@@ -131,7 +131,8 @@ async function duplicateOf(deps: IssueDeps, ctx: ToolContext, reader: string | n
     limit: 500,
   });
   const same = open.find(
-    (i) => (i.status === "todo" || i.status === "in_progress" || i.status === "in_review") && meaningKey(i.title) === key,
+    (i) =>
+      (i.status === "todo" || i.status === "in_progress" || i.status === "in_review") && meaningKey(i.title) === key,
   );
   return same ? lineOf(deps, ctx, same) : null;
 }

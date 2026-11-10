@@ -31,8 +31,8 @@ import {
 } from "./issues";
 import { getMessage, messageView } from "./messages";
 import { can, getMembership } from "./organizations";
-import { enqueue } from "./outbox";
 import { outOfOfficeIds } from "./out-of-office";
+import { enqueue } from "./outbox";
 import { isRightHand, RIGHT_HAND } from "./right-hand";
 import { closedOrg } from "./standing";
 import { USAGE_WAIT_CODES } from "./usage-pause";
@@ -96,7 +96,8 @@ export async function kickTaskPump(db: Executor, orgId: string, now = new Date()
  * started by themselves `TASK_AUTO_STARTS_PER_DAY` times today, and their agent's queue is on with room left. The
  * pump checks the rest (`lineOf`, `heldAgents`): this keeps the minute's tick from queueing pumps that start nothing.
  */
-const waitingTaskSql = () => sql`${issues.assigneeType} = 'agent' and ${issues.status} in ('todo', 'in_progress', 'in_review')
+const waitingTaskSql =
+  () => sql`${issues.assigneeType} = 'agent' and ${issues.status} in ('todo', 'in_progress', 'in_review')
   and ${issues.blocked} is null
   and not exists (select 1 from ${organizationSettings} s where s.org_id = ${issues.orgId} and not s.task_pump)
   and exists (select 1 from ${agents} a where a.org_id = ${issues.orgId} and a.id::text = ${issues.assigneeId}
@@ -217,25 +218,26 @@ async function queueTasks(db: Executor, orgId: string, agentIds: string[], now: 
     reviews.length === 0
       ? Promise.resolve([])
       : db
-      .select({ issueId: issueActivity.issueId, at: sql<Date>`max(${issueActivity.createdAt})` })
-      .from(issueActivity)
-      .where(
-        and(
-          eq(issueActivity.orgId, orgId),
-          inArray(issueActivity.issueId, reviews),
-          or(
-            inArray(issueActivity.event, ["created", "assigned", "start_approved"]),
-            and(eq(issueActivity.event, "status_changed"), sql`${issueActivity.data}->>'to' = 'in_review'`),
-          ),
-        ),
-      )
-      .groupBy(issueActivity.issueId),
+          .select({ issueId: issueActivity.issueId, at: sql<Date>`max(${issueActivity.createdAt})` })
+          .from(issueActivity)
+          .where(
+            and(
+              eq(issueActivity.orgId, orgId),
+              inArray(issueActivity.issueId, reviews),
+              or(
+                inArray(issueActivity.event, ["created", "assigned", "start_approved"]),
+                and(eq(issueActivity.event, "status_changed"), sql`${issueActivity.data}->>'to' = 'in_review'`),
+              ),
+            ),
+          )
+          .groupBy(issueActivity.issueId),
   ]);
   const since = new Map(entered.map((e) => [e.issueId, new Date(e.at).getTime()]));
   return rows.map((row) => {
     const mine = runs.filter(
       (r) =>
-        r.agentId === row.assigneeId && (r.issueId === row.id || (!r.issueId && r.channelId === row.conversationChannelId)),
+        r.agentId === row.assigneeId &&
+        (r.issueId === row.id || (!r.issueId && r.channelId === row.conversationChannelId)),
     );
     const live = mine.some((r) => (LIVE as readonly string[]).includes(r.status));
     const ends = mine.map((r) => (r.ended ? new Date(r.ended).getTime() : 0));

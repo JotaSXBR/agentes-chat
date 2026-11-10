@@ -1629,10 +1629,16 @@ export async function askAgentToImplement(
   const agent = await getAgent(db, orgId, agentId);
   if (!agent || agent.archivedAt) throw new NotFoundError("Agent not found");
   if (!canTalkTo(agent, userId, await speakerFor(db, orgId, userId))) throw await audienceError(db, agent);
+  const reassign = issue.assigneeType !== "agent" || issue.assigneeId !== agentId;
+  // Asking for the work answers what its agent said blocked it: its queue may take it again afterwards.
+  const unblock = issue.blocked?.reason === "agent";
   const updated =
-    issue.assigneeType === "agent" && issue.assigneeId === agentId
-      ? await one(db, issue, userId)
-      : await updateIssue(deps, actor, orgId, issue.id, { assignee: { type: "agent", id: agentId } });
+    reassign || unblock
+      ? await updateIssue(deps, actor, orgId, issue.id, {
+          ...(reassign ? { assignee: { type: "agent" as const, id: agentId } } : {}),
+          ...(unblock ? { blocked: null } : {}),
+        })
+      : await one(db, issue, userId);
   const started = await db.transaction(async (tx) => {
     await lockAgentTasks(tx, agentId);
     return startTaskWork(tx, (await reload(tx, issue)) ?? issue, agent, { by: "person", userId });
@@ -1685,7 +1691,7 @@ export const lockAgentTasks = (tx: Executor, agentId: string) =>
 /** What the agent reads on its queue's turn, by line (the notice's text). */
 const QUEUE_TURN: Record<TaskLine, (n: number) => string> = {
   start: (n) =>
-    `Start on task #${n} now: it was next in your queue. Say in a line here that you're on it, then work on it; when you can't go on without someone, say what you need and mark it blocked (update_issue).`,
+    `Task #${n} was next in your queue: work on it now. Can't go on without someone: say what you need and mark it blocked (update_issue).`,
   resume: (n) =>
     `Task #${n} is still in progress and nothing is working on it: pick it up where you left off (read this conversation first). Done: say so and move it on. Can't go on without someone: say what you need and mark it blocked (update_issue).`,
   review: (n) =>

@@ -3,6 +3,7 @@ import { and, eq, inArray, schema } from "@agenteschat/db";
 import {
   announceTaskConversation,
   approveTaskStart,
+  askAgentToImplement,
   createAgent,
   createIssue,
   drainOutbox,
@@ -249,6 +250,40 @@ describe("the task pump: an agent takes its next task as room frees (24h build f
     await announceTaskConversation(deps(), f.org.id, answer.id);
     expect((await viewOf(task)).blocked).toBeNull();
     expect(await pump()).toBe(1);
+
+    // Asked for the work ("Pedir ao"), the block it named is answered too.
+    await f.db.update(agentRuns).set({ status: "done" });
+    await updateIssue(deps(), { type: "agent", agentId: f.agent.id, channelId: f.general.id }, f.org.id, task.id, {
+      blocked: "Waiting for the DNS change",
+    });
+    await askAgentToImplement(deps(), f.owner.id, f.org.id, task.id, f.agent.id);
+    expect((await viewOf(task)).blocked).toBeNull();
+  });
+
+  test("a follow-up its agent set in the task's conversation holds the comeback until then", async () => {
+    f = await setup();
+    const task = await give("Watch the deploy");
+    await pump();
+    const [run] = await runsOf();
+    const conversation = await openTaskConversation(f.db, person(f.owner.id), f.org.id, task.id);
+    const later = await insertMessage(f.db, {
+      orgId: f.org.id,
+      channelId: conversation.channelId,
+      threadId: conversation.rootId,
+      author: { type: "agent", agentId: f.agent.id, runId: null, hop: 1, stretchId: null },
+      body: "Check the deploy finished",
+      meta: { notice: { kind: "follow_up", text: "Check the deploy finished", refs: { state: "pending" } } },
+    });
+    await finish([run?.id ?? ""], TASK_IDLE_MS + 60_000);
+    expect(await pump()).toBe(0);
+    expect(await enqueueTaskPumps(f.db)).toBe(0);
+
+    await f.db
+      .update(messages)
+      .set({ meta: { notice: { kind: "follow_up", text: "Check the deploy finished", refs: { state: "done" } } } })
+      .where(eq(messages.id, later.id));
+    expect(await enqueueTaskPumps(f.db)).toBe(1);
+    expect(await pump()).toBe(1);
   });
 
   test("whoever gave the task decides: a person's assignment starts it for them, an agent's waits for a person's go", async () => {
@@ -334,6 +369,48 @@ describe("the task pump: an agent takes its next task as room frees (24h build f
     expect(await enqueueTaskPumps(f.db)).toBe(1);
     await pump();
     expect(await enqueueTaskPumps(f.db)).toBe(0);
+  });
+
+  test("the tick leaves out what the pump wouldn't start, so an idle workspace gets no job every minute", async () => {
+    f = await setup();
+    const later = (ms: number) => new Date(Date.now() + ms);
+    // Its agent sent it to review itself and stopped: nothing to do until a person moves it.
+    const reviewed = await give("Open the pull request");
+    await pump();
+    const [run] = await runsOf();
+    await updateIssue(
+      deps(),
+      { type: "agent", agentId: f.agent.id, channelId: run?.channelId ?? "", runId: run?.id ?? "" },
+      f.org.id,
+      reviewed.id,
+      { status: "in_review" },
+    );
+    await finish([run?.id ?? ""]);
+    expect(await enqueueTaskPumps(f.db, later(TASK_IDLE_MS * 2))).toBe(0);
+    expect(await pump(later(TASK_IDLE_MS * 2))).toBe(0);
+
+    // Work left in progress a minute ago waits out its quarter of an hour.
+    await f.db.update(issues).set({ status: "in_progress" }).where(eq(issues.id, reviewed.id));
+    expect(await enqueueTaskPumps(f.db)).toBe(0);
+    expect(await enqueueTaskPumps(f.db, later(TASK_IDLE_MS + 60_000))).toBe(1);
+    await f.db.update(issues).set({ status: "done" }).where(eq(issues.id, reviewed.id));
+
+    // A task whose giver left the workspace is nobody's to start.
+    const bob = await addMember(f.db, f.org.id, "member", "bob");
+    await give("Bob's task", f.agent.id, {}, bob.id);
+    await f.db.delete(schema.organizationMembers).where(eq(schema.organizationMembers.userId, bob.id));
+    expect(await enqueueTaskPumps(f.db)).toBe(0);
+
+    // A workspace on hold, or an agent on hold, works on nothing.
+    await give("Ana's task");
+    expect(await enqueueTaskPumps(f.db, later(60_000))).toBe(1);
+    await f.db.update(schema.organizations).set({ standing: "hold" }).where(eq(schema.organizations.id, f.org.id));
+    expect(await enqueueTaskPumps(f.db, later(120_000))).toBe(0);
+    expect(await pump()).toBe(0);
+    await f.db.update(schema.organizations).set({ standing: "active" }).where(eq(schema.organizations.id, f.org.id));
+    await f.db.update(schema.agents).set({ operatorHoldAt: new Date() }).where(eq(schema.agents.id, f.agent.id));
+    expect(await enqueueTaskPumps(f.db, later(180_000))).toBe(0);
+    expect(await pump()).toBe(0);
   });
 
   test("a person's assignment wakes the queue by itself: its job starts the task and the agent works on it", async () => {

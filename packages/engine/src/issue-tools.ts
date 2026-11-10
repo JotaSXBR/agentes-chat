@@ -101,9 +101,9 @@ async function handOverLine(deps: IssueDeps, ctx: ToolContext, i: IssueView) {
   if (ctx.background)
     return `\n#${i.number} starts nothing: it waits until a person starts it from the task. Say so in your report.`;
   if (i.assignee.id === ctx.agentId)
-    return `\nYour queue takes #${i.number} by itself only after a person's go on the "Começar estas" card your reply carries; working on it now, in this run, is fine.`;
+    return `\nYour queue takes #${i.number} by itself only after a person's go on the start card your reply carries; working on it now, in this run, is fine.`;
   const name = (await assigneeNames(deps, ctx, [i])).get(i.assignee.id) ?? "that agent";
-  return `\n#${i.number} starts nothing yet: your reply carries a "Começar estas" card with it, and once a person presses it ${name} starts as soon as it has room. Say in a line that it waits for their go on the card: nobody works on it before that.`;
+  return `\n#${i.number} starts nothing yet: your reply carries a start card with it, and once a person presses it ${name} starts as soon as it has room. Say in a line that it waits for their go on that card: nobody works on it before that.`;
 }
 
 /**

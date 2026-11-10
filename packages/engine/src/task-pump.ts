@@ -6,7 +6,6 @@ import {
   eq,
   inArray,
   isNull,
-  not,
   or,
   rowsOf,
   type SQL,
@@ -20,6 +19,7 @@ import { requireChannelAccess } from "./channels";
 import { crowdedAgents } from "./computer-queue";
 import { NotFoundError } from "./errors";
 import { publishMessageCreated } from "./events";
+import { FOLLOW_UP_LIMITS } from "./follow-through";
 import { boardColumns, columnOf } from "./issue-columns";
 import {
   announceTaskStart,
@@ -34,7 +34,7 @@ import { can, getMembership } from "./organizations";
 import { outOfOfficeIds } from "./out-of-office";
 import { enqueue } from "./outbox";
 import { isRightHand, RIGHT_HAND } from "./right-hand";
-import { closedOrg } from "./standing";
+import { openOrg } from "./standing";
 import { USAGE_WAIT_CODES } from "./usage-pause";
 
 const { agents, agentRuns, issues, issueActivity, messages, organizations, organizationSettings, organizationMembers } =
@@ -91,17 +91,26 @@ export async function kickTaskPump(db: Executor, orgId: string, now = new Date()
   });
 }
 
+/** A follow-up its agent set (`follow_up`), still to come: the agent comes back to that conversation then by itself. */
+const pendingFollowUpSql = (m: SQL, now: Date) => sql`${m}.deleted_at is null
+  and ${m}.created_at > ${new Date(now.getTime() - (FOLLOW_UP_LIMITS.maxMinutes + 60) * 60_000).toISOString()}::timestamptz
+  and ${m}.meta->'notice'->>'kind' = 'follow_up' and ${m}.meta->'notice'->'refs'->>'state' = 'pending'`;
+
 /**
- * Tasks in SQL a queue might take now: a person gave them (`taskStarters`), nothing works on them, not blocked nor
- * started by themselves `TASK_AUTO_STARTS_PER_DAY` times today, and their agent's queue is on with room left. The
- * pump checks the rest (`lineOf`, `heldAgents`): this keeps the minute's tick from queueing pumps that start nothing.
+ * Tasks in SQL a queue might take now, by `lineOf`'s rules: a person still in the workspace gave them
+ * (`taskStarters`), nothing works on them, not blocked nor started by themselves `TASK_AUTO_STARTS_PER_DAY` times
+ * today, on a line (a to-do, work in progress idle `TASK_IDLE_MS`, a review its agent hasn't done), and their agent's
+ * queue is on with room left. The pump checks the rest (`heldAgents`, who may talk to whom): this keeps the minute's
+ * tick from queueing pumps that start nothing.
  */
-const waitingTaskSql =
-  () => sql`${issues.assigneeType} = 'agent' and ${issues.status} in ('todo', 'in_progress', 'in_review')
+const waitingTaskSql = (now: Date) => {
+  const at = sql`${now.toISOString()}::timestamptz`;
+  const idle = sql`${new Date(now.getTime() - TASK_IDLE_MS).toISOString()}::timestamptz`;
+  return sql`${issues.assigneeType} = 'agent' and ${issues.status} in ('todo', 'in_progress', 'in_review')
   and ${issues.blocked} is null
   and not exists (select 1 from ${organizationSettings} s where s.org_id = ${issues.orgId} and not s.task_pump)
   and exists (select 1 from ${agents} a where a.org_id = ${issues.orgId} and a.id::text = ${issues.assigneeId}
-    and a.archived_at is null and coalesce(a.autonomy_brakes->>'tasks', '') <> 'false'
+    and a.archived_at is null and a.operator_hold_at is null and coalesce(a.autonomy_brakes->>'tasks', '') <> 'false'
     and coalesce(a.builtin, '') <> ${RIGHT_HAND}
     and (select count(*) from ${agentRuns} b where b.org_id = a.org_id and b.agent_id = a.id and b.issue_id is not null
         and b.status in ('queued', 'running'))
@@ -109,12 +118,26 @@ const waitingTaskSql =
         then (a.autonomy_brakes->>'tasksAtOnce')::numeric else ${AUTONOMY_DEFAULTS.tasksAtOnce} end)
   and not exists (select 1 from ${agentRuns} r where r.issue_id = ${issues.id}
     and r.status in ('queued', 'running', 'waiting_approval', 'waiting_input'))
-  and (select x.author_type from ${issueActivity} x where x.issue_id = ${issues.id}
-      and ${starterEventSql(sql`x.event`, sql`x.data`)}
-      order by x.created_at desc, x.id desc limit 1) = 'person'
+  and not exists (select 1 from ${messages} f where f.org_id = ${issues.orgId}
+    and f.channel_id = ${issues.conversationChannelId} and f.author_agent_id::text = ${issues.assigneeId}
+    and ${pendingFollowUpSql(sql`f`, now)})
+  and exists (select 1 from (select x.author_type, x.author_id from ${issueActivity} x where x.issue_id = ${issues.id}
+      and ${starterEventSql(sql`x.event`, sql`x.data`)} order by x.created_at desc, x.id desc limit 1) g
+    join ${organizationMembers} om on om.org_id = ${issues.orgId} and om.user_id = g.author_id
+    where g.author_type = 'person')
   and (select count(*) from ${agentRuns} d join ${messages} m on m.org_id = d.org_id and m.id = d.trigger_message_id
-      where d.issue_id = ${issues.id} and d.created_at > now() - interval '1 day'
-        and m.meta->'notice'->>'kind' = 'task_start') < ${TASK_AUTO_STARTS_PER_DAY}`;
+      where d.issue_id = ${issues.id} and d.created_at > ${at} - interval '1 day'
+        and m.meta->'notice'->>'kind' = 'task_start') < ${TASK_AUTO_STARTS_PER_DAY}
+  and (${issues.status} = 'todo'
+    or (${issues.status} = 'in_progress' and coalesce((select max(coalesce(e.finished_at, e.updated_at))
+        from ${agentRuns} e where e.issue_id = ${issues.id} and e.agent_id::text = ${issues.assigneeId}),
+      ${issues.updatedAt}) <= ${idle})
+    or (${issues.status} = 'in_review' and not exists (select 1 from ${agentRuns} e where e.issue_id = ${issues.id}
+      and e.agent_id::text = ${issues.assigneeId} and coalesce(e.finished_at, e.updated_at) > coalesce(
+        (select max(y.created_at) from ${issueActivity} y where y.issue_id = ${issues.id}
+          and (y.event in ('created', 'assigned', 'start_approved')
+            or (y.event = 'status_changed' and y.data->>'to' = 'in_review'))), ${issues.createdAt}))))`;
+};
 
 /** The minute's tick: a pump for each workspace with a task its agent may take. Returns how many were queued. */
 export async function enqueueTaskPumps(db: Database, now = new Date()): Promise<number> {
@@ -122,7 +145,7 @@ export async function enqueueTaskPumps(db: Database, now = new Date()): Promise<
     .selectDistinct({ orgId: issues.orgId })
     .from(issues)
     .innerJoin(organizations, eq(organizations.id, issues.orgId))
-    .where(and(not(closedOrg), waitingTaskSql()));
+    .where(and(openOrg, waitingTaskSql(now)));
   for (const r of rows) await kickTaskPump(db, r.orgId, now);
   return rows.length;
 }
@@ -132,7 +155,7 @@ interface QueueTask {
   row: IssueRow;
   /** The person it starts for (`taskStarters`); null: nobody gave the go yet. */
   starter: string | null;
-  /** A run is on it now (queued, working or waiting). */
+  /** A run is on it now (queued, working or waiting), or its agent set a follow-up in its conversation. */
   live: boolean;
   /** Since when nothing worked on it (its last run's end, else its last change). */
   idleSince: number;
@@ -189,7 +212,7 @@ async function queueTasks(db: Executor, orgId: string, agentIds: string[], now: 
   const ids = rows.map((r) => r.id);
   const reviews = rows.filter((r) => r.status === "in_review").map((r) => r.id);
   const conversations = rows.flatMap((r) => (r.conversationChannelId ? [r.conversationChannelId] : []));
-  const [starters, runs, entered] = await Promise.all([
+  const [starters, runs, entered, followUps] = await Promise.all([
     taskStarters(db, orgId, ids),
     db
       .select({
@@ -231,6 +254,18 @@ async function queueTasks(db: Executor, orgId: string, agentIds: string[], now: 
             ),
           )
           .groupBy(issueActivity.issueId),
+    conversations.length === 0
+      ? Promise.resolve([])
+      : db
+          .selectDistinct({ channelId: messages.channelId, agentId: messages.authorAgentId })
+          .from(messages)
+          .where(
+            and(
+              eq(messages.orgId, orgId),
+              inArray(messages.channelId, conversations),
+              pendingFollowUpSql(sql`${messages}`, new Date(now)),
+            ),
+          ),
   ]);
   const since = new Map(entered.map((e) => [e.issueId, new Date(e.at).getTime()]));
   return rows.map((row) => {
@@ -239,7 +274,9 @@ async function queueTasks(db: Executor, orgId: string, agentIds: string[], now: 
         r.agentId === row.assigneeId &&
         (r.issueId === row.id || (!r.issueId && r.channelId === row.conversationChannelId)),
     );
-    const live = mine.some((r) => (LIVE as readonly string[]).includes(r.status));
+    const live =
+      mine.some((r) => (LIVE as readonly string[]).includes(r.status)) ||
+      followUps.some((u) => u.channelId === row.conversationChannelId && u.agentId === row.assigneeId);
     const ends = mine.map((r) => (r.ended ? new Date(r.ended).getTime() : 0));
     const lastEnd = Math.max(0, ...ends);
     const entry = since.get(row.id) ?? row.createdAt.getTime();
@@ -298,7 +335,14 @@ async function queueAgents(db: Executor, orgId: string, agentIds: string[]) {
   const rows = await db
     .select()
     .from(agents)
-    .where(and(eq(agents.orgId, orgId), inArray(agents.id, agentIds), isNull(agents.archivedAt)));
+    .where(
+      and(
+        eq(agents.orgId, orgId),
+        inArray(agents.id, agentIds),
+        isNull(agents.archivedAt),
+        isNull(agents.operatorHoldAt),
+      ),
+    );
   return rows.flatMap((a) => {
     const s = autonomySettings(a.autonomyBrakes);
     // The right hand does no hands-on work: a task someone gave it waits for a person to hand it on.
@@ -358,13 +402,10 @@ async function busyTaskRuns(db: Executor, orgId: string, agentId: string) {
 
 /** Automatic starts in the workspace in the last day, counted on its agents' runs. */
 async function startsToday(db: Executor, orgId: string, now: number) {
-  const ids = (await db.select({ id: agents.id }).from(agents).where(eq(agents.orgId, orgId))).map((a) => a.id);
-  if (ids.length === 0) return 0;
   const [row] = rowsOf<{ n: number | string }>(
     await db.execute(sql`select count(*)::int as n from ${agentRuns} r
       join ${messages} m on m.org_id = r.org_id and m.id = r.trigger_message_id
-      where r.org_id = ${orgId}::uuid and r.agent_id = any(${`{${ids.join(",")}}`}::uuid[])
-        and r.created_at > ${new Date(now - DAY_MS).toISOString()}::timestamptz
+      where r.org_id = ${orgId}::uuid and r.created_at > ${new Date(now - DAY_MS).toISOString()}::timestamptz
         and m.meta->'notice'->>'kind' = 'task_start'`),
   );
   return Number(row?.n ?? 0);
@@ -403,15 +444,12 @@ async function heldAgents(deps: TaskPumpDeps, orgId: string, agentIds: string[])
 export async function pumpTasks(deps: TaskPumpDeps, orgId: string, now = new Date()): Promise<number> {
   const { db } = deps;
   const ms = now.getTime();
-  const [org] = await db
-    .select({ closed: closedOrg, standing: organizations.standing })
-    .from(organizations)
-    .where(eq(organizations.id, orgId));
-  if (!org || org.closed || org.standing !== "active") return 0;
+  const [org] = await db.select({ open: openOrg }).from(organizations).where(eq(organizations.id, orgId));
+  if (!org?.open) return 0;
   const assigned = await db
     .selectDistinct({ id: issues.assigneeId })
     .from(issues)
-    .where(and(eq(issues.orgId, orgId), waitingTaskSql()));
+    .where(and(eq(issues.orgId, orgId), waitingTaskSql(now)));
   const on = await queueAgents(
     db,
     orgId,

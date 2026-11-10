@@ -651,19 +651,19 @@ describe("issues", () => {
     const run = async (name: string, input: Record<string, unknown>) =>
       (await tools.find((t) => t.name === name)?.execute(input, ctx))?.content ?? "";
     const created = await run("create_issue", { title: "Revisar o contrato", assignee: "@bia" });
-    expect(created).toContain('starts nothing yet: your reply carries a "Começar estas" card');
+    expect(created).toContain("starts nothing yet: your reply carries a start card");
     expect(created).toContain("once a person presses it @bia starts as soon as it has room");
     const [issue] = await listIssues(f.db, person(f.owner.id), f.org.id, { q: "contrato" });
     const ref = `#${issue?.number}`;
     // The same assignee kept, or a change of its own: nothing to say.
-    expect(await run("update_issue", { issue: ref, priority: "high" })).not.toContain("Começar estas");
+    expect(await run("update_issue", { issue: ref, priority: "high" })).not.toContain("start card");
     // To itself: its queue waits for the go too, and working on it now is fine.
     expect(await run("update_issue", { issue: ref, assignee: "me" })).toContain(
       "working on it now, in this run, is fine",
     );
     expect(await run("update_issue", { issue: ref, assignee: "@bia" })).toContain("starts nothing yet");
     expect(await run("update_issue", { issue: ref, assignee: "@bia", status: "in_progress" })).not.toContain(
-      "Começar estas",
+      "start card",
     );
   });
 

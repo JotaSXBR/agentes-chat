@@ -1,15 +1,18 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { and, eq, schema } from "@agenteschat/db";
+import type { ModelRequest } from "@agenteschat/providers";
 import {
   absorbToolData,
   createAgent,
   createIssueToolSource,
   createToolGateway,
+  drainOutbox,
   grantScopes,
   insertMessage,
   issueWorkBrief,
   listIssues,
   openPersonAgentDm,
+  postPersonMessage,
   pumpTasks,
   RIGHT_HAND,
   runAuthorityById,
@@ -114,7 +117,7 @@ describe("tasks people ask the right hand for are a list, not a crowd", () => {
         assignee: n % 2 ? "@dev" : "@ops",
       });
       expect(out.isError).toBeFalsy();
-      expect(out.content).toContain("Começar estas");
+      expect(out.content).toContain("your reply carries a start card");
       absorbToolData(effects, out.data);
     }
     // Nobody started: no run, and no hand-off a 15-minute timer could call "never got to it".
@@ -273,5 +276,30 @@ describe("tasks people ask the right hand for are a list, not a crowd", () => {
     const brief = (await issueWorkBrief(f.db, f.org.id, row?.id ?? "")) ?? "";
     expect(brief).toContain("from ana's message in #general");
     expect(brief).toContain('"@dev the checkout page is slow on phones, can you look?"');
+  });
+
+  test("a run that gives a task and only reacts still posts the card that starts it", async () => {
+    const reply = (req: ModelRequest) =>
+      JSON.stringify(req.messages.at(-1)?.content).includes("tool_result")
+        ? { chunks: [] }
+        : {
+            chunks: [],
+            toolUses: [
+              { name: "create_issue", input: { title: "Fix the flaky upload test", assignee: "me" } },
+              { name: "react", input: { emoji: "👍" } },
+            ],
+          };
+    f = await setup({ react: true, issueTools: true, reply });
+    await grantScopes(f.db, f.org.id, f.agent.id, [{ connectionId: null, scope: "issues:write" }]);
+    await postPersonMessage({ db: f.db, pubsub: f.pubsub }, f.owner.id, f.org.id, f.general.id, {
+      body: "@dev make yourself a task for the flaky upload test",
+    });
+    await drainOutbox(f.db, f.handlers);
+    const cards = (await f.db.select().from(messages).where(eq(messages.authorAgentId, f.agent.id))).filter((m) =>
+      Array.isArray(m.meta.tasks),
+    );
+    expect(cards.map((m) => m.meta.tasks)).toMatchObject([
+      [{ title: "Fix the flaky upload test", agentId: f.agent.id, held: true }],
+    ]);
   });
 });

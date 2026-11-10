@@ -4773,9 +4773,11 @@ async function executeRunInner(
       // Or it sent a GIF or its sticker and wrote nothing after it, with no card left to attach: that was the answer.
       // Or it posted a mission report and has no card left to attach: the report is the answer. Coding CLIs
       // always close with a summary that repeats it, whatever the prompt says, so the text is dropped too.
-      const noCards = !transcript.artifacts?.length && !transcript.memoryUpdates?.length;
+      // Tasks it gave an agent wait for a person's go on the card a message carries: never left unposted.
+      const heldTasks = Boolean(transcript.tasks?.length);
+      const noCards = !transcript.artifacts?.length && !transcript.memoryUpdates?.length && !heldTasks;
       const silent =
-        (Boolean(transcript.reacted) && restatesReaction(said)) ||
+        (Boolean(transcript.reacted) && restatesReaction(said) && !heldTasks) ||
         (Boolean(transcript.mediaSent) && !said && noCards) ||
         (Boolean(transcript.reported) && noCards);
       // The message is the final answer only: the last model call's text. Without it, a short closing line.

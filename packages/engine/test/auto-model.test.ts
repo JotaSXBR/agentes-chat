@@ -23,10 +23,12 @@ import {
   drainOutbox,
   isBrainEffortSetting,
   type Judge,
+  type JudgeAnswer,
   NEW_AGENT_DEFAULTS,
   needsAutoChoice,
   normalizeBrainModel,
   postPersonMessage,
+  stanceQuestion,
   updateAgent,
   updateOrgSettings,
   ValidationError,
@@ -54,9 +56,9 @@ const input = {
 };
 
 describe("chooseAutoModel", () => {
-  test("one judge request with two choices: the tier and the effort, with a one-line reason", async () => {
+  test("one judge request: the tier, the effort and what the message does to the agent, with a one-line reason", async () => {
     const judge = createFakeJudge((kind, id) =>
-      kind === "auto_model" ? (id === "tier" ? "large" : "high") : undefined,
+      kind === "auto_model" ? (id === "tier" ? "large" : id === "effort" ? "high" : "asks") : undefined,
     );
     const choice = await chooseAutoModel(judge, { ...input, agentId: "a", runId: "r" });
     expect(choice).toMatchObject({ tier: "large", effort: "high", source: "judge" });
@@ -64,17 +66,68 @@ describe("chooseAutoModel", () => {
     expect(judge.calls).toHaveLength(1);
     const call = judge.calls[0];
     expect(call).toMatchObject({ kind: "auto_model", orgId: "o", agentId: "a", runId: "r" });
-    expect(Object.keys(call?.questions ?? {})).toEqual(["tier", "effort"]);
-    const { tier, effort } = call?.questions ?? {};
+    expect(Object.keys(call?.questions ?? {})).toEqual(["tier", "effort", "stance"]);
+    const { tier, effort, stance } = call?.questions ?? {};
     expect(Object.keys((tier as { criteria: Record<string, string> }).criteria)).toEqual(["small", "medium", "large"]);
     expect(Object.keys((effort as { criteria: Record<string, string> }).criteria)).toEqual(["low", "medium", "high"]);
+    expect(stance).toEqual(stanceQuestion("message"));
     expect(call?.state).toMatchObject({
       message: input.message,
       recent: "person: a cobrança está falhando",
       run: { started_by_a_routine: false, part_of_a_mission: true, works_on_a_computer: true, has_tools: true },
     });
-    // Any judge answers (Jev, or the org's cheap model): only the choice is used, never a probability.
+    // Any judge answers (Jev, or the org's cheap model): the choice is used, and a probability only to doubt a cheap one.
     expect(call?.calibrated).toBeUndefined();
+  });
+
+  test("a question on the agent's own work, a correction or a complaint never gets the small tier or low effort", async () => {
+    for (const stance of ["questions", "corrects"]) {
+      const judge = createFakeJudge((_kind, id) => (id === "tier" ? "small" : id === "effort" ? "low" : stance));
+      expect(
+        await chooseAutoModel(judge, {
+          ...input,
+          message: "por que você postou o resumo aqui e não no #financeiro?",
+          recent: ["agent: Segue o resumo das despesas de outubro."],
+        }),
+      ).toEqual({
+        tier: "medium",
+        effort: "medium",
+        reason:
+          "A quick, simple turn (100%); low effort (100%). Raised to medium tier, medium effort: the person questions or corrects the agent.",
+        source: "judge",
+      });
+    }
+    // A quick ask stays quick.
+    const quick = createFakeJudge((_kind, id) => (id === "tier" ? "small" : id === "effort" ? "low" : "asks"));
+    expect(await chooseAutoModel(quick, { ...input, message: "que horas é a reunião?" })).toMatchObject({
+      tier: "small",
+      effort: "low",
+    });
+  });
+
+  test("a cheap pick the judge isn't sure of thinks with the medium tier and effort; a sure one stands", async () => {
+    const picks = (tier: JudgeAnswer, effort: JudgeAnswer) =>
+      createFakeJudge((_kind, id) => (id === "tier" ? tier : id === "effort" ? effort : "other"));
+    const unsure = picks(
+      { choice: "small", probabilities: { small: 0.45, medium: 0.4, large: 0.15 } },
+      { choice: "low", probabilities: { low: 0.55, medium: 0.45 } },
+    );
+    expect(await chooseAutoModel(unsure, input)).toMatchObject({
+      tier: "medium",
+      effort: "medium",
+      reason:
+        "A quick, simple turn (45%); low effort (55%). Raised to medium tier, medium effort: the judge wasn't sure.",
+    });
+    const sure = picks(
+      { choice: "small", probabilities: { small: 0.9, medium: 0.1 } },
+      { choice: "low", probabilities: { low: 0.8, medium: 0.2 } },
+    );
+    expect(await chooseAutoModel(sure, input)).toMatchObject({ tier: "small", effort: "low" });
+    // An unsure pick that isn't the cheap one is the judge's.
+    const large = createFakeJudge((_kind, id) =>
+      id === "tier" ? { choice: "large", probabilities: { large: 0.5, medium: 0.5 } } : "high",
+    );
+    expect(await chooseAutoModel(large, input)).toMatchObject({ tier: "large", effort: "high" });
   });
 
   test("acting for the person with tools is never the small tier: it only answers", async () => {
@@ -351,6 +404,27 @@ describe("a run of an agent on Automático", () => {
       model: "claude-sonnet-5-5",
       source: "error",
       reason: "The judge failed: medium tier, medium effort.",
+    });
+  });
+
+  test("a person questioning what it just did is answered on the medium tier with medium effort, never the quick one", async () => {
+    f = await setup({
+      judge: (kind, id) =>
+        kind === "auto_model" ? (id === "tier" ? "small" : id === "effort" ? "low" : "questions") : undefined,
+      reply: () => ({ chunks: ["Postei aqui porque o pedido veio daqui. Daqui pra frente mando no #financeiro."] }),
+    });
+    await updateAgent(f.db, f.owner.id, f.org.id, f.agent.id, { model: AUTO_MODEL });
+    await postPersonMessage({ db: f.db, pubsub: f.pubsub }, f.owner.id, f.org.id, f.general.id, {
+      body: "@dev por que você postou o resumo aqui e não no #financeiro?",
+    });
+    await drainOutbox(f.db, f.handlers);
+    expect(f.provider.calls[0]?.request).toMatchObject({ model: "claude-sonnet-5-5", effort: "medium" });
+    const steps = await f.db.select().from(schema.agentRunSteps).where(eq(schema.agentRunSteps.kind, "context"));
+    expect(steps.find((s) => s.data.autoModel)?.data.autoModel).toMatchObject({
+      tier: "medium",
+      effort: "medium",
+      model: "claude-sonnet-5-5",
+      source: "judge",
     });
   });
 

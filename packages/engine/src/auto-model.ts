@@ -7,7 +7,7 @@ import type { BrainKind } from "./brains/types";
 import { caches } from "./cache";
 import { usableCredentialRow } from "./credentials";
 import { cutText } from "./format";
-import type { Judge } from "./judge";
+import { choiceP, type Judge, type JudgeAnswer, stanceQuestion } from "./judge";
 import { missionOfThread } from "./missions";
 import { orgModelProvider } from "./router";
 
@@ -15,8 +15,11 @@ import { orgModelProvider } from "./router";
  * "Automático": an agent whose model (or effort) is `auto` gets them
  * picked per run. Before the first model call the judge reads the task and
  * answers two choices, the model tier (small, medium, large) and the effort
- * (low, medium, high); this module maps that one decision onto the brain the
- * run thinks with, the same way for all of them: the API model from the
+ * (low, medium, high), plus what the message does to the agent: a question on
+ * its own work, a correction or a complaint never runs on the small tier or
+ * with low effort, nor does a cheap pick the judge isn't sure of. This module
+ * maps that one decision onto the brain the run thinks with, the same way for
+ * all of them: the API model from the
  * catalog (Haiku, Sonnet, Opus; the OpenAI line when the agent's key is
  * OpenAI's), Claude Code's aliases, Codex's models. Auto never changes the
  * brain (API ↔ computer), never grants anything, and never blocks a run: no
@@ -81,6 +84,16 @@ const TIER_REASON: Record<ModelTier, string> = {
 };
 
 const percent = (p: number | undefined) => (typeof p === "number" ? ` (${Math.round(p * 100)}%)` : "");
+
+/**
+ * Below this a pick of the small tier or of low effort isn't trusted (Jev's probabilities; the small model's answers
+ * say 1): the run thinks with the medium one.
+ */
+export const AUTO_CHEAP_MIN_P = 0.6;
+
+/** The cheap pick (`cheap`) stands only when the judge is sure of it and the message isn't about the agent's work. */
+const lifted = (answer: JudgeAnswer | undefined, cheap: string, aboutAgent: boolean) =>
+  answer?.choice === cheap && (aboutAgent || choiceP(answer, cheap) < AUTO_CHEAP_MIN_P);
 
 /**
  * The tier and effort for a run, in one judge request. Inputs: what the run
@@ -148,20 +161,28 @@ export async function chooseAutoModel(
             instructions: `${about} How hard should it think before and while answering?`,
             criteria: EFFORT_CRITERIA,
           },
+          stance: stanceQuestion("message"),
         },
       }),
       timeout,
     ]);
     if (answers === "timeout") return fallbackChoice("timeout");
-    const tier = answers.tier?.choice as ModelTier | undefined;
-    const effort = answers.effort?.choice as AutoEffort | undefined;
-    if (!tier || !MODEL_TIERS.includes(tier) || !effort || !AUTO_EFFORTS.includes(effort)) {
+    const picked = answers.tier?.choice as ModelTier | undefined;
+    const pickedEffort = answers.effort?.choice as AutoEffort | undefined;
+    if (!picked || !MODEL_TIERS.includes(picked) || !pickedEffort || !AUTO_EFFORTS.includes(pickedEffort)) {
       return fallbackChoice("error");
     }
-    const tierP = percent(answers.tier?.probabilities?.[tier]);
-    const effortP = percent(answers.effort?.probabilities?.[effort]);
-    const reason = `${TIER_REASON[tier]}${tierP}; ${effort} effort${effortP}.`;
-    return { tier, effort, reason: reason.charAt(0).toUpperCase() + reason.slice(1), source: "judge" };
+    const aboutAgent = choiceP(answers.stance, "questions") + choiceP(answers.stance, "corrects") >= 0.5;
+    const tier = lifted(answers.tier, "small", aboutAgent) ? "medium" : picked;
+    const effort = lifted(answers.effort, "low", aboutAgent) ? "medium" : pickedEffort;
+    const tierP = percent(answers.tier?.probabilities?.[picked]);
+    const effortP = percent(answers.effort?.probabilities?.[pickedEffort]);
+    const reason = `${TIER_REASON[picked]}${tierP}; ${pickedEffort} effort${effortP}.`;
+    const raised =
+      tier === picked && effort === pickedEffort
+        ? ""
+        : ` Raised to ${tier} tier, ${effort} effort: ${aboutAgent ? "the person questions or corrects the agent" : "the judge wasn't sure"}.`;
+    return { tier, effort, reason: `${reason.charAt(0).toUpperCase()}${reason.slice(1)}${raised}`, source: "judge" };
   } catch {
     return fallbackChoice("error");
   } finally {

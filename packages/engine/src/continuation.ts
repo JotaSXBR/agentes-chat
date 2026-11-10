@@ -40,6 +40,8 @@ export interface ContinuationState {
   askNudged?: boolean;
   /** The last turn was told to ask: this one is judged past the cap, and turns into the question if it didn't. */
   askPending?: boolean;
+  /** It was told once that nobody can open files on its computer (`localPathsNudge`): the next reply is posted. */
+  pathsNudged?: boolean;
   /** It was told once to say whether it still needs its open requests (`openRequestNudge`). */
   requestNudged?: boolean;
   /** It was told once to ask for a secret securely: the next secret verdict ends the run as it is. */
@@ -112,6 +114,48 @@ export function findableNudge(means: string[], tried: string[]) {
 /** What a run reads, once, when it described what only a person can give instead of asking for it. */
 export const ASK_NUDGE =
   "You need something only a person can give (a credential, a decision, a test, access). Ask them now with ask_user: one direct question, with choices if it is one of a few; but a sign-in, a QR code, a code or a captcha with browser_ask_person or desktop_ask_person once the page or app is at that step, a key or a password through request_secret, an approval only someone else can give through request_approval, a permission through request_permission. Do not end with a list of what's missing. If you need nothing from them to finish, just give your answer, with no question.";
+
+/** Never a path on the agent's computer: a web or mail address, a wiki link (`[[Folder/Page]]`), a code block. */
+const NOT_PATHS = /```[\s\S]*?```|\[\[[^\]]*\]\]|[a-z][a-z0-9+.-]*:\/\/\S*|\bwww\.\S*|\S+@\S+/gi;
+/** A word with a slash in it: `notas/`, `~/out/x.csv`, `/home/agent/a.md`, `scripts/run.sh`. */
+const SLASHED = /(?<![\p{L}\p{N}_.~/-])(?:~|\.{1,2})?\/?(?:[\p{L}\p{N}_.-]+\/)+[\p{L}\p{N}_.-]*/gu;
+const UNDER_HOME = /^(?:~|\.{1,2})\/|^\/(?:home|root|tmp|Users|workspace|mnt|srv)\//;
+
+/**
+ * A word with a slash that names a file or a folder: under a home or the current folder (`~/`, `./`, `/home/`), a
+ * name with an extension (`notas/pricing.md`) or a folder (`notas/`). A pair or a ratio (`e/ou`, `24/7`, `km/h`), a
+ * date and an address without its scheme (`example.com/precos`) aren't.
+ */
+function namesFile(word: string) {
+  if (UNDER_HOME.test(word)) return true;
+  const parts = word.split("/").filter(Boolean);
+  if (!parts.some((p) => /\p{L}/u.test(p)) || /\.[a-z]{2,}$/i.test(parts[0] ?? "")) return false;
+  // A folder's name is two characters at least: "c/ desconto" and "w/ the team" are words.
+  const last = parts.at(-1) ?? "";
+  if (word.endsWith("/")) return last.length >= 2;
+  return /^[\p{L}\p{N}_-][\p{L}\p{N}_.-]*\.[A-Za-z0-9]{1,5}$/u.test(last);
+}
+
+const pathsIn = (text: string) =>
+  [...text.replace(NOT_PATHS, " ").matchAll(SLASHED)].map((m) => m[0].replace(/[.,:;!?]+$/, "")).filter(namesFile);
+
+/**
+ * Files on the agent's computer its reply cites as if people could open them (`notas/pricing.md`, `~/out/`): nobody
+ * else can. None when the person's message writes paths or code itself: then they talk code, and read paths.
+ */
+export function localPathsCited(reply: string, request: string): string[] {
+  if (request.includes("```") || pathsIn(request).length > 0) return [];
+  return [...new Set(pathsIn(reply))];
+}
+
+/** What a run reads, once, when its reply cites files on its computer to people (`localPathsCited`): not posted. */
+export function localPathsNudge(paths: string[]) {
+  const cited = paths
+    .slice(0, 3)
+    .map((p) => `\`${p}\``)
+    .join(", ");
+  return `Not posted: your reply cites files on your computer (${cited}), which nobody else can open. When people need one, share it with upload_file: they get its card. Otherwise write what matters from it in your message, or link a wiki page you wrote as [[Title]]. Then write your reply again without those paths. A path in code the person works on can stay.`;
+}
 
 /**
  * What a run reads, once, when its reply asks a person for a secret in the chat (ADR 0109 addendum): its reply is not
@@ -235,7 +279,7 @@ const LEARN_QUESTION = {
     method:
       "It worked out a way it will reuse: several tries before one worked, a new API or address, a command or a script it wrote.",
     correction:
-      "A person corrected it or said how they want things done from now on ('always…', 'from now on…', 'don't… again').",
+      "A person corrected it, questioned something it did ('did anyone ask you to…?'), or said how they want things done from now on ('always…', 'from now on…', 'don't… again').",
     fact: "A person's message or a tool result gave a lasting fact about the company, its people or its systems.",
     access:
       "Someone in the team got, lost or was named for an access: the agent or another signed in to a service, got a login, a key, a connector or a mailbox, or a person said who handles a service.",
@@ -336,6 +380,8 @@ export interface TurnEnd {
    * judged.
    */
   unreached: string;
+  /** Files on its computer its reply cites to people (`localPathsCited`): it writes the reply again once, unposted. */
+  localPaths?: string[];
   /** What is judged ("" skips the judgment: nothing to read, or an agents' DM run that owes no answer). */
   judged: string;
   mission: boolean;
@@ -373,6 +419,9 @@ export async function decideTurnEnd(t: TurnEnd): Promise<TurnEndDecision> {
   const canNudge = t.state.count < max;
   if (t.bound) return { outcome: "done", rule: t.bound };
   if (t.quiet) return { outcome: "done", rule: "quiet" };
+  // Only a person's conversation: another agent may read its computer's shared folder.
+  if (t.kind === "conversation" && t.localPaths?.length && !t.state.pathsNudged)
+    return { outcome: "continue", rule: "local_paths", nudge: localPathsNudge(t.localPaths) };
   if (t.decided && canNudge) return { outcome: "continue", rule: "decision", nudge: decisionNudge(t.decided) };
   if (t.unanswered && canNudge) return { outcome: "continue", rule: "answer", nudge: ANSWER_NUDGE };
   if (t.openRequest && !t.state.requestNudged)
@@ -441,6 +490,7 @@ export async function decideTurnEnd(t: TurnEnd): Promise<TurnEndDecision> {
 export function advance(state: ContinuationState, d: TurnEndDecision, executed: number): ContinuationState {
   const { askPending: _, ...rest } = state;
   if (d.outcome !== "continue") return rest;
+  if (d.rule === "local_paths") return { ...rest, pathsNudged: true };
   if (d.rule === "ask") return { ...rest, askNudged: true, askPending: true };
   if (d.rule === "secret") return { ...rest, secretNudged: true };
   if (d.rule === "open_request") return { ...rest, requestNudged: true };

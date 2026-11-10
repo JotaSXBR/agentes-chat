@@ -3100,6 +3100,8 @@ export interface AgentQuestion {
   withdrawn?: true;
   /** A person (`answeredByUserId`) skipped it: the agent went on without an answer. */
   dismissed?: true;
+  /** Why it is for `requestedForUserId` and not who asked the agent, in the agent's words (on its card only). */
+  forWhy?: string;
 }
 
 /**

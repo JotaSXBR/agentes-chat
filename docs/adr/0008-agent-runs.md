@@ -78,3 +78,13 @@ Someone else's message answers nothing and doesn't wait behind the question: it 
 (`holdsMessages` with the writer). If the person leaves the conversation or the workspace, or deletes their account, the
 question goes back to the room and to the person behind the run (`releaseQuestionsOf`), since nobody could answer it
 otherwise.
+
+## Addendum (2026-11-09): a question waits on who asked
+
+A question that names nobody now waits on who asked (`defaultAddressee`): the person behind the run, or the last person
+to write there since it started when its text names them alone. Anyone may answer only a question of a run nobody is
+behind (a routine's), or one whose person can't read where it is asked. Someone else (`person`) only with `person_why`,
+one short line the card shows under the question (only an admin connects a connector): without it the call is refused. Who
+asked answers such a question too, with a plain reply right after its card (no other person's message between them,
+nobody named in it), in the same statement as any reply that answers one (`insertMessageWithRuns`). Met any other way
+(someone else gave it, later words), it is for the early check of ADR 0136, which withdraws it quietly.

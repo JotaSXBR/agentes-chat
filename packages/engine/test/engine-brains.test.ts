@@ -911,7 +911,7 @@ test("a question for one person, through the bridge: it is theirs alone", async 
   const { brain } = scriptedComputerBrain(async function* (n, turn) {
     if (n > 0) return;
     const why = "I need a person's answer before I go on: this decides what I change next.";
-    const input = { why, question: "Qual foi o combinado?", person: "bia" };
+    const input = { why, question: "Qual foi o combinado?", person: "bia", person_why: "Só a Bia esteve lá." };
     const call = { id: "ask-1", name: "ask_user", input };
     const result = await executeToolForRun(
       f.jobDeps,

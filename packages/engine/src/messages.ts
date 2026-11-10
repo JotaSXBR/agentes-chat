@@ -745,6 +745,9 @@ export async function insertMessageWithRuns(
         order by lm.created_at desc limit 1),
       (select rm.author_agent_id from ${messages} rm where rm.org_id = ${input.orgId}::uuid
         and rm.id = ${threadId}::uuid))))`;
+  /** SQL: the person writing wrote the message the run of question `oq` answers. */
+  const askedIt = sql`exists (select 1 from ${agentRuns} ar join ${messages} tm on tm.id = ar.trigger_message_id
+    where ar.id = oq.run_id and tm.author_user_id = ${userId})`;
   // Idempotent send: a person's `clientId` is claimed with the message; a resend finds it taken.
   const clientId = person ? normalizeClientId(input.clientId) : null;
   // Where the message may go: no thread, or a top-level message of this channel (`m` checks it too).
@@ -832,15 +835,21 @@ export async function insertMessageWithRuns(
             where oq.org_id = ${input.orgId}::uuid and oq.channel_id = ${input.channelId}::uuid
               and oq.status = 'open' and oq.expires_at > now()
               and oq.thread_id is not distinct from ${threadId}::uuid
-              and (oq.requested_for_user_id is null or oq.requested_for_user_id = ${userId})
+              and (oq.requested_for_user_id is null or oq.requested_for_user_id = ${userId}
+                -- For someone else (the agent said why): who asked the agent answers it too, with the first word
+                -- here after the card, naming nobody (a mention is a request, not the answer).
+                or (${askedIt} and not exists (select 1 from mentioned_people)
+                  and not exists (select 1 from mentioned)
+                  and not exists (select 1 from ${messages} x where x.org_id = oq.org_id
+                    and x.channel_id = oq.channel_id and x.thread_id is not distinct from oq.thread_id
+                    and x.author_type = 'person' and x.deleted_at is null and x.created_at > oq.created_at)))
               -- In a channel's main timeline many talk at once: who it is for or who asked the agent answers it,
               -- or whoever addresses it.
               and (${threadId}::uuid is not null or oq.requested_for_user_id = ${userId}
                 or not exists (select 1 from ${channels} c where c.id = ${input.channelId}::uuid and c.kind = 'channel')
                 -- Named: a mention of everyone is no answer to whatever each agent asked.
                 or oq.agent_id in (select id from named)
-                or exists (select 1 from ${agentRuns} ar join ${messages} tm on tm.id = ar.trigger_message_id
-                  where ar.id = oq.run_id and tm.author_user_id = ${userId}))
+                or ${askedIt})
             order by oq.created_at desc limit 1)
           and not ${forAnother(sql`q.agent_id`)}
           and q.agent_id not in (select agent_id from muted)

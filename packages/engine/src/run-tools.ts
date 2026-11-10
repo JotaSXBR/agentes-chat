@@ -22,7 +22,7 @@ import { notifyQuestion } from "./notification-producers";
 import {
   type AgentQuestionRow,
   ASK_USER_TOOL,
-  impliedAddressee,
+  defaultAddressee,
   publishQuestion,
   QUESTION_TTL_MS,
   questionCardMeta,
@@ -718,9 +718,11 @@ export interface PauseRequests {
     toolUseId: string;
     text: string;
     choices: string[] | null;
-    /** The person the agent said it is for; else `impliedAddressee` reads it from the run. */
+    /** The person the agent said it is for; else `defaultAddressee` reads it from the run. */
     requestedForUserId?: string | null;
     why?: string;
+    /** Why it is for that person and not who asked (`ask_user`'s `person_why`). */
+    forWhy?: string;
   }[];
   secretRequestIds: string[];
 }
@@ -870,12 +872,13 @@ export async function postPauseCards(
   }
 
   for (const ask of requests.questions) {
-    // Someone who can't read where the card goes could never answer it: it waits on the room instead.
-    const requestedForUserId =
+    // Someone who can't read where the card goes could never answer it: it waits on who asked instead.
+    const named =
       ask.requestedForUserId &&
       (await readableChannelIds(tx, run.orgId, ask.requestedForUserId, [asked.channelId])).size > 0
         ? ask.requestedForUserId
-        : await impliedAddressee(tx, run, asked, ask.text);
+        : null;
+    const requestedForUserId = named ?? (await defaultAddressee(tx, run, asked, ask.text));
     const [inserted] = await tx
       .insert(agentQuestions)
       .values({
@@ -895,7 +898,8 @@ export async function postPauseCards(
       .onConflictDoNothing()
       .returning();
     if (!inserted) continue;
-    const message = await card(asked, ask.text, questionCardMeta(inserted, ask.why ?? ""));
+    const forWhy = named ? ask.forWhy : undefined;
+    const message = await card(asked, ask.text, questionCardMeta(inserted, ask.why ?? "", forWhy));
     const [linked] = await tx
       .update(agentQuestions)
       .set({ messageId: message.id })
@@ -903,7 +907,7 @@ export async function postPauseCards(
       .returning();
     if (linked) {
       await syncQuestionMessage(tx, linked);
-      message.meta = { ...message.meta, question: questionView(linked) };
+      message.meta = { ...message.meta, question: { ...questionView(linked), ...(forWhy ? { forWhy } : {}) } };
       out.questions.push(linked);
     }
   }
@@ -1043,6 +1047,7 @@ export async function suspendRunForTool(
                 choices: gated.choices,
                 requestedForUserId: gated.requestedForUserId,
                 why: gated.why,
+                ...(gated.forWhy ? { forWhy: gated.forWhy } : {}),
               },
             ]
           : [],

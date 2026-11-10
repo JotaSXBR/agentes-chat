@@ -641,6 +641,8 @@ export function QuestionCard({ question }: { question: AgentQuestion }) {
         {error}
       </p>
     ) : null;
+    // Asked of someone other than who asked the agent: the agent's reason, under the question.
+    const reason = current.requestedForUserId && question.forWhy ? <p className="rq__note">{question.forWhy}</p> : null;
     const field = writing && (
       <div className="rq__field">
         <Textarea
@@ -672,8 +674,9 @@ export function QuestionCard({ question }: { question: AgentQuestion }) {
         })}
         lead={current.text}
         body={
-          (mine && choices.length > 0) || field || errorLine ? (
+          reason || (mine && choices.length > 0) || field || errorLine ? (
             <>
+              {reason}
               {mine && choices.length > 0 && (
                 <RequestChoices
                   choices={choices.map((label) => ({ label, busy: picking(label) }))}

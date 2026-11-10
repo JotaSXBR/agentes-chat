@@ -170,6 +170,7 @@ export function describeCapabilities(
         "- If a command fails because of the network (DNS, connection refused), say exactly what the tool says about it; don't blame permissions.",
       );
     }
+    if (names.has("upload_file")) lines.push(LOCAL_FILES_LINE);
     // An agent with GitHub (git through our proxy, or the connector's tools).
     if (names.has("git_clone") || [...names].some((n) => n.startsWith("github_"))) lines.push(GITHUB_GUIDANCE);
     if (names.has("browser_read")) {
@@ -247,6 +248,13 @@ export function describeCapabilities(
  */
 export const GITHUB_GUIDANCE =
   "- GitHub: use the GitHub connector's tools and git through `git_clone`; read-only gh (gh pr view, gh run view…) runs without asking only where gh is already signed in. Never sign the person in to gh (gh auth login) nor ask for a GitHub token. When the connector lacks something, say what, and that an admin can reconnect GitHub in Connectors to add it.";
+
+/**
+ * Files on the agent's computer are its alone: people get one as a file card or its content, never a path to it. The
+ * turn-end check holds a reply that cites one anyway (`localPathsCited`).
+ */
+export const LOCAL_FILES_LINE =
+  "- People can't open files on your computer: share one with `upload_file` (they get its card), or put what it holds in your message or in a wiki page they asked for, linked as [[Title]]. Never cite a path there as if they could.";
 
 /** How to use the agent browser (ADR 0040, ADR 0054), when the agent has it. */
 export const BROWSER_GUIDANCE =

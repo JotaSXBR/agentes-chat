@@ -399,7 +399,7 @@ describe("what waits for a person's click comes last", () => {
 });
 
 describe("a question for one person", () => {
-  const card = (requestedForUserId: string | null) => {
+  const card = (requestedForUserId: string | null, forWhy?: string) => {
     const m = answer("q-owner", []);
     return {
       ...m,
@@ -417,6 +417,7 @@ describe("a question for one person", () => {
           status: "open",
           answer: null,
           answeredByUserId: null,
+          ...(forWhy ? { forWhy } : {}),
         },
       },
     } as Message;
@@ -442,6 +443,18 @@ describe("a question for one person", () => {
       expect(within(rq).getByRole("button", { name: "Pular" })).toBeTruthy();
       cleanup();
     }
+  });
+
+  test("asked of them and not of who asked: the agent's reason under the question, for everyone", async () => {
+    const why = "Só um admin conecta conectores.";
+    for (const asked of ["u-joao", seedState().me?.user.id ?? ""]) {
+      await openChannel(() => [card(asked, why)]);
+      expect(document.querySelector(".rq .rq__note")?.textContent).toBe(why);
+      cleanup();
+    }
+    // Back with the room (the person left): the reason no longer holds.
+    await openChannel(() => [card(null, why)]);
+    expect(document.querySelector(".rq .rq__note")).toBeNull();
   });
 });
 

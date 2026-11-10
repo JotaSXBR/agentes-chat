@@ -394,6 +394,7 @@ export function questionOf(meta: Message["meta"]): AgentQuestion | null {
     ...(str(q.requestedForUserId) ? { requestedForUserId: str(q.requestedForUserId) } : {}),
     ...(q.withdrawn === true ? { withdrawn: true as const } : {}),
     ...(q.dismissed === true ? { dismissed: true as const } : {}),
+    ...(str(q.forWhy) ? { forWhy: str(q.forWhy) } : {}),
   };
 }
 

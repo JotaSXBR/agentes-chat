@@ -32,6 +32,6 @@ test("the one checklist is the right hand's: a new agent has no rows, for its ow
   const layout = readFileSync(new URL("../../app/(app)/_layout.tsx", import.meta.url), "utf8");
   expect(layout).toContain('<Stack.Screen name="agent-step/[id]" options={{ ...pushed, ...scrollUnder }} />');
   expect(src("agents/setup/SetupStepScreen.tsx")).toContain(
-    'if (!agent?.setup || !isRightHand(agent) || (step !== "apps" && !about))',
+    "if (!agent?.setup || !isRightHand(agent) || !firstRunScreen)",
   );
 });

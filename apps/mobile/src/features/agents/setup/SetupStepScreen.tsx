@@ -31,6 +31,8 @@ import { TextArea } from "../../shared/TextArea";
  * row the invite screen.
  */
 
+const STEPS: readonly SetupStep[] = ["apps", "about"];
+
 /** Opens a row's screen; `text` fills row 1's sentence. */
 export const openSetupStep = (agentId: string, step: SetupStep, text?: string | null) =>
   router.push({
@@ -52,8 +54,10 @@ export function SetupStepScreen({
   const c = useColors();
   const dir = useDirectory();
   const agent = dir.agentById.get(agentId);
-  const about = step === "about" && isPersonal(org);
-  if (!agent?.setup || !isRightHand(agent) || (step !== "apps" && !about)) {
+  const known = STEPS.find((s) => s === step);
+  // Its apps row has a screen, and in a personal workspace (ADR 0159) row 1, what the person wants help with.
+  const firstRunScreen = known === "apps" || (known === "about" && isPersonal(org));
+  if (!agent?.setup || !isRightHand(agent) || !firstRunScreen) {
     return (
       <View style={[styles.fill, { backgroundColor: c.bg }]}>
         <PushedHeader title={t(modeKey(org, "agentSetup.firstRun.apps.title"))} solid={false} />
@@ -61,7 +65,8 @@ export function SetupStepScreen({
       </View>
     );
   }
-  return about ? <AboutYouStep typed={text ?? null} /> : <FirstRunAppsStep />;
+  if (known === "about") return <AboutYouStep typed={text ?? null} />;
+  return <FirstRunAppsStep />;
 }
 
 /**

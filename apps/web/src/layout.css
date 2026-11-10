@@ -9786,12 +9786,18 @@ html:not([data-pointer]) .agp-cell:focus-visible {
   border-bottom-right-radius: 0;
 }
 .agp-acct--use > .ac-planmeter {
-  /* Even room above the line's capitals and below the bar: the line's own leading comes off the top. */
-  padding: calc(var(--space-3) - 0.5lh + var(--cap-top)) 14px var(--space-3);
+  /* Even room above the line's capitals and below the bar: the line's own leading comes off the top (browsers without
+     the lh unit: the page's 22px line). */
+  padding: calc(var(--space-3) - 11px + var(--cap-top)) 14px var(--space-3);
   border: 1px solid var(--field-line);
   border-top: 0;
   border-radius: 0 0 var(--control-r-md) var(--control-r-md);
   background: var(--sunken);
+}
+@supports (top: 1lh) {
+  .agp-acct--use > .ac-planmeter {
+    padding-top: calc(var(--space-3) - 0.5lh + var(--cap-top));
+  }
 }
 /*
  * "Atende outras pessoas" (`PlanReplies`): its label with the ⓘ right after it, the switch at the end of the line, its
@@ -9890,10 +9896,8 @@ html:not([data-pointer]) .agp-cell:focus-visible {
   display: block;
   margin-top: var(--space-2);
 }
-/* For several agents: their faces and names, read-only, over the select. */
+/* For several agents: their faces and names, read-only, over the select. `.ac-iconline` lays them out. */
 .ai-for {
-  display: flex;
-  align-items: center;
   gap: var(--space-2);
   margin: 0;
   font-size: 14px;

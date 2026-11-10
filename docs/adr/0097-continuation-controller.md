@@ -66,5 +66,6 @@ A person asked an agent why it was reading an account's balance: the check took 
 4. **The untried nudge** quotes the ask, says never to ask anyone for a sign-in or an access the request doesn't need, and says the held reply wasn't posted and nobody sees the note, so the agent writes its answer again instead of answering the note in public.
 5. **A question card is asking.** A reply that carries a choices card ends as `asked`: no nudge to ask, no second card.
 6. **Per stretch too.** The judged pushes (`promise`, `untried`, `unreached`, the ask nudge) are bounded per agent and stretch as well as per run: three across its runs (`CONTINUE.maxPerStretch`, counted from its other runs' `nudged` steps, read only before a push). Past it the turn ends as it is (`stretch_cap`).
+7. **The ask stays where it was written.** The judge reads the person's ask wherever it was written. The nudge quotes it only to an agent that may read it: the run's own conversation, or a public channel. Words from a DM or a private channel never reach an agent that works outside it.
 
 Tests: `follow-through.test.ts` on the fake provider. Questioned in Portuguese and English, the agent answers once and nothing follows; a relay is judged by the person's own ask, which the nudge quotes; a choices card ends the turn; four copies of an agent in one stretch get three pushes.

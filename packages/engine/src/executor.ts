@@ -2792,10 +2792,10 @@ async function executeRunInner(
   /**
    * What the turn-end judge reads (ADR 0109), filled only when it runs: the run's general means (`turnMeans`, its
    * computer's own tools on a computer brain), every call it tried (`triedCalls`) and what the person asked
-   * (`personAsk`). An `untried` nudge names them.
+   * (`personAsk`). An `untried` nudge names them, and quotes the ask only where the agent may read it.
    */
   const evidenceFor = (t: Transcript) => {
-    const evidence = { means: [] as string[], tried: [] as string[], ask: "" };
+    const evidence = { means: [] as string[], tried: [] as string[], ask: "", quote: "" };
     const gather = async () => {
       const names = new Set([...granted, ...tools].map((x) => x.name));
       const own =
@@ -2812,7 +2812,9 @@ async function executeRunInner(
       evidence.means = [...turnMeans(names, teammates), ...own];
       // No call executed in this run: no tool step to read.
       evidence.tried = t.executedCalls ? await triedCalls(db, run, t.harnessTried) : (t.harnessTried ?? []);
-      evidence.ask = await personAsk(db, run, t.request, triggerMessage).catch(() => "");
+      const asked = await personAsk(db, run, t.request, triggerMessage).catch(() => ({ text: "", quote: "" }));
+      evidence.ask = asked.text;
+      evidence.quote = asked.quote;
       return evidence;
     };
     return { evidence, gather };

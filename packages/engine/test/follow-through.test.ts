@@ -18,6 +18,7 @@ import {
   invokeToolForRun,
   joinChannel,
   openAgentDm,
+  openDm,
   openTaskConversation,
   postPersonMessage,
   removeChannelMember,
@@ -1151,11 +1152,58 @@ describe("the turn-end check holds the reply to what the person asked", () => {
       author: { type: "agent", agentId: f.agent.id, runId: null, hop: 1, stretchId: null },
       body: "Bom dia, time.",
     });
-    const of = (m: { id: string; stretchId: string | null }, carried?: string) =>
-      personAsk(f.db, { orgId: f.org.id, stretchId: m.stretchId, triggerMessageId: m.id }, carried);
+    const of = async (m: { id: string; stretchId: string | null }, carried?: string) =>
+      (
+        await personAsk(
+          f.db,
+          { orgId: f.org.id, channelId: f.general.id, stretchId: m.stretchId, triggerMessageId: m.id },
+          carried,
+        )
+      ).text;
     expect(await of(relay)).toBe("me manda a planilha de custos");
     expect(await of(asked)).toBe("me manda a planilha de custos");
     expect(await of(own)).toBe("");
     expect(await of(own, "o relatório de vendas")).toBe("o relatório de vendas");
+  });
+
+  test("a person's words in a private conversation reach the judge, never the nudge of an agent outside it", async () => {
+    const held = "Não tenho acesso ao cofre do escritório.";
+    f = await setup({
+      judge: (kind, id, state) =>
+        kind === "follow_through" && id === "verdict" ? (state.reply === held ? "untried" : "done") : undefined,
+      reply: (_request, call) => ({
+        chunks: [call === 1 ? held : "Achei: o item do wifi está no cofre, em Escritório."],
+      }),
+    });
+    const ops = await createAgent(
+      f.db,
+      f.owner.id,
+      f.org.id,
+      { name: "Ops", handle: "ops", role: "Office", credentialId: f.credential.id },
+      { model: "claude-sonnet-5-5" },
+    );
+    await addChannelMember(f.db, f.owner.id, f.org.id, f.general.id, { agentId: ops.id });
+    // Ana asks Ops in their DM, and Ops relays it to @dev in #general.
+    const dm = await openDm(f.db, f.owner.id, f.org.id, { agentId: ops.id });
+    const asked = await insertMessage(f.db, {
+      orgId: f.org.id,
+      channelId: dm.id,
+      author: { type: "person", userId: f.owner.id },
+      body: "a senha do wifi do escritório mudou, a nova está no cofre: me confirma?",
+    });
+    const relay = await insertMessage(f.db, {
+      orgId: f.org.id,
+      channelId: f.general.id,
+      author: { type: "agent", agentId: ops.id, runId: null, hop: 1, stretchId: asked.id },
+      body: "@dev consegue conferir o item do wifi no cofre?",
+    });
+    await f.db.transaction((tx) => createAgentRuns(tx, relay, [f.agent.id], "mention"));
+    await drainOutbox(f.db, f.handlers);
+
+    expect(judgedCalls(f)[0]?.state.ask).toBe(asked.body);
+    const nudge = lastUserText(f.provider.calls[1]?.request as ModelRequest);
+    expect(nudge).toContain("never ask anyone for a sign-in or an access the request doesn't need");
+    expect(nudge).not.toContain("Asked:");
+    expect(nudge).not.toContain("senha do wifi");
   });
 });

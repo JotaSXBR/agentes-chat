@@ -442,9 +442,9 @@ export interface TurnEnd {
   verdict: (() => Promise<ContinuationVerdict>) | null;
   /**
    * What an `untried` turn is reminded of (`untriedNudge`), filled by `verdict`: its means, what it tried, and what
-   * the person asked (`personAsk`).
+   * of the person's ask it may read (`personAsk`'s `quote`).
    */
-  evidence?: { means: string[]; tried: string[]; ask?: string };
+  evidence?: { means: string[]; tried: string[]; quote?: string };
 }
 
 export type TurnEndDecision = {
@@ -533,7 +533,7 @@ export async function decideTurnEnd(t: TurnEnd): Promise<TurnEndDecision> {
       outcome: "continue",
       rule: "untried",
       verdict,
-      nudge: untriedNudge(t.evidence?.means ?? [], t.evidence?.tried ?? [], t.evidence?.ask),
+      nudge: untriedNudge(t.evidence?.means ?? [], t.evidence?.tried ?? [], t.evidence?.quote),
     };
   }
   if (verdict === "done") return { outcome: "done", rule: "judged", verdict };
@@ -557,22 +557,30 @@ export function advance(state: ContinuationState, d: TurnEndDecision, executed: 
 }
 
 /**
- * What a person asked that the run serves, which the turn-end judge holds its reply to: what the run carries
+ * What a person asked that the run serves, which the turn-end judge holds its reply to (`text`): what the run carries
  * (Continuar's request, what a person added while it worked), else the person's message that opened its stretch
  * (ADR 0089): the trigger itself, or the message an agent relayed to it. "" when nobody asked (a routine's brief, an
- * agent's own work).
+ * agent's own work). `quote`: what the agent itself may read of it (the untried nudge): nothing of a message written
+ * in another conversation that isn't a public channel, whose readers the agent may not be among.
  */
 export async function personAsk(
   db: Executor,
-  run: Pick<AgentRun, "orgId" | "stretchId" | "triggerMessageId">,
+  run: Pick<AgentRun, "orgId" | "channelId" | "stretchId" | "triggerMessageId">,
   carried?: string,
   trigger?: Message | null,
-): Promise<string> {
-  if (carried) return carried;
+): Promise<{ text: string; quote: string }> {
+  if (carried) return { text: carried, quote: carried };
   const rootId = runStretchOf(run);
   const root = trigger?.id === rootId ? trigger : await getMessage(db, run.orgId, rootId);
-  if (root?.authorType !== "person" || routineBriefOf(root.meta) || root.meta.background === true) return "";
-  return root.body;
+  if (root?.authorType !== "person" || routineBriefOf(root.meta) || root.meta.background === true)
+    return { text: "", quote: "" };
+  if (root.channelId === run.channelId) return { text: root.body, quote: root.body };
+  const [where] = await db
+    .select({ kind: schema.channels.kind, visibility: schema.channels.visibility })
+    .from(schema.channels)
+    .where(eq(schema.channels.id, root.channelId));
+  const open = where?.kind === "channel" && where.visibility === "public";
+  return { text: root.body, quote: open ? root.body : "" };
 }
 
 /** The nudges that push an agent on (`decideTurnEnd`), as its runs' `context` steps record them (`nudged`). */

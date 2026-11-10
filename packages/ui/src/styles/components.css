@@ -11809,7 +11809,7 @@ html:not([data-pointer]) .ac-carousel__arrow:focus-visible {
 /* The picture's box (set inline): nothing here takes the pointer, and what reaches past the picture is cut at it. */
 .ac-cursor {
   position: absolute;
-  z-index: 2;
+  z-index: var(--z-lifted);
   overflow: hidden;
   pointer-events: none;
   transition: opacity var(--dur-fast) var(--out);

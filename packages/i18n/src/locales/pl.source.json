@@ -14940,10 +14940,10 @@
     "value": "PR #{{number}}"
   },
   "issues.queue": {
-    "value": "In {{name}}'s queue · #{{position}}"
+    "value": "In {{name}}'s queue · No. {{position}}"
   },
   "issues.queueShort": {
-    "value": "Queued · #{{position}}"
+    "value": "Queued · No. {{position}}"
   },
   "issues.open": {
     "value": "#{{number}} {{title}}"

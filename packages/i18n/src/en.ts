@@ -6238,8 +6238,8 @@ export const en = {
     agentRole: "Agent · {{role}}",
     pr: "PR #{{number}}",
     /** A task waiting in its agent's queue of tasks (1 = next): on a board card, and short where the agent is named. */
-    queue: "In {{name}}'s queue · #{{position}}",
-    queueShort: "Queued · #{{position}}",
+    queue: "In {{name}}'s queue · No. {{position}}",
+    queueShort: "Queued · No. {{position}}",
     open: "#{{number}} {{title}}",
     empty: "A task says who does what, person or agent, and shows where it stands.",
     emptyViewerTitle: "See who does what",
@@ -13753,7 +13753,6 @@ export const en = {
       general2: "Summarize what happened today",
       general3: "Help me plan the week?",
     },
-    /** "Ask Ada to implement": the card at the root of the work thread in the DM, and the line where the issue came from. */
     /** "Começar estas": the go for the tasks an agent gave agents in its reply, under their chips. */
     tasksStart: {
       start_one: "Start it",
@@ -13762,6 +13761,7 @@ export const en = {
       someone: "Someone",
       failed: "Couldn't start them now. Try again.",
     },
+    /** "Ask Ada to implement": the card at the root of the work thread in the DM, and the line where the issue came from. */
     issueWork: {
       label: "Requested task",
       asked: "You asked for task",

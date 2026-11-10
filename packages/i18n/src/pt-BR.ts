@@ -13861,7 +13861,6 @@ export const ptBR = {
       general2: "Resume o que rolou hoje",
       general3: "Me ajuda a organizar a semana?",
     },
-    /** "Ask Ada to implement": the card at the root of the work thread in the DM, and the line where the issue came from. */
     /** "Começar estas": the go for the tasks an agent gave agents in its reply, under their chips. */
     tasksStart: {
       start_one: "Começar esta",
@@ -13870,6 +13869,7 @@ export const ptBR = {
       someone: "Alguém",
       failed: "Não deu para começar agora. Tente de novo.",
     },
+    /** "Ask Ada to implement": the card at the root of the work thread in the DM, and the line where the issue came from. */
     issueWork: {
       label: "Tarefa pedida",
       asked: "Você pediu a tarefa",

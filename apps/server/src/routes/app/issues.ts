@@ -14,6 +14,7 @@ import {
   openTaskConversation,
   setCriterion,
   setIssueAudience,
+  startHeldTasks,
   updateIssue,
   updateIssueColumn,
 } from "@agenteschat/engine";
@@ -121,6 +122,10 @@ const Issue = z
     conversation: Conversation.nullable().openapi({
       description: "Its conversation (ADR 0145), once opened or written: a thread the chat's routes read and post to.",
     }),
+    queue: z
+      .object({ position: z.number().int().min(1) })
+      .nullable()
+      .openapi({ description: "Its place in its agent's queue of tasks (1 = next); null when it waits in none." }),
     createdAt: z.string(),
     updatedAt: z.string(),
   })
@@ -557,6 +562,30 @@ export function issueRoutes(deps: AppDeps) {
       const issue = await askAgentToImplement(issues, c.get("user").id, orgId, issueId, c.req.valid("json").agentId);
       deps.wakeWorkers?.();
       return c.json(issue, 200);
+    },
+  );
+
+  app.openapi(
+    createRoute({
+      method: "post",
+      path: "/organizations/{orgId}/messages/{messageId}/start-tasks",
+      tags,
+      security,
+      summary:
+        '"Começar estas" on an agent\'s reply: the go for the tasks it gave agents in that turn; each agent takes them as room frees',
+      request: { params: OrgParams.extend({ messageId: z.uuid() }) },
+      responses: {
+        200: json(
+          z.object({ started: z.number().openapi({ description: "Tasks that got the go (0: someone pressed it already)." }) }),
+        ),
+        ...errors,
+      },
+    }),
+    async (c) => {
+      const { orgId, messageId } = c.req.valid("param");
+      const started = await startHeldTasks(issues, c.get("user").id, orgId, messageId);
+      deps.wakeWorkers?.();
+      return c.json({ started }, 200);
     },
   );
 

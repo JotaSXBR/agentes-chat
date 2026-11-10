@@ -282,6 +282,10 @@ export const AgentBrakes = z
       description: "Its project (a repository, a product): agents of different projects don't call each other.",
     }),
     otherProjects: z.boolean().openapi({ description: "It may call agents of other projects too." }),
+    tasks: z.boolean().openapi({
+      description: "It takes its next assigned task by itself as room frees (the task pump); off: only when asked.",
+    }),
+    tasksAtOnce: z.number().int().min(1).max(10).openapi({ description: "Tasks it works on at once, by itself." }),
   })
   .openapi("AgentBrakes");
 

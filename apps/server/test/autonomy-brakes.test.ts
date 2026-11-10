@@ -8,7 +8,15 @@ import { browser, createTestServer, joinByInvitation, seedOrg, signUp, type Test
 let t: TestServer;
 afterEach(() => t.close());
 
-type Brakes = { costly: string; maxUnrequested: number; callAgents: string; callAgentIds: string[]; never: string[] };
+type Brakes = {
+  costly: string;
+  maxUnrequested: number;
+  callAgents: string;
+  callAgentIds: string[];
+  never: string[];
+  tasks: boolean;
+  tasksAtOnce: number;
+};
 
 test("an agent's brakes: defaults on the agent, merged on PATCH, and a proposal decided only by who may", async () => {
   t = await createTestServer();
@@ -34,6 +42,15 @@ test("an agent's brakes: defaults on the agent, merged on PATCH, and a proposal 
     maxUnrequested: 5,
     callAgents: "none",
   });
+  // Its task queue: on with two at once unless someone changes it.
+  expect(created.brakes).toMatchObject({ tasks: true, tasksAtOnce: 2 });
+  const queue = await owner(`${org}/agents/${created.id}`, {
+    method: "PATCH",
+    json: { brakes: { tasks: false, tasksAtOnce: 3 } },
+  });
+  expect(((await queue.json()) as { brakes: Brakes }).brakes).toMatchObject({ tasks: false, tasksAtOnce: 3 });
+  const tooMany = { brakes: { tasksAtOnce: 50 } };
+  expect((await owner(`${org}/agents/${created.id}`, { method: "PATCH", json: tooMany })).status).toBe(400);
 
   // A run nobody asked for wants to install packages: the card is for the agent's owner.
   await t.db

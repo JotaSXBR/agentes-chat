@@ -38,9 +38,14 @@ export const STRETCH = { runs: 50, unattendedRuns: 10, budgetShare: 0.2 } as con
  */
 export const PERSON_ASKED_MS = 4 * 3600_000;
 
-/** Nobody asked for the stretch's work: an agent wrote its first message, or it is a routine's brief. */
+/**
+ * Nobody asked for the stretch's work: an agent wrote its first message, or it is a routine's brief. A task's turn from
+ * its agent's queue (a `task_start` notice naming the person who gave it the task) is that person's.
+ */
 const unattendedSql = (orgId: string, stretchId: string) => sql`exists (select 1 from ${messages} m
-  where m.org_id = ${orgId}::uuid and m.id = ${stretchId}::uuid and (m.author_type = 'agent' or m.meta ? 'routineBrief'))`;
+  where m.org_id = ${orgId}::uuid and m.id = ${stretchId}::uuid and ((m.author_type = 'agent'
+    and not (m.meta->'notice'->>'kind' = 'task_start' and coalesce(m.meta->'notice'->'refs'->>'personId', '') <> ''))
+    or m.meta ? 'routineBrief'))`;
 
 /**
  * Whether a stretch is work a person asked for (their message, decision or Continuar opened it) within

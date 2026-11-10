@@ -63,6 +63,7 @@ import type { GitHubAppAccess } from "./git/github-call";
 import { GITHUB_EVENT_JOB, type GitHubAppEvent, handleGitHubAppEvent } from "./git/github-events";
 import { FILE_JOIN_REQUEST_JOB, fileJoinRequest } from "./invite-requests";
 import { announceTaskConversation } from "./issues";
+import { pumpTasks, TASK_PUMP_JOB } from "./task-pump";
 import type { JevKey, JevKeySource } from "./jev-key";
 import { DEEP_MENTION_THRESHOLD, DEEP_WAKE_HOP, MENTION_WAKE_THRESHOLD, mentionNeedsNothing } from "./judge";
 import { platformCapReached } from "./limits";
@@ -147,6 +148,8 @@ async function maybeEnqueueReflection(deps: JobDeps, orgId: string, threadId: st
 
 export interface JobDeps extends RunExecutorDeps {
   maxHops: number;
+  /** Automatic task starts per workspace and day (job `tasks.pump`, `AGENT_TASK_STARTS_PER_DAY`). */
+  taskStartsPerDay?: number;
   /** Search index (jobs `search.index`, `search.reindex`). */
   search?: SearchIndexResolver;
   /** Transactional email (job `email.send`). */
@@ -1058,6 +1061,18 @@ export function createJobHandlers(deps: JobDeps): JobHandlers {
         level: job.payload.level === "reached" ? "reached" : "warning",
         period: String(job.payload.period),
       });
+    },
+    // Agents take their next tasks as room frees (`task-pump.ts`).
+    [TASK_PUMP_JOB]: async (job) => {
+      await pumpTasks(
+        {
+          db: deps.db,
+          pubsub: deps.pubsub,
+          ai: { db: deps.db, gateway: deps.gateway, machines: deps.machines },
+          startsPerDay: deps.taskStartsPerDay,
+        },
+        orgOf(job),
+      );
     },
     // In-app notifications of a message: mentions, thread replies, DMs.
     "notifications.message": async (job) => {

@@ -320,6 +320,7 @@ import { billingHold, standingErrorDetail, standingRefusal } from "./standing";
 import { personAskedLately, rerootRun, runStretchOf } from "./stretch";
 import { isStuck, noteStep, STUCK_END_NOTE, STUCK_END_REPLY_NOTE, STUCK_NOTE, type StuckState } from "./stuck";
 import { archivedAgentsPrompt, FIND_AGENT_TOOL, renamedAgentsPrompt, teammateMeans } from "./team";
+import { kickTaskPump } from "./task-pump";
 import { linkRunChecks, runChecksForReply } from "./team-actions";
 import { carriesCredential, cliErrorWords, maskCredentials, maskCredentialsExcept, scrubSignIns } from "./tool-detail";
 import { chooseToolGroups, keptToolGroups, recentForJudge, type ToolGroupChoice } from "./tool-loading";
@@ -546,7 +547,7 @@ export interface Transcript {
   browser?: BrowserTrailStep[];
   /** Its desktop calls since the last post, for the card of what it did there (`meta.desktop`). */
   desktop?: BrowserTrailStep[];
-  /** Tasks the right hand handed on, not yet on a posted message (`meta.tasks`, its chips). */
+  /** Tasks it gave an agent, not yet on a posted message (`meta.tasks`, its chips and "Começar estas"). */
   tasks?: HandedTask[];
   /** The agent reacted (`react`) instead of replying: an empty final answer posts nothing. */
   reacted?: boolean;
@@ -1294,6 +1295,15 @@ async function executeRunInner(
     }
     // Its line ends with the run (checked on read); the apps refresh now (ADR 0084 §11).
     await announceAgentStatus(deps.pubsub, run.orgId, run.agentId).catch(() => {});
+    // A task run ended or parked: its agent has room for its next task (`task-pump.ts`).
+    if (!run.background) {
+      const [linked] = await db
+        .select({ issueId: agentRuns.issueId })
+        .from(agentRuns)
+        .where(eq(agentRuns.id, run.id))
+        .catch(() => []);
+      if (linked?.issueId) await kickTaskPump(db, run.orgId).catch(() => {});
+    }
     // Back from its plan or budget and over: the turns its note took in still wait, so the note speaks on for them.
     if (waitedOn && USAGE_WAIT_CODES.has(waitedOn) && status !== "waiting_input" && status !== "waiting_approval") {
       await usageNoteHandOn(deps, run).catch(() => {});

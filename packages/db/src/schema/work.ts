@@ -126,6 +126,10 @@ export const issues = pgTable(
     uniqueIndex().on(t.conversationChannelId),
     // Every run reads its agent's open tasks, latest activity first (`openTasksBrief`).
     index().on(t.orgId, t.assigneeType, t.assigneeId, t.updatedAt),
+    // The task pump's minute (`enqueueTaskPumps`): agents' open tasks, across workspaces.
+    index("issues_open_agent_idx")
+      .on(t.orgId)
+      .where(sql`${t.assigneeType} = 'agent' and ${t.status} in ('todo', 'in_progress', 'in_review')`),
   ],
 );
 

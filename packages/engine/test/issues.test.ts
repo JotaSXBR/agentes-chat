@@ -635,7 +635,7 @@ describe("issues", () => {
     expect(row?.assignee).toEqual({ type: "agent", id: f.agent.id });
   });
 
-  test("assigning a task to another agent says it doesn't start it, and how to hand it the job", async () => {
+  test("giving a task to an agent starts nobody: it waits for a person's go on the reply's card", async () => {
     f = await setup();
     await createAgent(f.db, f.owner.id, f.org.id, { name: "Bia", handle: "bia" }, { model: "claude-sonnet-5-5" });
     const ctx = {
@@ -651,19 +651,50 @@ describe("issues", () => {
     const run = async (name: string, input: Record<string, unknown>) =>
       (await tools.find((t) => t.name === name)?.execute(input, ctx))?.content ?? "";
     const created = await run("create_issue", { title: "Revisar o contrato", assignee: "@bia" });
-    expect(created).toContain("Assigning doesn't tell @bia or start its work");
-    expect(created).toContain("tell_agent");
+    expect(created).toContain('starts nothing yet: your reply carries a "Começar estas" card');
+    expect(created).toContain("once a person presses it @bia starts as soon as it has room");
     const [issue] = await listIssues(f.db, person(f.owner.id), f.org.id, { q: "contrato" });
     const ref = `#${issue?.number}`;
-    // The same assignee kept, a change of its own, or the agent itself: nothing to hand over.
-    expect(await run("update_issue", { issue: ref, priority: "high" })).not.toContain("tell_agent");
-    expect(await run("update_issue", { issue: ref, assignee: "me" })).not.toContain("tell_agent");
-    expect(await run("update_issue", { issue: ref, assignee: "@bia" })).toContain(
-      "Assigning doesn't tell @bia or start its work",
-    );
+    // The same assignee kept, or a change of its own: nothing to say.
+    expect(await run("update_issue", { issue: ref, priority: "high" })).not.toContain("Começar estas");
+    // To itself: its queue waits for the go too, and working on it now is fine.
+    expect(await run("update_issue", { issue: ref, assignee: "me" })).toContain("working on it now, in this run, is fine");
+    expect(await run("update_issue", { issue: ref, assignee: "@bia" })).toContain("starts nothing yet");
     expect(await run("update_issue", { issue: ref, assignee: "@bia", status: "in_progress" })).not.toContain(
-      "tell_agent",
+      "Começar estas",
     );
+  });
+
+  test("update_issue marks a task blocked in a line, which the board and its history say, and clears it", async () => {
+    f = await setup();
+    const deps = { db: f.db, pubsub: f.pubsub };
+    const ctx = {
+      db: f.db,
+      orgId: f.org.id,
+      agentId: f.agent.id,
+      runId: crypto.randomUUID(),
+      channelId: f.general.id,
+      threadRootId: crypto.randomUUID(),
+      triggerMessageId: crypto.randomUUID(),
+    };
+    const tools = await createIssueToolSource(f.artifactDeps).tools(ctx);
+    const run = async (input: Record<string, unknown>) =>
+      tools.find((t) => t.name === "update_issue")?.execute(input, ctx);
+    const issue = await createIssue(deps, person(f.owner.id), f.org.id, {
+      title: "Rotate the API keys",
+      assignee: { type: "agent", id: f.agent.id },
+    });
+    expect((await run({ issue: `#${issue.number}`, blocked: "Needs the vault password from Ana" }))?.isError).toBeFalsy();
+    const blocked = await getIssue(f.db, person(f.owner.id), f.org.id, { id: issue.id });
+    expect(blocked.blocked).toMatchObject({ reason: "agent", text: "Needs the vault password from Ana" });
+    expect(blocked.queue).toBeNull();
+    await run({ issue: issue.id, blocked: "" });
+    expect((await getIssue(f.db, person(f.owner.id), f.org.id, { id: issue.id })).blocked).toBeNull();
+    const events = await listIssueActivity(f.db, person(f.owner.id), f.org.id, issue.id);
+    expect(events.filter((e) => e.event === "blocked" || e.event === "unblocked").map((e) => e.textCode)).toEqual([
+      "blocked",
+      "unblocked",
+    ]);
   });
 
   test("list_issues shows each due date, so a late-tasks routine reads them from the list", async () => {

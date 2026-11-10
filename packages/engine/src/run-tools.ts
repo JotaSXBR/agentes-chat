@@ -130,12 +130,16 @@ export interface ToolSideEffects {
   browser?: BrowserTrailStep[];
   /** Its desktop calls since the last post (`meta.desktop`, ADR 0062), the same shape: the app an open started. */
   desktop?: BrowserTrailStep[];
-  /** Tasks the right hand handed to an agent (`create_issue`), shown as chips on its reply (`meta.tasks`). */
+  /** Tasks it gave an agent (`create_issue`, `update_issue`), shown as chips on its reply (`meta.tasks`). */
   tasks?: HandedTask[];
 }
 
-/** A task handed on, as a reply's chip reads it: the task, its agent and its conversation's root (the thread). */
+/**
+ * A task handed on, as a reply's chip reads it: the task, its agent and its conversation's root (the thread).
+ * `held`: it waits for a person's go, the reply's "Começar estas" (`startHeldTasks`).
+ */
 export interface HandedTask {
+  held?: boolean;
   issueId: string;
   number: number;
   title: string;

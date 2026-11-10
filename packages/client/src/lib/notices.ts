@@ -19,6 +19,7 @@ export const NOTICE_KINDS = [
   "work_check_in",
   "run_stopped",
   "github_event",
+  "task_start",
 ] as const;
 export type NoticeKind = (typeof NOTICE_KINDS)[number];
 
@@ -259,6 +260,16 @@ export function noticeView(
       if (r.answerFor) return line("chat.notice.github.asked", values, detail);
       return { ...line(githubLineKey(r), values, detail), answer: r.outside === "1" && !r.answeredBy };
     }
+    // An agent's turn on a task from its queue (the task's conversation): which turn, never the words for the agent.
+    case "task_start":
+      return line(
+        notice.refs.line === "resume"
+          ? "chat.notice.taskResume"
+          : notice.refs.line === "review"
+            ? "chat.notice.taskReview"
+            : "chat.notice.taskStart",
+        { name: names.author },
+      );
     case "proposal_result":
     case "poll_result":
     case "work_check_in":

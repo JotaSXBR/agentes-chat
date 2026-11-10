@@ -83,6 +83,8 @@ export interface OrgSettings extends MediaSettings {
   autoModels: AutoModels;
   /** Who can talk to a new agent whoever made it didn't choose for (`newAgentAudience`): everyone by default. */
   newAgentAudience: NewAgentAudience;
+  /** Agents take the tasks people gave them by themselves as room frees (`task-pump.ts`). On by default. */
+  taskPump: boolean;
 }
 
 export const TEAM_SIZES = ["solo", "small", "medium", "large"] as const;
@@ -107,6 +109,7 @@ export async function getOrgSettings(db: Database, actorId: string, orgId: strin
     voiceMessages: s?.voiceMessages ?? true,
     autoModels: (s?.autoModels ?? {}) as AutoModels,
     newAgentAudience: s?.newAgentAudience ?? "everyone",
+    taskPump: s?.taskPump ?? true,
     ...mediaSettingsFrom(s),
   };
 }
@@ -229,6 +232,7 @@ export async function updateOrgSettings(
       ...(input.agentStickers !== undefined ? { agentStickers: input.agentStickers } : {}),
       ...(input.agentMedia !== undefined ? { agentMedia: input.agentMedia } : {}),
       ...(input.newAgentAudience !== undefined ? { newAgentAudience: input.newAgentAudience } : {}),
+      ...(input.taskPump !== undefined ? { taskPump: input.taskPump } : {}),
       ...(input.autoModels !== undefined
         ? { autoModels: mergeAutoModels(await storedAutoModels(), input.autoModels) }
         : {}),

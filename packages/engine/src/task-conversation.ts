@@ -34,7 +34,7 @@ export interface TaskConversationRef {
  * ids (deleted from the activity in the same transaction; its events stay there as the history). Taken under
  * the issue's row lock, so two first uses make one.
  */
-export async function ensureTaskConversation(db: Database, issueId: string): Promise<TaskConversationRef> {
+export async function ensureTaskConversation(db: Executor, issueId: string): Promise<TaskConversationRef> {
   return db.transaction(async (tx) => {
     const [issue] = await tx.select().from(issues).where(eq(issues.id, issueId)).for("update");
     if (!issue) throw new Error("issue not found");

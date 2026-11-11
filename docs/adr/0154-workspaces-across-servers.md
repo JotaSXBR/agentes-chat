@@ -54,9 +54,10 @@ One list of workspaces, grouped by server, in both apps; switching keeps every s
   the webview's store (`cookies_for_url`, the same cookies the window uses) and calls `GET /api/app/me` and
   `GET /api/app/me/unread` like the phone does (no `Origin`, `X-Agentes-Client: mobile`), every minute and when the
   window gains focus. The server open in the window reports its own from the page.
-- The web sidebar's **Seus workspaces** lists them grouped by server, with unread counts; "Adicionar workspace" (in
-  place of "Novo workspace" in the desktop app) opens the welcome window in an add-a-workspace mode: a new workspace on
-  agentes.chat, or the team's server. Choosing a workspace on another server switches the window there.
+- The web sidebar's **Seus workspaces** lists them grouped by server, with unread counts; "Adicionar workspace" opens
+  the welcome window in an add-a-workspace mode: a new workspace on agentes.chat, or the team's server. It takes the
+  place of "Novo workspace" on agentes.chat; on any other server "Novo workspace" stays before it, since that window
+  can't make a workspace there. Choosing a workspace on another server switches the window there.
 - New unread notifications on a server not open in the window show as the system's notification, named after the
   workspace and server (found by the minute's check, so up to a minute late); clicking it opens that workspace.
 - Preferences › Servers lists each server's workspaces.

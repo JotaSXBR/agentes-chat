@@ -520,10 +520,9 @@
   background: var(--plate);
   box-shadow: inset 0 0 0 2px var(--line-strong);
 }
-.arrival-feedback__form {
+/* The dialog's form has no box (`display: contents`), so the ring is drawn on its body. */
+.arrival-feedback__form[data-over] > .ac-dialog__body {
   border-radius: var(--radius-md);
-}
-.arrival-feedback__form[data-over] {
   box-shadow: inset 0 0 0 2px var(--line-strong);
 }
 

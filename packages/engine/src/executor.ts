@@ -198,6 +198,8 @@ import {
   STEP_HELD_MAX,
   takeStepWords,
 } from "./events";
+import { type Feedback, queueFeedback } from "./feedback";
+import type { PendingFeedbackOffer } from "./feedback-offers";
 import { comesBackHere, FOLLOW_UP_TOOL, wakesLater } from "./follow-through";
 import { cutText } from "./format";
 import type { ModelGateway } from "./gateway";
@@ -562,6 +564,8 @@ export interface Transcript {
   desktop?: BrowserTrailStep[];
   /** Tasks it gave an agent, not yet on a posted message (`meta.tasks`, its chips and "Começar estas"). */
   tasks?: HandedTask[];
+  /** A report it offered about the app, not yet on a posted message (`meta.feedbackOffer`, ADR 0160 §12). */
+  feedbackOffer?: PendingFeedbackOffer;
   /** The agent reacted (`react`) instead of replying: an empty final answer posts nothing. */
   reacted?: boolean;
   /** It sent a GIF or its sticker (`send_gif`, `send_sticker`, ADR 0091): an empty final answer posts nothing. */
@@ -1952,6 +1956,10 @@ async function executeRunInner(
     // Nor does it answer anything ("I'll answer when it's back"): a reply held before it stays owed (`owedReply`).
     // Every caller counts it in `postedCount` right after.
     if (note && transcript?.held) transcript.held.posted++;
+    // A report that goes by itself (ADR 0160 §12) is queued with the message that says so, never kept on it.
+    const { [FEEDBACK_SEND]: feedbackSend, ...shown } = (meta ?? {}) as Record<string, unknown> & {
+      [FEEDBACK_SEND]?: { key: string; feedback: Feedback };
+    };
     const tagged = report && !note ? { routine: report } : {};
     // What a run a routine's reading feeds writes holds no credential it may have read (ADR 0053 §3); one a person
     // wrote into since (`steeredBy`, in the transcript as it is now) answers that person. Any other run writes as
@@ -2040,7 +2048,7 @@ async function executeRunInner(
       threadId,
       said,
       {
-        ...meta,
+        ...shown,
         ...runMeta,
         ...tagged,
         ...(readOutside && !note ? { readOutside: true } : {}),
@@ -2066,6 +2074,7 @@ async function executeRunInner(
         text: said,
       };
     }
+    if (feedbackSend) await queueFeedback(tx, { orgId: run.orgId, ...feedbackSend });
     // Act with undo (ADR 0037 round 2): the changes the run made so far become this message's receipts.
     if ((await linkRunActions(tx, run.orgId, run.id, m.id)) > 0) withReceipts.push(m.id);
     if (!note && transcript) transcript.lastPosted = body.trim();
@@ -5894,11 +5903,14 @@ function createDeltaPublisher(
   };
 }
 
+/** Where `takeMemoryUpdates` hands `post` the email of a report that goes by itself: never saved on the message. */
+const FEEDBACK_SEND = "feedbackSend";
+
 /**
  * Moves pending memory updates, artifacts, a proposed mission's link, the
  * agents it consulted, where it browsed and what it did on its desktop onto the
  * message being posted (the "memory updated", file preview, mission link,
- * "message from @agent", browser and desktop cards).
+ * "message from @agent", browser and desktop cards), and a report it offered about the app (its row under the reply).
  */
 function takeMemoryUpdates(t: Transcript): Record<string, unknown> | undefined {
   const updates = t.memoryUpdates ?? [];
@@ -5908,7 +5920,9 @@ function takeMemoryUpdates(t: Transcript): Record<string, unknown> | undefined {
   const browser = t.browser ?? [];
   const desktop = t.desktop ?? [];
   const tasks = t.tasks ?? [];
+  const offer = t.feedbackOffer;
   if (
+    !offer &&
     updates.length === 0 &&
     files.length === 0 &&
     !link &&
@@ -5925,6 +5939,7 @@ function takeMemoryUpdates(t: Transcript): Record<string, unknown> | undefined {
   t.browser = [];
   t.desktop = [];
   t.tasks = [];
+  t.feedbackOffer = undefined;
   const meta: Record<string, unknown> = {};
   if (updates.length > 0) meta.memoryUpdates = updates;
   if (files.length > 0) meta.artifacts = files;
@@ -5933,6 +5948,10 @@ function takeMemoryUpdates(t: Transcript): Record<string, unknown> | undefined {
   if (browser.length > 0) meta.browser = { steps: browser };
   if (desktop.length > 0) meta.desktop = { steps: desktop };
   if (tasks.length > 0) meta.tasks = tasks;
+  if (offer) {
+    meta.feedbackOffer = offer.view;
+    if (offer.send) meta[FEEDBACK_SEND] = { key: `offer:${offer.view.id}`, feedback: offer.send };
+  }
   return meta;
 }
 

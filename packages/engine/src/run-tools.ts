@@ -14,6 +14,7 @@ import {
   publishMessageCreated,
   takeStepWords,
 } from "./events";
+import { type PendingFeedbackOffer, pendingFeedbackOfferOf } from "./feedback-offers";
 import { pgSafeStringify } from "./format";
 import type { Judge } from "./judge";
 import { insertMessage, type Message, messageView } from "./messages";
@@ -133,6 +134,8 @@ export interface ToolSideEffects {
   desktop?: BrowserTrailStep[];
   /** Tasks it gave an agent (`create_issue`, `update_issue`), shown as chips on its reply (`meta.tasks`). */
   tasks?: HandedTask[];
+  /** A report it offered about the app (`offer_feedback`, ADR 0160 §12), for its next reply (`meta.feedbackOffer`). */
+  feedbackOffer?: PendingFeedbackOffer;
 }
 
 /**
@@ -284,6 +287,8 @@ export function absorbToolData(t: ToolSideEffects, data: Record<string, unknown>
   const task = data.handedTask as HandedTask | undefined;
   if (task && typeof task.issueId === "string" && typeof task.rootId === "string")
     t.tasks = [...(t.tasks ?? []).filter((x) => x.issueId !== task.issueId), task];
+  const offer = pendingFeedbackOfferOf(data.feedbackOffer);
+  if (offer) t.feedbackOffer = offer;
   const update = data.memoryUpdate as MemoryUpdate | undefined;
   if (update) t.memoryUpdates = [...(t.memoryUpdates ?? []), update];
   return update ?? null;
@@ -304,6 +309,7 @@ export function mergeToolEffects(t: ToolSideEffects, e: ToolSideEffects | null |
   if (e.browser?.length) t.browser = withTrail(t.browser, e.browser);
   if (e.desktop?.length) t.desktop = withTrail(t.desktop, e.desktop);
   if (e.tasks?.length) t.tasks = [...(t.tasks ?? []), ...e.tasks];
+  if (e.feedbackOffer) t.feedbackOffer = e.feedbackOffer;
 }
 
 const hasEffects = (e: ToolSideEffects) =>
@@ -319,7 +325,8 @@ const hasEffects = (e: ToolSideEffects) =>
       e.deniedRepo ||
       e.browser?.length ||
       e.desktop?.length ||
-      e.tasks?.length,
+      e.tasks?.length ||
+      e.feedbackOffer,
   );
 
 /** The transcript key where the bridge leaves a computer-brain turn's side effects for the engine. */

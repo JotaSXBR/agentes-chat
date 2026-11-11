@@ -293,6 +293,7 @@ import { DeleteChannelDialog } from "@/components/DeleteChannelDialog";
 import { MenuEntries } from "@/components/DesktopMenus";
 import { DeviceWaitCard } from "@/components/devices/DeviceWaitCard";
 import { useArchiveChannelWithUndo } from "@/components/entity-menus";
+import { FeedbackOfferRow } from "@/components/FeedbackOffer";
 import { InPlaceProvider } from "@/components/InPlace";
 import { HandedTaskChips, IssueTakenLine, IssueWorkCard } from "@/components/IssueWork";
 import { ArrivalCard, useArrival } from "@/components/invite/Arrival";
@@ -4650,6 +4651,7 @@ export const TimelineMessage = memo(function TimelineMessage({
             {m.author.type === "agent" && !m.local && <HandedTaskChips message={m} />}
             {m.author.type === "agent" && !m.local && <TeamChecks message={m} />}
             {m.author.type === "agent" && !m.local && <ReachLines message={m} />}
+            {m.author.type === "agent" && !m.local && <FeedbackOfferRow message={m} />}
             {agent &&
               memoryUpdates
                 .filter((u) => u.action !== "proposed")

@@ -514,6 +514,18 @@
 .sidebar__feedback .ac-chip {
   margin-left: auto;
 }
+/* A file dragged over the row, or over the open form: where it lands is lit, as a task's files are. */
+.sidebar__feedback > .sidebar__item[data-over] {
+  color: var(--ink);
+  background: var(--plate);
+  box-shadow: inset 0 0 0 2px var(--line-strong);
+}
+.arrival-feedback__form {
+  border-radius: var(--radius-md);
+}
+.arrival-feedback__form[data-over] {
+  box-shadow: inset 0 0 0 2px var(--line-strong);
+}
 
 @media (prefers-reduced-motion: reduce) {
   .team-scene__cast[data-awake] .team-scene__agent,

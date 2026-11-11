@@ -842,8 +842,8 @@ html:not([data-pointer]) .cal-band:focus-visible {
   display: grid;
   grid-template-columns: 120px minmax(0, 1fr);
   gap: 12px;
-  /* Its events' plates as far from its top and bottom as from its sides, so their corners stay concentric with its. */
-  padding: var(--space-3);
+  /* Its events' plates (6px corners) as far from every edge as its 14px corners leave room for: concentric with it. */
+  padding: var(--space-2);
   border-radius: var(--radius-lg);
   background: var(--raised);
   box-shadow: var(--e1);

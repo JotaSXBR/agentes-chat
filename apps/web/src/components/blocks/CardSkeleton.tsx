@@ -27,7 +27,7 @@ export function CardSkeleton({
       label={card?.title ?? t("common.loading")}
       className={`live-block ${kind === "choices" ? "choices" : ""}`}
     >
-      <header className="live-block__head">
+      <header className={kind === "block" ? "live-block__head ac-actline" : "live-block__head"}>
         <span className="live-block__titles">
           {title}
           {(kind === "poll" || steps > 1) && (
@@ -36,11 +36,16 @@ export function CardSkeleton({
             </small>
           )}
         </span>
-        {Array.from({ length: buttons }, (_, i) => (
-          // The buttons' box (the kit's classes, so its touch sizes too), nothing to press yet.
-          // biome-ignore lint/suspicious/noArrayIndexKey: fixed placeholders
-          <span key={i} className="ac-btn ac-btn--sm ac-btn--icon ac-btn--ghost" aria-hidden="true" />
-        ))}
+        {buttons > 0 && (
+          // The buttons' boxes in the card's own group of actions (the kit's classes, so its touch sizes and gaps too),
+          // nothing to press yet.
+          <span className="ac-acts">
+            {Array.from({ length: buttons }, (_, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: fixed placeholders
+              <span key={i} className="ac-btn ac-btn--sm ac-btn--icon ac-btn--ghost" aria-hidden="true" />
+            ))}
+          </span>
+        )}
       </header>
       {kind === "choices" && (
         <>

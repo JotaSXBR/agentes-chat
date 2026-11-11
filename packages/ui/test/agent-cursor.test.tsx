@@ -309,5 +309,6 @@ describe("the agent's cursor", () => {
       cursor.current?.step({ x: 640, y: 450, presses: 1, words: "clicking" });
     });
     expect(parts(container).layer?.dataset.phase).toBe("gone");
+    expect(parts(container).layer?.style.display).toBe("none");
   });
 });

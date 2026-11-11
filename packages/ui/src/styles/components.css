@@ -2446,6 +2446,14 @@ html:not([data-pointer]) .ac-menu__item:focus-visible,
   font-weight: 400;
   color: var(--ink-muted);
   white-space: normal;
+  /* Words with nothing to break at (an email, a link) break anywhere rather than run past the menu's edge. */
+  overflow-wrap: anywhere;
+}
+/* A select's row says its whole option: its title wraps as its description does, never cut at the menu's edge. A list
+   of people keeps its one line a row (below). */
+.ac-menu--select:not(:has(.ac-menu__leading > .ac-avatar)) .ac-menu__label > :first-child {
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 /*
  * OptionRow: a list with people or agents in it (a select's, a menu's, the mentions', search's, the palette's). The
@@ -12078,6 +12086,10 @@ html:not([data-pointer]) .ac-carousel__arrow:focus-visible {
 .ac-cursor__tag[data-west][data-north] {
   border-radius: 9px 9px 3px;
   transform: translate(calc(-100% - 19px), calc(-100% - 23px));
+}
+/* With no face to start it, the name stands as far from the tag's start as the tag's words end from its end. */
+.ac-cursor__tag:not(:has(.ac-cursor__face)) {
+  padding-left: var(--space-2);
 }
 /* The face and the name keep together: a long name wraps beside the face. */
 .ac-cursor__who {

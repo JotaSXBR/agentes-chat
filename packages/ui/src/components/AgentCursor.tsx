@@ -328,8 +328,9 @@ export function AgentCursor({
       data-phase={phase}
       aria-hidden="true"
       // Its ripples take the arrow's color.
+      // No picture laid out yet (an empty box): nothing to point at, so nothing of it is laid out either.
       style={
-        box
+        box?.width && box.height
           ? { left: box.left, top: box.top, width: box.width, height: box.height, color: tones.arrow }
           : { display: "none" }
       }

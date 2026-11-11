@@ -1635,10 +1635,10 @@ export function TeamAi({
   return (
     <Locked when={busy}>
       <div className="ai-form">
-        <p className="ai-for ac-iconline">
+        <div className="ai-for ac-iconline">
           {faces}
           <span>{t("aiSelect.for", { names })}</span>
-        </p>
+        </div>
         {flow ? (
           <div className="ai-flow">
             <div className="agp-addacct__head ai-flow__head">

@@ -2202,9 +2202,10 @@ function useWorkspaceLook() {
 
 /**
  * Your workspaces in the account menu of a personal workspace (ADR 0159): the workspace menu's list, then New
- * workspace; in the desktop app (ADR 0154) by server, with New workspace under this server's workspaces (it makes one
- * here), then Add workspace. Mounted only while the menu is open: the counts load then. No role beside each: one
- * person's own workspaces.
+ * workspace when the person may make one. In the desktop app (ADR 0154) by server, then Add workspace; New workspace
+ * (it makes one here) sits under this server's workspaces only on a server of one's own, since on agentes.chat Add
+ * workspace makes one (`offersNewWorkspace`). Mounted only while the menu is open: the counts load then. No role beside
+ * each: one person's own workspaces.
  */
 function MenuWorkspaces() {
   const { t, i18n } = useTranslation();

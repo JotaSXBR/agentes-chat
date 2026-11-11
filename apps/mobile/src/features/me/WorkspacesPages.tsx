@@ -1,4 +1,4 @@
-import { type Me, type OrgSummary, useApi } from "@agenteschat/client";
+import { type Me, type OrgSummary, useApi, useMe } from "@agenteschat/client";
 import { workspaceNotes } from "@agenteschat/client/lib/deletion";
 import { CLOUD_SERVER, checkServer, normalizeServer, serverHost } from "@agenteschat/client/lib/server";
 import { isPersonal, modeKey } from "@agenteschat/client/lib/workspace-mode";
@@ -8,7 +8,7 @@ import { useTranslation } from "react-i18next";
 import { StyleSheet, View } from "react-native";
 import { openWorkspace, problemText } from "@/features/server";
 import { createApi } from "@/lib/api";
-import { askNewWorkspace } from "@/lib/new-workspace";
+import { askNewWorkspace, offersNewWorkspaceHere } from "@/lib/new-workspace";
 import { openOrgs } from "@/lib/org-choice";
 import { ALLOW_HTTP, serverUrl, signedInServers, useServer, useSignedInServers } from "@/lib/server";
 import { useOrg, useOrgMaybe } from "@/providers/org";
@@ -199,11 +199,13 @@ export function WorkspacesPage() {
 }
 
 /**
- * Adicionar workspace, a short sheet (the system's form sheet, sized to its two rows): a new one on agentes.chat,
- * or the team's own server; one line under them says nothing is lost.
+ * Adicionar workspace, a short sheet (the system's form sheet, sized to its rows): on a server of one's own, a new one
+ * there first; a new one on agentes.chat, or the team's own server; one line under them says nothing is lost.
  */
 export function AddWorkspacePage() {
   const { t } = useTranslation();
+  const server = useServer();
+  const me = useMe().data;
   const create = () => {
     askNewWorkspace(CLOUD_SERVER);
     // Signed in to agentes.chat already: its first run opens over the app; otherwise its sign-in comes first.
@@ -215,6 +217,19 @@ export function AddWorkspacePage() {
       {/* The sheets' bar: back to the list it came from, the title centered (as Novo's). */}
       <SheetHeader title={t("mobile.me.addWorkspace")} icon="back" />
       <GroupedList>
+        {offersNewWorkspaceHere(server, me) ? (
+          <GroupedRow
+            icon="plus"
+            label={t("shell.newWorkspace")}
+            sub={serverHost(server)}
+            chevron
+            onPress={() => {
+              // Signed in here already: the root layout opens the first run over the app for the ask.
+              askNewWorkspace(server);
+              router.dismissTo("/");
+            }}
+          />
+        ) : null}
         <GroupedRow
           icon="plus"
           label={t("mobile.me.addWorkspaceCreate")}

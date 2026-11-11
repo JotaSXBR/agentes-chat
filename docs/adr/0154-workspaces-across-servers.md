@@ -41,7 +41,8 @@ One list of workspaces, grouped by server, in both apps; switching keeps every s
 - **Adicionar workspace**, at the end, opens a pushed screen with two ways: a new workspace on agentes.chat (signed in
   there already: its creation; otherwise sign in or create an account there, then its creation), or the team's server
   by address or QR code. Adding a server makes it the current one: signed in there already, its workspaces; otherwise
-  its sign-in, with a way back to the workspace before. Nothing signs out.
+  its sign-in, with a way back to the workspace before. Nothing signs out. On any server but agentes.chat, "Novo
+  workspace" comes first: a new workspace on that server, its creation over the app.
 - Signing out of a server signs out of that one only: its push registration, session and per-server values go, the
   others and the phone's own preferences (theme, sounds) stay.
 - Push: the phone registers its token with every server signed in to (again when the token changes). A tap reads
@@ -56,8 +57,9 @@ One list of workspaces, grouped by server, in both apps; switching keeps every s
   window gains focus. The server open in the window reports its own from the page.
 - The web sidebar's **Seus workspaces** lists them grouped by server, with unread counts; "Adicionar workspace" opens
   the welcome window in an add-a-workspace mode: a new workspace on agentes.chat, or the team's server. It takes the
-  place of "Novo workspace" on agentes.chat; on any other server "Novo workspace" stays before it, since that window
-  can't make a workspace there. Choosing a workspace on another server switches the window there.
+  place of "Novo workspace" on agentes.chat; on any other server "Novo workspace" stays, under that server's own
+  workspaces, since that window can't make a workspace there. Choosing a workspace on another server switches the
+  window there.
 - New unread notifications on a server not open in the window show as the system's notification, named after the
   workspace and server (found by the minute's check, so up to a minute late); clicking it opens that workspace.
 - Preferences › Servers lists each server's workspaces.

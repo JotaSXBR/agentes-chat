@@ -300,8 +300,11 @@ describe("the desktop app lists every server's workspaces (ADR 0154)", () => {
     await settle(4);
     return within(screen().getByRole("menu", { name: "Seus workspaces" }));
   };
-  const names = (menu: ReturnType<typeof within>) =>
-    menu.getAllByRole("menuitem").map((i: HTMLElement) => i.textContent?.replace(/\s+/g, " ").trim());
+  const text = (el: Element) => el.textContent?.replace(/\s+/g, " ").trim();
+  const names = (menu: ReturnType<typeof within>) => menu.getAllByRole("menuitem").map(text);
+  /** The menu's items and its headings (matched by `heading`), in order: what sits under which server. */
+  const lines = (menu: Element, heading: string) =>
+    [...menu.querySelectorAll(`${heading}, [role="menuitem"]`)].map(text);
   type App = { __agentesDesktop?: unknown; __TAURI_INTERNALS__?: unknown };
   let home: string | undefined;
   /** This page in the desktop app at `here`, which reads Oficina on `other`; what the page asks of the app, listed. */
@@ -348,15 +351,17 @@ describe("the desktop app lists every server's workspaces (ADR 0154)", () => {
     expect(asked).toContainEqual({ kind: "addWorkspace" });
   });
 
-  test("on a server of one's own, whose window can't make one there, Novo workspace does, before Adicionar workspace", async () => {
+  test("on a server of one's own, whose window can't make one there, Novo workspace does, under that server", async () => {
     inDesktop(OWN, CLOUD_SERVER);
     const { router } = await open(`/org/${ORG_ID}/issues`);
     const menu = await menuRows();
-    expect(names(menu)).toEqual([
+    expect(lines(screen().getByRole("menu", { name: "Seus workspaces" }), ".sidebar__menu-server")).toEqual([
+      "agentes.exemplo.com.br· Seu servidor",
       expect.stringContaining("Acme"),
       expect.stringContaining("Beta"),
-      expect.stringMatching(/Oficina.*4/),
       "Novo workspace",
+      "agentes.chat",
+      expect.stringMatching(/Oficina.*4/),
       expect.stringContaining("Adicionar workspace"),
     ]);
     await click(menu.getByText("Novo workspace"));
@@ -364,16 +369,20 @@ describe("the desktop app lists every server's workspaces (ADR 0154)", () => {
     expect(router.state.location.pathname).toBe("/onboarding");
   });
 
-  test("a personal workspace's account menu the same: Novo workspace on one's own server, not on agentes.chat", async () => {
-    for (const [here, other] of [
-      [CLOUD_SERVER, OWN],
-      [OWN, CLOUD_SERVER],
+  test("a personal workspace's account menu the same: Novo workspace under one's own server, not on agentes.chat", async () => {
+    const own = "agentes.exemplo.com.br · Seu servidor";
+    const oficina = expect.stringMatching(/Oficina.*4/);
+    for (const [here, other, servers] of [
+      [CLOUD_SERVER, OWN, ["agentes.chat", expect.anything(), "Beta", own, oficina]],
+      [OWN, CLOUD_SERVER, [own, expect.anything(), "Beta", "Novo workspace", "agentes.chat", oficina]],
     ] as const) {
       inDesktop(here, other);
       const { router } = await open(`/org/${ORG_ID}/issues`, { mode: "personal" });
-      const menu = within(await accountMenu(/^Conta: /));
-      expect(names(menu).slice(-3)).toEqual([
-        here === OWN ? "Novo workspace" : expect.stringMatching(/Oficina.*4/),
+      const list = await accountMenu(/^Conta: /);
+      const menu = within(list);
+      const all = lines(list, ".ac-menu__heading");
+      expect(all.slice(all.indexOf("Seus workspaces") + 1)).toEqual([
+        ...servers,
         expect.stringContaining("Adicionar workspace"),
         "Sair",
       ]);

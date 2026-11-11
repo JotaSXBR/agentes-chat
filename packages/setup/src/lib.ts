@@ -619,15 +619,25 @@ export function diagnoseDocker(output: string, platform: Platform): Problem {
 }
 
 /** A `docker compose` failure people hit often, said with its fix; null for anything else. */
+/** The images of docker-compose.yml's services that come from our registry, and the .env setting that replaces each. */
+const SERVICE_IMAGES: Record<string, { image: string; env: string }> = {
+  agentes: { image: IMAGE, env: "AGENTES_IMAGE" },
+  backup: { image: "ghcr.io/agentes-chat/backup:latest", env: "AGENTES_BACKUP_IMAGE" },
+  speech: { image: "ghcr.io/agentes-chat/speech:latest", env: "AGENTES_SPEECH_IMAGE" },
+};
+
 export function diagnoseCompose(output: string, platform: Platform): Problem | null {
   // A registry that refuses an image (a private one, or one this computer isn't signed in to): Compose then also says
   // the other images are missing, which isn't the cause. Docker names it on the image's line ("Image <ref> Error …
-  // denied") or in the registry's address (".../v2/<name>/manifests/<tag>": denied).
+  // denied"), on the service's ("agentes Error … denied", older Compose), or in the registry's address
+  // (".../v2/<name>/manifests/<tag>": denied).
   const named = /Image (\S+) Error\b[^\n]*\b(?:denied|unauthorized)\b/i.exec(output)?.[1];
   const url = /https:\/\/([^/\s"]+)\/v2\/([^\s"]+)\/manifests\/([^\s"]+)"?:\s*(?:denied|unauthorized)/i.exec(output);
+  const service = /^\s*([\w.-]+)\s+Error\b[^\n]*\b(?:denied|unauthorized)\b/im.exec(output)?.[1];
   const refused =
     named ??
     (url ? `${url[1]}/${url[2]}:${url[3]}` : undefined) ??
+    (service ? (SERVICE_IMAGES[service]?.image ?? `the ${service} service's image`) : undefined) ??
     (/error from registry: (denied|unauthorized)|pull access denied|requested access to the resource is denied/i.test(
       output,
     )
@@ -635,11 +645,15 @@ export function diagnoseCompose(output: string, platform: Platform): Problem | n
       : undefined);
   if (refused) {
     const first = refused.split("/")[0] ?? "";
-    const registry = refused !== "an image" && /[.:]/.test(first) ? first : "<registry>";
+    const registry = refused.includes("/") && /[.:]/.test(first) ? first : "<registry>";
+    const setting =
+      Object.values(SERVICE_IMAGES).find((s) => s.image === refused)?.env ??
+      (service ? SERVICE_IMAGES[service]?.env : undefined) ??
+      "AGENTES_IMAGE";
     return {
       check: "image",
       error: `Docker couldn't download ${refused}: the registry refused it.`,
-      fix: `It may be private: sign in with docker login ${registry} (with a token that can read packages), or set AGENTES_IMAGE in .env to an image this computer can download. Then run the setup again.`,
+      fix: `It may be private: sign in with docker login ${registry} (with a token that can read packages), or set ${setting} in .env to an image this computer can download. Then run the setup again.`,
     };
   }
   const busy = output.split("\n").find((line) => /port is already allocated|address already in use/i.test(line));

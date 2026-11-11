@@ -639,6 +639,24 @@ describe("Docker", () => {
     ).toMatchObject({
       error: "Docker couldn't download ghcr.io/agentes-chat/agentes:latest: the registry refused it.",
     });
+    // An older Compose names the service: its image, and the setting that replaces it.
+    const byService = diagnoseCompose(
+      [
+        "agentes Pulling",
+        "postgres Pulling",
+        "agentes Error error from registry: denied",
+        "denied",
+        "postgres  Interrupted",
+        "Error response from daemon: error from registry: denied",
+      ].join("\n"),
+      "darwin",
+    );
+    expect(byService).toMatchObject({
+      error: "Docker couldn't download ghcr.io/agentes-chat/agentes:latest: the registry refused it.",
+    });
+    expect(byService?.fix).toContain("docker login ghcr.io");
+    expect(byService?.fix).toContain("AGENTES_IMAGE");
+    expect(diagnoseCompose("speech Error error from registry: denied", "linux")?.fix).toContain("AGENTES_SPEECH_IMAGE");
   });
 
   test("the app's own refusal names the values to fix", () => {

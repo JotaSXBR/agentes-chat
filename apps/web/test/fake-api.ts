@@ -2517,8 +2517,11 @@ export function createFakeHttpApi(state: FakeState): Omit<HttpApi, FakedParts> {
         log("agents.addCredential", orgId, { ...input, apiKey: "[redacted]" });
         if (state.keyRefusal)
           throw new ApiError(400, state.keyRefusal, "The provider didn't accept this key.", state.keyRefusalParams);
+        // The counter is the test process's, so a seeded key's id ("cred-1") can come round: never reuse one.
+        let credId = id("cred");
+        while (state.credentials.some((c) => c.id === credId)) credId = id("cred");
         const cred: Credential = {
-          id: id("cred"),
+          id: credId,
           provider: input.provider,
           label: input.label,
           keyHint: input.apiKey.slice(-4),
@@ -2613,7 +2616,13 @@ export function createFakeHttpApi(state: FakeState): Omit<HttpApi, FakedParts> {
         const { monthlyBudgetUsd, ...rest } = a;
         return {
           ...rest,
-          credentialId: a.hasCredential ? "cred-1" : null,
+          // The key it was last saved with (`update`), else the seeded one.
+          credentialId:
+            "credentialId" in a
+              ? ((a as { credentialId?: string | null }).credentialId ?? null)
+              : a.hasCredential
+                ? "cred-1"
+                : null,
           budgetUsedPercent: percentOf(a),
           ...(seesCost()
             ? {

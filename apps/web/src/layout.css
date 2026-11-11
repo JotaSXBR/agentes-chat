@@ -10231,6 +10231,14 @@ html:not([data-pointer]) .agp-cell:focus-visible {
   flex: 1;
   min-width: 0;
 }
+/* A row's note (a lent plan's question and its one way out) goes under its line at the row's width, never beside it. */
+.ai-set > .ac-setlist__row:has(> .ac-setnote) {
+  flex-wrap: wrap;
+}
+.ai-set > .ac-setlist__row > .ac-setnote {
+  flex-basis: 100%;
+  margin: 0;
+}
 :is(.ai-set, .ai-adv__body) .ac-setrow {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

@@ -6445,8 +6445,11 @@ html:not([data-pointer]) .photo-drop:focus-visible {
   gap: 14px;
   padding-top: 4px;
 }
+/* Full width, its own height: a block Segmented grows along its row (`flex: 1 1 auto`), and in this column that is
+   down, to the column's whole height. */
 .avatar-builder__side .ac-seg {
   align-self: stretch;
+  flex: none;
 }
 .avatar-builder__stage {
   width: 192px;

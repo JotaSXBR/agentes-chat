@@ -489,8 +489,9 @@ export function RealtimeProvider({
       if (isNotificationEvent(event)) applyNotificationEvent(qc, orgId, event);
       // The island at the top (ADR 0071 §9): what reaches me while I'm here, and what I settled elsewhere leaves.
       if (isNotificationEvent(event)) feedIsland(event);
-      // Its sound (ADR 0070): in one tab only, and in the background only what matters.
-      if (isNotificationEvent(event) && event.type === "notification.upserted") {
+      // Its sound (ADR 0070): in one tab only, and in the background only what matters. None for what isn't news
+      // (`alert: false`: the person's own undo, or a kind they turned off).
+      if (isNotificationEvent(event) && event.type === "notification.upserted" && event.alert !== false) {
         const { mine, background } = notificationAudience();
         const sound = mine ? soundForNotification(event.notification, background) : null;
         if (sound) playSound(sound);

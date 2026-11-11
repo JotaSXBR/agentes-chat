@@ -1223,8 +1223,13 @@ export async function markNotificationRead(
   const row = await mine(deps, userId, orgId, id);
   const updated = await change(deps, row, { readAt: read ? (row.readAt ?? nowOf(deps)) : null });
   const view = notificationView(updated);
+  // The person's own change (an undo too): not news, so no island, sound or banner.
   if (!updated.doneAt) {
-    await publishUserEvent(deps.pubsub, orgId, userId, { type: "notification.upserted", notification: view });
+    await publishUserEvent(deps.pubsub, orgId, userId, {
+      type: "notification.upserted",
+      notification: view,
+      alert: false,
+    });
   }
   await publishCounts(deps, orgId, userId);
   return view;
@@ -1255,7 +1260,8 @@ export async function markNotificationDone(
     userId,
     updated.doneAt
       ? { type: "notification.removed", id: row.id }
-      : { type: "notification.upserted", notification: view },
+      : // Back in the inbox by the person's hand ("Mover de volta", an undo): not news, so no island, sound or banner.
+        { type: "notification.upserted", notification: view, alert: false },
   );
   await publishCounts(deps, orgId, userId);
   return view;
@@ -1276,8 +1282,13 @@ export async function snoozeNotification(
     const row = await mine(deps, userId, orgId, id);
     const updated = await change(deps, row, { snoozedUntil: null });
     const view = notificationView(updated);
+    // Undone by the person: not news, so no island, sound or banner.
     if (!updated.doneAt) {
-      await publishUserEvent(deps.pubsub, orgId, userId, { type: "notification.upserted", notification: view });
+      await publishUserEvent(deps.pubsub, orgId, userId, {
+        type: "notification.upserted",
+        notification: view,
+        alert: false,
+      });
     }
     await publishCounts(deps, orgId, userId);
     return view;

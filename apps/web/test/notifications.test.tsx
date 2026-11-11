@@ -480,7 +480,7 @@ describe("Notificações", () => {
     const { state } = await go();
     const waiting = [...document.querySelectorAll<HTMLElement>("[data-n]")]
       .map((r) => r.dataset.n)
-      .filter((id) => state.notifications.find((n) => n.id === id)?.waiting);
+      .filter((id) => state.notifications?.find((n) => n.id === id)?.waiting);
     await click(screen().getByRole("button", { name: "Concluir todas" }));
     await settle(2);
     const dialog = screen().getByRole("dialog");
@@ -499,6 +499,22 @@ describe("Notificações", () => {
     expect(undone.length).toBeGreaterThan(0);
     expect(undone.every((d) => d === false)).toBe(true);
     expect(document.querySelector('[data-n="n-rx"]')).not.toBeNull();
+  });
+
+  test("Concluir todas stays off in a filter where only what waits on me is left", async () => {
+    // The question waits on me (a mention, unread); the reaction is read, so neither filter holds anything else.
+    const [q, , rx] = inbox();
+    if (!q || !rx) throw new Error("the sample inbox changed");
+    await go(seedState({ notifications: [q, { ...rx, readAt: ago(5) }] }));
+    const filters = screen().getByRole("radiogroup", { name: "Filtrar notificações" });
+    const button = () => screen().getByRole("button", { name: "Concluir todas" }) as HTMLButtonElement;
+    expect(button().disabled).toBe(false);
+    for (const name of [/Menções/, /Não lidas/]) {
+      await click(within(filters).getByRole("radio", { name }));
+      await settle(4);
+      expect(document.querySelector('[data-n="n-q"]')).not.toBeNull();
+      expect(button().disabled).toBe(true);
+    }
   });
 
   test("Abrir goes to the source and marks it read", async () => {

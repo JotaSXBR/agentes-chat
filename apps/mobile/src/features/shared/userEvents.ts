@@ -47,8 +47,10 @@ export function useUserEvents() {
         if (event.type === "notification.upserted") {
           void qc.invalidateQueries({ queryKey: keys.channels(orgId) });
           void qc.invalidateQueries({ queryKey: keys.dms(orgId) });
-          // Its sound (ADR 0070); the push covers the app in the background.
-          const sound = soundForNotification(event.notification, AppState.currentState !== "active");
+          // Its sound (ADR 0070); the push covers the app in the background. None for what isn't news (`alert: false`:
+          // the person's own undo, or a kind they turned off).
+          const sound =
+            event.alert === false ? null : soundForNotification(event.notification, AppState.currentState !== "active");
           if (sound) playSound(sound);
         }
       }

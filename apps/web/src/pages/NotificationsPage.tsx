@@ -1528,12 +1528,14 @@ export function NotificationsPage() {
     );
   };
 
-  // "Concluir todas": what waits on me stays, so it counts only what doesn't.
+  // "Concluir todas": what waits on me stays, so it counts only what doesn't. A filter's count holds what waits too;
+  // the list puts what waits first, so what waits in it is what is loaded.
   const [clearing, setClearing] = useState(false);
+  const waitingHere = items.filter((n) => n.waiting).length;
   const clearable =
     !doneView &&
     filter !== "waiting" &&
-    (filter === "all" ? (counts?.all ?? 0) > (counts?.waiting ?? 0) : (counts?.[filter] ?? 0) > 0);
+    (filter === "all" ? (counts?.all ?? 0) > (counts?.waiting ?? 0) : (counts?.[filter] ?? 0) > waitingHere);
   const doneAll = () =>
     action.mutate(
       { type: "doneAll", filter },

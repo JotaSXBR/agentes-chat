@@ -164,6 +164,22 @@ test("the realtime event says whether it reaches the person's devices, by their 
   expect(alerts).toEqual([true, false]);
 });
 
+test("what the person brings back (Mover de volta, an undo) is no news: it comes with alert false", async () => {
+  f = await setup();
+  const { bia } = await people();
+  await post(f.owner.id, "@bia olha isso");
+  const id = (await inbox(bia.id)).items[0]?.id ?? "";
+  const events = hear(bia.id);
+  await markNotificationDone(deps(), bia.id, f.org.id, id, true);
+  await markNotificationDone(deps(), bia.id, f.org.id, id, false);
+  await markNotificationRead(deps(), bia.id, f.org.id, id, false);
+  await snoozeNotification(deps(), bia.id, f.org.id, id, new Date(Date.now() + 3_600_000));
+  await snoozeNotification(deps(), bia.id, f.org.id, id, null);
+  const upserted = events.filter((e) => e.type === "notification.upserted");
+  expect(upserted.length).toBe(3);
+  expect(upserted.map((e) => e.alert)).toEqual([false, false, false]);
+});
+
 test("reactions to my message merge (also within 30 min after reading); my own reactions don't count", async () => {
   f = await setup();
   const { bia, caio } = await people();

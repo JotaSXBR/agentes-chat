@@ -1046,7 +1046,11 @@ describe("Conectar uma IA: one picker, plans first", () => {
     // Tried and saved, it is what Ada thinks with: back on the API with it, the select naming it.
     expect(calls(state, "agents.setBrain").at(-1)?.args[2]).toEqual({ brain: "model" });
     expect(calls(state, "agents.update").at(-1)?.args[2]).toMatchObject({ credentialId: expect.any(String) });
-    expect(within(dialog).getByRole("combobox", { name: "Quem pensa" }).textContent).toContain("Claude");
+    // The select reads Ada again after the saves, which a loaded runner can take past any number of ticks for.
+    await waitFor(
+      () => expect(within(dialog).getByRole("combobox", { name: "Quem pensa" }).textContent).toContain("Claude"),
+      { timeout: 10_000 },
+    );
   });
 
   test("while a key saves, nothing that belongs to it moves: the way to pay, its maker, the field", async () => {

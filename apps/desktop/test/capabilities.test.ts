@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { Glob } from "bun";
 
 /**
@@ -28,19 +28,41 @@ const allowedIn = (label: string) =>
 /** The permission build.rs generates for one of the app's own commands. */
 const permission = (command: string) => `allow-${command.replaceAll("_", "-")}`;
 
-const rust = [...new Glob("src/*.rs").scanSync(TAURI)].map((file) => read(join(TAURI, file))).join("\n");
+const sources = [...new Glob("src/*.rs").scanSync(TAURI)].map(
+  (file) => [basename(file, ".rs"), read(join(TAURI, file))] as const,
+);
+/** Each module's window label, from its `const LABEL: &str = "…"`. */
+const LABELS = new Map(
+  sources.flatMap(([module, text]) => {
+    const label = /const LABEL: &str = ("[\w-]+")/.exec(text)?.[1];
+    return label ? [[module, label] as const] : [];
+  }),
+);
+/** A check against a label's constant (`!= LABEL`, `!= main_window::LABEL`) reads as one against the label itself. */
+const rust = sources
+  .map(([module, text]) =>
+    text.replace(
+      /\b(?:crate::)?(?:(\w+)::)?LABEL\b/g,
+      (constant, owner?: string) => LABELS.get(owner ?? module) ?? constant,
+    ),
+  )
+  .join("\n");
 const ANY = /const ANY: &\[&str\] = &\[([^\]]*)\]/.exec(rust)?.[1] ?? "";
 /** A command's check of its caller: `window.label() != "…"`, `!matches!(window.label(), …)` or `app_window(…)`. */
 const GATE =
   /(?:window|webview)\.label\(\) != ("[\w-]+")|!matches!\((?:window|webview)\.label\(\), ([^)]*)\)|app_window\(&webview, (ANY|&\[[^\]]*\])\)/;
+/** The app's commands, each with its body. */
+const COMMANDS = new Map(
+  [...rust.matchAll(/#\[tauri::command\]\n(?:pub )?(?:async )?fn (\w+)([\s\S]*?)\n\}\n/g)].map(
+    ([, command = "", body = ""]) => [command, body] as const,
+  ),
+);
 /** The windows a command answers, for those that check the caller's label (the others answer any window). */
 const ANSWERS = new Map(
-  [...rust.matchAll(/#\[tauri::command\]\n(?:pub )?(?:async )?fn (\w+)([\s\S]*?)\n\}\n/g)].flatMap(
-    ([, command = "", body = ""]) => {
-      const labels = GATE.exec(body)?.slice(1).join(" ").replace("ANY", ANY);
-      return labels ? [[command, [...labels.matchAll(/"([\w-]+)"/g)].map(([, label = ""]) => label)] as const] : [];
-    },
-  ),
+  [...COMMANDS].flatMap(([command, body]) => {
+    const labels = GATE.exec(body)?.slice(1).join(" ").replace("ANY", ANY);
+    return labels ? [[command, [...labels.matchAll(/"([\w-]+)"/g)].map(([, label = ""]) => label)] as const] : [];
+  }),
 );
 /** Why the window `label` can't call `command`: its capability, or the command itself; nothing when it can. */
 const refusal = (label: string, command: string) => {
@@ -165,6 +187,16 @@ describe("each window may call every app command its code calls", () => {
     expect(ANSWERS.get("link_take")).toEqual(["welcome"]);
     expect(ANSWERS.get("tray_visible")).toEqual(["popover", "prefs"]);
     expect(ANSWERS.get("local_server_status")).toEqual(["welcome", "popover", "prefs", "main-cover"]);
+    expect(ANSWERS.get("cover_retry")).toEqual(["main-cover"]);
+    expect(ANSWERS.get("page_ready")).toEqual(["main"]);
+  });
+
+  test("every command that looks at its caller's label has the windows it answers read", () => {
+    expect(COMMANDS.size).toBe(rust.match(/#\[tauri::command\]/g)?.length ?? 0);
+    const unread = [...COMMANDS].filter(
+      ([command, body]) => /\.label\(\)|app_window\(/.test(body) && !ANSWERS.has(command),
+    );
+    expect(unread.map(([command]) => command)).toEqual([]);
   });
 
   test("every window with a capability has its screen here", () => {

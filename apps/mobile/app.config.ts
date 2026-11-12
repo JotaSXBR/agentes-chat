@@ -213,13 +213,17 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       "expo-audio",
       { microphonePermission: "To record voice messages in your conversations.", recordAudioAndroid: true },
     ],
+    // The share extension reads as the app in the share sheet. Before expo-share-intent, so it runs once the
+    // extension's files are written (a project's changes run from the last plugin to the first).
+    "./plugins/with-share-extension-name",
     [
       // "Compartilhar com…": the app in the system's share sheet (an iOS share extension and Android's send intents),
       // for photos, videos, files, links and text; what arrives opens the agent picker (src/features/share). The
-      // extension takes the app's name and shares its URL scheme; it reaches phones only with a new native build.
+      // extension shares the app's URL scheme; it reaches phones only with a new native build. No
+      // `iosShareExtensionName`: it also names the extension's Xcode target, and the app's name there is the app's
+      // own target, so the extension was never made (plugins/with-share-extension-name.js gives it its name).
       "expo-share-intent",
       {
-        iosShareExtensionName: variant === "production" ? "agentes" : `agentes ${variant}`,
         iosActivationRules: {
           NSExtensionActivationSupportsText: true,
           NSExtensionActivationSupportsWebURLWithMaxCount: 1,

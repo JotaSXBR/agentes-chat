@@ -41,9 +41,8 @@ jobs:
     timeout-minutes: 90
     env:
       APP_VARIANT: production
-      # The targets the project has, each with an App Store provisioning profile. An extension joins the list when
-      # prebuild makes its target (chat.agentes.app.share-extension: the share extension's, once it has one).
-      IOS_BUNDLE_IDS: chat.agentes.app
+      # The project's targets, the app and its share extension: each has an App Store provisioning profile.
+      IOS_BUNDLE_IDS: chat.agentes.app chat.agentes.app.share-extension
     steps:
       # Fails in seconds, before anything is installed, when a secret isn't there.
       - name: Apple secrets are set

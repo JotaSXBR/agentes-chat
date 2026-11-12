@@ -225,7 +225,7 @@ export const helpEs: Partial<Record<HelpSlug, HelpDocument>> = {
         heading: "Cuando los agentes esperan en la fila",
         blocks: [
           "Cada trabajo de un agente usa la memoria de la computadora. Cuando queda poca memoria libre, el siguiente espera en la fila hasta que otro termine. Las personas van primero. El número de CPU no cambia esto.",
-          "Una computadora con 4 GB de memoria ejecuta dos o tres trabajos a la vez, una con 8 GB unos nueve; un Mac o un PC, hasta ocho. Los navegadores y escritorios que los agentes dejan abiertos también usan memoria. Para una fila más corta, usa una computadora con más memoria, o conecta otra y reparte los agentes entre ellas. Los workspaces que comparten una computadora comparten su memoria.",
+          "Una computadora con 4 GB de memoria ejecuta dos o tres trabajos a la vez, una con 8 GB unos nueve. Un Mac o un PC, hasta ocho. Los navegadores y escritorios que los agentes dejan abiertos también usan memoria. Para una fila más corta, usa una computadora con más memoria, o conecta otra y reparte los agentes entre ellas. Los workspaces que comparten una computadora comparten su memoria.",
         ],
       },
       {

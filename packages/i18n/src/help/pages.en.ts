@@ -222,7 +222,7 @@ export const helpEn: Record<HelpSlug, HelpDocument> = {
         heading: "When agents wait in line",
         blocks: [
           "Each piece of an agent's work uses the computer's memory. When free memory runs short, the next one waits in line until another ends. People go first. The number of CPUs doesn't change this.",
-          "A computer with 4 GB of memory runs two or three at once, one with 8 GB about nine; a Mac or a PC, up to eight. Browsers and desktops the agents keep open use memory too. For a shorter line, use a computer with more memory, or connect another and split the agents between them in **Settings\u00a0›\u00a0Devices**. Workspaces that share a computer share its memory.",
+          "A computer with 4 GB of memory runs two or three at once, one with 8 GB about nine. A Mac or a PC runs up to eight. Browsers and desktops the agents keep open use memory too. For a shorter line, use a computer with more memory, or connect another and split the agents between them in **Settings\u00a0›\u00a0Devices**. Workspaces that share a computer share its memory.",
         ],
       },
       {

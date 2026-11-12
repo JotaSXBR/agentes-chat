@@ -856,7 +856,9 @@ describe("a computer's line", () => {
     expect(text).toContain("Na fila · 3");
     expect(text).toContain("respondendo você · #eng");
     expect(text).toContain("Você vai primeiro");
-    expect(text).not.toMatch(/US\$|GB|memória/i);
+    // The rule says what the line waits for (free memory), never sizes or costs.
+    expect(text).toContain("quando o computador tem memória livre");
+    expect(text).not.toMatch(/US\$|GB/i);
   });
 
   test("a task's row says nothing of where it runs: its computer's line opens from Computadores", async () => {

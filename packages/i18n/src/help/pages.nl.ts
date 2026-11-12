@@ -225,7 +225,7 @@ export const helpNl: Partial<Record<HelpSlug, HelpDocument>> = {
         heading: "Als agenten in de rij wachten",
         blocks: [
           "Elk werk van een agent gebruikt geheugen van de computer. Als er weinig vrij geheugen is, wacht het volgende in de rij tot een ander klaar is. Mensen gaan voor. Het aantal CPU's verandert dit niet.",
-          "Een computer met 4 GB geheugen draait twee of drie tegelijk, een met 8 GB ongeveer negen; een Mac of pc tot acht. Browsers en bureaubladen die agenten open laten, gebruiken ook geheugen. Voor een kortere rij gebruik je een computer met meer geheugen, of verbind je er nog een en verdeel je de agenten over beide. Workspaces die een computer delen, delen het geheugen ervan.",
+          "Een computer met 4 GB geheugen draait twee of drie tegelijk, een met 8 GB ongeveer negen. Een Mac of pc draait er tot acht. Browsers en bureaubladen die agenten open laten, gebruiken ook geheugen. Voor een kortere rij gebruik je een computer met meer geheugen, of verbind je er nog een en verdeel je de agenten over beide. Workspaces die een computer delen, delen het geheugen ervan.",
         ],
       },
       {

@@ -225,7 +225,7 @@ export const helpFr: Partial<Record<HelpSlug, HelpDocument>> = {
         heading: "Quand les agents attendent dans la file",
         blocks: [
           "Chaque travail d'un agent utilise la mémoire de l'ordinateur. Quand la mémoire libre vient à manquer, le suivant attend dans la file jusqu'à ce qu'un autre se termine. Les personnes passent en premier. Le nombre de CPU n'y change rien.",
-          "Un ordinateur avec 4 Go de mémoire exécute deux ou trois travaux à la fois, un avec 8 Go environ neuf ; un Mac ou un PC, jusqu'à huit. Les navigateurs et les bureaux que les agents laissent ouverts utilisent aussi de la mémoire. Pour une file plus courte, utilisez un ordinateur avec plus de mémoire, ou connectez-en un autre et répartissez les agents entre eux. Les workspaces qui partagent un ordinateur partagent sa mémoire.",
+          "Un ordinateur avec 4 Go de mémoire exécute deux ou trois travaux à la fois, un avec 8 Go environ neuf. Un Mac ou un PC en exécute jusqu'à huit. Les navigateurs et les bureaux que les agents laissent ouverts utilisent aussi de la mémoire. Pour une file plus courte, utilisez un ordinateur avec plus de mémoire, ou connectez-en un autre et répartissez les agents entre eux. Les workspaces qui partagent un ordinateur partagent sa mémoire.",
         ],
       },
       {

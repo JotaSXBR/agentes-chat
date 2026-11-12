@@ -223,7 +223,7 @@ export const helpIt: Partial<Record<HelpSlug, HelpDocument>> = {
         heading: "Quando gli agenti aspettano in coda",
         blocks: [
           "Ogni lavoro di un agente usa la memoria del computer. Quando la memoria libera scarseggia, il successivo aspetta in coda finché un altro non finisce. Le persone passano per prime. Il numero di CPU non cambia nulla.",
-          "Un computer con 4 GB di memoria esegue due o tre lavori alla volta, uno con 8 GB circa nove; un Mac o un PC, fino a otto. Anche i browser e i desktop che gli agenti lasciano aperti usano memoria. Per una coda più corta, usa un computer con più memoria, oppure connettine un altro e dividi gli agenti tra i due. I workspace che condividono un computer ne condividono la memoria.",
+          "Un computer con 4 GB di memoria esegue due o tre lavori alla volta, uno con 8 GB circa nove. Un Mac o un PC ne esegue fino a otto. Anche i browser e i desktop che gli agenti lasciano aperti usano memoria. Per una coda più corta, usa un computer con più memoria, oppure connettine un altro e dividi gli agenti tra i due. I workspace che condividono un computer ne condividono la memoria.",
         ],
       },
       {

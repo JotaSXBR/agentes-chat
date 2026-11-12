@@ -185,7 +185,7 @@ export const helpId: Partial<Record<HelpSlug, HelpDocument>> = {
         heading: "Saat agen menunggu dalam antrean",
         blocks: [
           "Setiap pekerjaan agen memakai memori komputer. Saat memori kosong menipis, pekerjaan berikutnya menunggu dalam antrean sampai yang lain selesai. Orang didahulukan. Jumlah CPU tidak mengubah hal ini.",
-          "Komputer dengan memori 4 GB menjalankan dua atau tiga pekerjaan sekaligus, yang 8 GB sekitar sembilan; Mac atau PC, hingga delapan. Browser dan desktop yang dibiarkan terbuka oleh agen juga memakai memori. Agar antrean lebih pendek, gunakan komputer dengan memori lebih besar, atau hubungkan satu lagi dan bagi agen di antara keduanya. Workspace yang berbagi satu komputer berbagi memorinya.",
+          "Komputer dengan memori 4 GB menjalankan dua atau tiga pekerjaan sekaligus, yang 8 GB sekitar sembilan. Mac atau PC menjalankan hingga delapan. Browser dan desktop yang dibiarkan terbuka oleh agen juga memakai memori. Agar antrean lebih pendek, gunakan komputer dengan memori lebih besar, atau hubungkan satu lagi dan bagi agen di antara keduanya. Workspace yang berbagi satu komputer berbagi memorinya.",
         ],
       },
       {

@@ -222,7 +222,7 @@ export const helpPtBR: Record<HelpSlug, HelpDocument> = {
         heading: "Quando os agentes esperam na fila",
         blocks: [
           "Cada trabalho de um agente usa a memória do computador. Quando a memória livre fica curta, o próximo espera na fila até outro terminar. Pessoas vão primeiro. O número de CPUs não muda isso.",
-          "Um computador com 4 GB de memória roda dois ou três trabalhos ao mesmo tempo, um com 8 GB cerca de nove; um Mac ou um PC, até oito. Navegadores e áreas de trabalho que os agentes deixam abertos também usam memória. Para uma fila menor, use um computador com mais memória, ou conecte outro e divida os agentes entre eles em **Configurações\u00a0›\u00a0Dispositivos**. Workspaces que dividem um computador dividem a memória dele.",
+          "Um computador com 4 GB de memória roda dois ou três trabalhos ao mesmo tempo, um com 8 GB cerca de nove. Um Mac ou um PC roda até oito. Navegadores e áreas de trabalho que os agentes deixam abertos também usam memória. Para uma fila menor, use um computador com mais memória, ou conecte outro e divida os agentes entre eles em **Configurações\u00a0›\u00a0Dispositivos**. Workspaces que dividem um computador dividem a memória dele.",
         ],
       },
       {

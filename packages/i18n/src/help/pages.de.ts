@@ -225,7 +225,7 @@ export const helpDe: Partial<Record<HelpSlug, HelpDocument>> = {
         heading: "Wenn Agenten in der Warteschlange stehen",
         blocks: [
           "Jede Arbeit eines Agenten braucht Arbeitsspeicher des Computers. Wird der freie Speicher knapp, wartet die nächste in der Warteschlange, bis eine andere endet. Menschen kommen zuerst dran. Die Zahl der CPUs ändert daran nichts.",
-          "Ein Computer mit 4 GB Arbeitsspeicher führt zwei oder drei Arbeiten gleichzeitig aus, einer mit 8 GB etwa neun; ein Mac oder PC bis zu acht. Browser und Desktops, die Agenten offen lassen, brauchen ebenfalls Speicher. Für eine kürzere Warteschlange nutze einen Computer mit mehr Arbeitsspeicher oder verbinde einen weiteren und verteile die Agenten auf beide. Workspaces, die sich einen Computer teilen, teilen sich seinen Speicher.",
+          "Ein Computer mit 4 GB Arbeitsspeicher führt zwei oder drei Arbeiten gleichzeitig aus, einer mit 8 GB etwa neun. Ein Mac oder PC führt bis zu acht aus. Browser und Desktops, die Agenten offen lassen, brauchen ebenfalls Speicher. Für eine kürzere Warteschlange nutze einen Computer mit mehr Arbeitsspeicher oder verbinde einen weiteren und verteile die Agenten auf beide. Workspaces, die sich einen Computer teilen, teilen sich seinen Speicher.",
         ],
       },
       {

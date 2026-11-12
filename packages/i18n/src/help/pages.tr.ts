@@ -185,7 +185,7 @@ export const helpTr: Partial<Record<HelpSlug, HelpDocument>> = {
         heading: "Ajanlar sırada beklediğinde",
         blocks: [
           "Bir ajanın her işi bilgisayarın belleğini kullanır. Boş bellek azaldığında sıradaki iş, bir başkası bitene kadar sırada bekler. Önce insanlar gelir. CPU sayısı bunu değiştirmez.",
-          "4 GB belleği olan bir bilgisayar aynı anda iki ya da üç iş çalıştırır, 8 GB olan yaklaşık dokuz; bir Mac ya da PC en fazla sekiz. Ajanların açık bıraktığı tarayıcılar ve masaüstleri de bellek kullanır. Daha kısa bir sıra için daha fazla belleği olan bir bilgisayar kullanın ya da bir tane daha bağlayıp ajanları aralarında paylaştırın. Bir bilgisayarı paylaşan çalışma alanları belleğini de paylaşır.",
+          "4 GB belleği olan bir bilgisayar aynı anda iki ya da üç iş çalıştırır, 8 GB olan yaklaşık dokuz. Bir Mac ya da PC en fazla sekiz iş çalıştırır. Ajanların açık bıraktığı tarayıcılar ve masaüstleri de bellek kullanır. Daha kısa bir sıra için daha fazla belleği olan bir bilgisayar kullanın ya da bir tane daha bağlayıp ajanları aralarında paylaştırın. Bir bilgisayarı paylaşan çalışma alanları belleğini de paylaşır.",
         ],
       },
       {

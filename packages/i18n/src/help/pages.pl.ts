@@ -223,7 +223,7 @@ export const helpPl: Partial<Record<HelpSlug, HelpDocument>> = {
         heading: "Gdy agenci czekają w kolejce",
         blocks: [
           "Każda praca agenta zużywa pamięć komputera. Gdy wolnej pamięci zaczyna brakować, następna czeka w kolejce, aż inna się skończy. Ludzie mają pierwszeństwo. Liczba procesorów tego nie zmienia.",
-          "Komputer z 4 GB pamięci wykonuje dwie lub trzy prace naraz, z 8 GB około dziewięciu; Mac lub PC do ośmiu. Przeglądarki i pulpity, które agenci zostawiają otwarte, też zużywają pamięć. Aby skrócić kolejkę, użyj komputera z większą pamięcią albo połącz kolejny i rozdziel agentów między oba. Workspace'y, które dzielą komputer, dzielą też jego pamięć.",
+          "Komputer z 4 GB pamięci wykonuje dwie lub trzy prace naraz, z 8 GB około dziewięciu. Mac lub PC wykonuje do ośmiu. Przeglądarki i pulpity, które agenci zostawiają otwarte, też zużywają pamięć. Aby skrócić kolejkę, użyj komputera z większą pamięcią albo połącz kolejny i rozdziel agentów między oba. Workspace'y, które dzielą komputer, dzielą też jego pamięć.",
         ],
       },
       {

@@ -54,6 +54,41 @@ jobs:
             if [ -z "$value" ] || [ "$value" = PLACEHOLDER ]; then echo "::error::Secret $name is not set"; missing=1; fi
           done
           if [ "$missing" = 1 ]; then echo "See apps/mobile/README.md, \"iOS on GitHub Actions\"."; exit 1; fi
+      # Asks App Store Connect itself, in seconds: a key it refuses would otherwise fail the archive a quarter of an
+      # hour in, as a signing error. The token is made here with openssl (ES256), as Xcode makes its own.
+      - name: App Store Connect accepts the key
+        env:
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_API_ISSUER_ID: ${{ secrets.ASC_API_ISSUER_ID }}
+          ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
+        run: |
+          key="$RUNNER_TEMP/check.p8"
+          printf '%s\n' "$ASC_API_KEY_P8" > "$key"
+          b64() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
+          now=$(date +%s)
+          header=$(printf '{"alg":"ES256","kid":"%s","typ":"JWT"}' "$ASC_API_KEY_ID" | b64)
+          claims=$(printf '{"iss":"%s","iat":%s,"exp":%s,"aud":"appstoreconnect-v1"}' \
+            "$ASC_API_ISSUER_ID" "$now" "$((now + 300))" | b64)
+          # openssl signs in DER; a token carries the two 32-byte numbers side by side.
+          sig=$(printf '%s.%s' "$header" "$claims" | openssl dgst -sha256 -sign "$key" | python3 -c '
+          import sys
+          d = sys.stdin.buffer.read()
+          i = 2 if d[1] < 0x80 else 2 + (d[1] & 0x7F)
+          out = b""
+          for _ in range(2):
+              n = d[i + 1]
+              out += d[i + 2 : i + 2 + n].lstrip(b"\x00").rjust(32, b"\x00")
+              i += 2 + n
+          sys.stdout.buffer.write(out)' | b64)
+          rm -f "$key"
+          status=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $header.$claims.$sig" \
+            "https://api.appstoreconnect.apple.com/v1/apps?limit=1")
+          # Shapes only, never values: enough to tell a mistyped secret from a key Apple turned down.
+          echo "key id: ${#ASC_API_KEY_ID} characters; issuer: ${#ASC_API_ISSUER_ID} characters; key file: $(printf '%s\n' "$ASC_API_KEY_P8" | wc -l | tr -d ' ') lines"
+          if [ "$status" != 200 ]; then
+            echo "::error::App Store Connect answered $status to this key: check ASC_API_KEY_ID, ASC_API_ISSUER_ID and ASC_API_KEY_P8 (the .p8 file's whole text)"
+            exit 1
+          fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:

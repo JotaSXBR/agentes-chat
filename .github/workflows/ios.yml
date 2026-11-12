@@ -3,9 +3,8 @@ name: iOS build
 # Builds the phone app for iPhone here, without EAS: `expo prebuild` makes the native project from app.config.ts
 # (it is never committed), xcodebuild archives it and exports it for the App Store, and the result goes to
 # TestFlight (or stays as the run's artifact). Signed by hand: the Apple Distribution certificate comes from a
-# secret into a keychain made for the run, the App Store provisioning profiles of the app and its share extension
-# are read from App Store Connect with the API key, and plugins/with-ios-manual-signing.js gives each target its
-# own. Xcode never signs in to Apple. Production only: testers get builds through TestFlight.
+# secret into a keychain made for the run, the App Store provisioning profile of each target is read from App
+# Store Connect with the API key, and plugins/with-ios-manual-signing.js gives each target its own. Xcode never signs in to Apple. Production only: testers get builds through TestFlight.
 # Runs only by hand (Actions → Run workflow). See apps/mobile/README.md, "iOS on GitHub Actions".
 #
 # Secrets (repository settings, never in the repo):
@@ -42,8 +41,9 @@ jobs:
     timeout-minutes: 90
     env:
       APP_VARIANT: production
-      # The app and its extensions: each needs an App Store provisioning profile.
-      IOS_BUNDLE_IDS: chat.agentes.app chat.agentes.app.share-extension
+      # The targets the project has, each with an App Store provisioning profile. An extension joins the list when
+      # prebuild makes its target (chat.agentes.app.share-extension: the share extension's, once it has one).
+      IOS_BUNDLE_IDS: chat.agentes.app
     steps:
       # Fails in seconds, before anything is installed, when a secret isn't there.
       - name: Apple secrets are set

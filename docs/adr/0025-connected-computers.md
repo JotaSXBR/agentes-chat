@@ -96,6 +96,8 @@ A new artifact kind `file` (migration adds the enum value): any bytes, with the 
 
 **Across replicas.** The replica holding the socket executes requests. Another replica writes the request to `machine_rpc` and signals the holder through pub/sub; the reply comes back the same way (Postgres `NOTIFY` payloads are too small for file bodies). Live output streaming works only on the replica holding the socket; elsewhere the command reports its output at the end.
 
+*Amended 2026-11-12:* people took the line for "one agent at a time" and didn't know whether a server could work for two workspaces. A runner home holds one connection, so connecting a server from another workspace moves it there; `pair` now says which workspace it left (`movedFrom` in `pairing.ts`), and several workspaces on one computer stay the app's (one home each). The line's words say what it waits for, free memory ("Começa quando tiver memória livre", the line's rule and the note after ten minutes), and the help page on computers has a section on the line: what fits at once by memory, and that workspaces sharing a computer share its memory.
+
 ### 5a. Protocol 4: background tasks
 
 Runner protocol 4 (`TASKS_PROTOCOL`, runner 0.4.0) adds work that outlives a request, the socket and the runner itself (ADR 0029 sections 4 and 5):

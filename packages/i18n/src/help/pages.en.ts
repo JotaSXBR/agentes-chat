@@ -214,6 +214,15 @@ export const helpEn: Record<HelpSlug, HelpDocument> = {
           "Sign in to each workspace in the same app and press **Allow** for each one. Workspaces on agentes.chat Cloud and on your own servers can share a computer (app 0.6.1 and later). Each has its own agents and folders there, and disconnecting one doesn't touch the others.",
           "A server the app runs on this computer is connected already and needs nothing. To also lend that computer to a workspace somewhere else, see [Lend it to another workspace too](/help/run-on-your-computer#another-workspace).",
           "Using the app on a laptop only as a window onto your workspace? When it asks to let agents use the laptop, **Not now** keeps it a plain window.",
+          "A server connected with the terminal line works for one workspace. Connecting it from another workspace moves the server to that one, and the first no longer reaches it. For several workspaces on one computer, use the app.",
+        ],
+      },
+      {
+        id: "line",
+        heading: "When agents wait in line",
+        blocks: [
+          "Each piece of an agent's work uses the computer's memory. When free memory runs short, the next one waits in line until another ends. People go first. The number of CPUs doesn't change this.",
+          "A computer with 4 GB of memory runs two or three at once, one with 8 GB about nine; a Mac or a PC, up to eight. Browsers and desktops the agents keep open use memory too. For a shorter line, use a computer with more memory, or connect another and split the agents between them in **Settings\u00a0›\u00a0Devices**. Workspaces that share a computer share its memory.",
         ],
       },
       {

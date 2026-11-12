@@ -822,7 +822,7 @@ describe("a computer's line", () => {
     expect(checkout.querySelector(".tm-state[data-wait]")).toBeNull();
     expect(checkout.querySelector(".tm-cell--use")?.textContent).toBe("—");
     const report = rowOf("Gerar o relatório");
-    expect(stateOf(report)).toEqual(["Computador cheio", "Começa quando tiver espaço"]);
+    expect(stateOf(report)).toEqual(["Computador cheio", "Começa quando tiver memória livre"]);
     expect(report.querySelector(".tm-cell--use")?.textContent).toBe("—");
     expect(document.querySelector(".tm-sum")?.textContent).toBe("3 trabalhando1 espera você");
   });
@@ -834,7 +834,7 @@ describe("a computer's line", () => {
     await open(seedState({ taskManager: view }), "task-manager");
     await openAgent("Ada");
     const row = rowOf("Ajustar o texto do checkout");
-    expect(stateOf(row)).toEqual(["Na fila · 1º", "Começa quando tiver espaço"]);
+    expect(stateOf(row)).toEqual(["Na fila · 1º", "Começa quando tiver memória livre"]);
     expect(row.querySelector(".tm-cell--use")?.textContent).toBe("—");
   });
 

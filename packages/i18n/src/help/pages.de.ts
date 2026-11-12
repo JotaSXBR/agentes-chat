@@ -217,6 +217,15 @@ export const helpDe: Partial<Record<HelpSlug, HelpDocument>> = {
           "Melde dich in derselben App bei jedem Workspace an und drück für jeden **Erlauben**. Workspaces auf agentes.chat Cloud und auf deinen eigenen Servern können sich einen Computer teilen (ab App-Version 0.6.1). Jeder hat dort eigene Agenten und Ordner, und wenn du einen trennst, bleiben die anderen unberührt.",
           "Ein Server, den die App auf diesem Computer ausführt, ist schon verbunden und braucht nichts. Um den Computer auch einem Workspace an anderer Stelle zu leihen, sieh dir [Auch einem anderen Workspace leihen](/help/run-on-your-computer#another-workspace) an.",
           "Nutzt du die App auf einem Laptop nur als Fenster zu deinem Workspace? Wenn sie fragt, ob Agenten den Laptop nutzen dürfen, bleibt sie mit **Nicht jetzt** ein einfaches Fenster.",
+          "Ein Server, der mit der Terminal-Zeile verbunden wurde, arbeitet für einen Workspace. Wird er von einem anderen Workspace aus verbunden, wechselt der Server zu diesem, und der erste erreicht ihn nicht mehr. Für mehrere Workspaces auf einem Computer nutze die App.",
+        ],
+      },
+      {
+        id: "line",
+        heading: "Wenn Agenten in der Warteschlange stehen",
+        blocks: [
+          "Jede Arbeit eines Agenten braucht Arbeitsspeicher des Computers. Wird der freie Speicher knapp, wartet die nächste in der Warteschlange, bis eine andere endet. Menschen kommen zuerst dran. Die Zahl der CPUs ändert daran nichts.",
+          "Ein Computer mit 4 GB Arbeitsspeicher führt zwei oder drei Arbeiten gleichzeitig aus, einer mit 8 GB etwa neun; ein Mac oder PC bis zu acht. Browser und Desktops, die Agenten offen lassen, brauchen ebenfalls Speicher. Für eine kürzere Warteschlange nutze einen Computer mit mehr Arbeitsspeicher oder verbinde einen weiteren und verteile die Agenten auf beide. Workspaces, die sich einen Computer teilen, teilen sich seinen Speicher.",
         ],
       },
       {

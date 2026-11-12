@@ -292,7 +292,7 @@ describe("a computer's line (ADR 0128)", () => {
     });
     const next = (x: ManagedTask) => taskStateWords(t, "pt-BR", x, rowState(x, NONE), now).next;
     expect(next(soon)).toBe("começa em ~3 min");
-    expect(next({ ...soon, line: full })).toBe("Começa quando tiver espaço");
+    expect(next({ ...soon, line: full })).toBe("Começa quando tiver memória livre");
     expect(next(task({ runId: "r2" }))).toBeNull();
   });
 });

@@ -77,6 +77,7 @@ import {
   devicePair,
   formatUserCode,
   LINK_CODE,
+  movedFrom,
   PairingError,
   redeemIssuedCode,
   takeEnrollCode,
@@ -383,6 +384,9 @@ async function pair(p: Parsed): Promise<number> {
   const details = [`Workspace: ${workspaceReal}${exec ? "" : " (commands off)"}`, `Config: ${configPath(home)}`];
   if (wait) wait.done(connected, ...details);
   else term.step(connected, ...details);
+  // One home holds one connection: it left the workspace it worked for, which nothing else says.
+  const left = movedFrom(prev, grant.org);
+  if (left) term.warn(left);
   // An issued code is a provisioner's (the workspace computer): its rule is the workspace's, not a person's choice.
   const who = enrollCode ? null : whoCanUse(grant, next.name ?? grant.name);
   if (who && grant.url) {

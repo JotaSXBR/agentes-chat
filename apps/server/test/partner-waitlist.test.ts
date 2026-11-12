@@ -67,6 +67,41 @@ test("the contact gets only partner_ keys, so the product's waiting list segment
   for (const key of Object.keys(t.email.contacts[0]?.properties ?? {})) expect(key).toStartWith("partner_");
 });
 
+test("the partner page's own body: its questions beside the contact become answers, consent as yes or no", async () => {
+  const res = await browser(t)("/api/partners/waitlist", {
+    json: {
+      ...ana,
+      company: "",
+      site: "",
+      city: " Recife ",
+      kind: "agency",
+      clients: "6-20",
+      segments: ["health", "retail"],
+      size: "",
+      consent: true,
+    },
+  });
+  expect(res.status).toBe(202);
+  const [row] = await t.db.select().from(schema.partnerWaitlistEntries);
+  expect(row?.answers).toEqual({
+    city: "Recife",
+    kind: "agency",
+    clients: "6-20",
+    segments: ["health", "retail"],
+    consent: "yes",
+  });
+  await t.drain();
+  expect(t.email.contacts[0]?.properties).toMatchObject({
+    partner_waitlist: "joined",
+    partner_kind: "agency",
+    partner_segments: "health, retail",
+    partner_consent: "yes",
+  });
+  await browser(t)("/api/partners/waitlist", { json: { ...ana, segments: [], consent: false } });
+  const [again] = await t.db.select().from(schema.partnerWaitlistEntries);
+  expect(again?.answers).toEqual({ consent: "no" });
+});
+
 test("sending the form again updates the entry and the contact; the first join date stays", async () => {
   const anon = browser(t);
   await anon("/api/partners/waitlist", { json: { ...ana, answers: { clients: "1-5" } } });

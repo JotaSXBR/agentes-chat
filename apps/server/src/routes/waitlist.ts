@@ -72,7 +72,7 @@ const partners = createRoute({
   tags: ["Public"],
   summary: "Join the partner program's waiting list",
   description:
-    "Public, from the landing page's partner page (`LANDING_URL` or our origin, JSON only). Sending it again with the same email updates the entry; no confirmation email. `answers` holds the form's optional questions, each key (lowercase, `a-z0-9_`) to a text or to the options picked. Guarded by the bot check when this server has one.",
+    "Public, from the landing page's partner page (`LANDING_URL` or our origin, JSON only). Sending it again with the same email updates the entry; no confirmation email. The page's questions (`company`, `site`, `city`, `kind`, `clients`, `segments`, `size`, `consent`) come beside the contact; `answers` holds any other, each key (lowercase, `a-z0-9_`) to a text or to the options picked. Guarded by the bot check when this server has one.",
   request: {
     body: {
       required: true,
@@ -87,6 +87,20 @@ const partners = createRoute({
               .record(z.string().max(40), z.union([z.string().max(500), z.array(z.string().max(100)).max(10)]))
               .optional()
               .openapi({ example: { clients: "6-20", picks: ["recurring", "certification"] } }),
+            // The partner page's own questions, sent beside the contact; kept as answers of the same keys.
+            company: z.string().max(500).optional(),
+            site: z.string().max(500).optional(),
+            city: z.string().max(500).optional(),
+            kind: z.string().max(100).optional().openapi({ example: "agency" }),
+            clients: z.string().max(100).optional().openapi({ example: "6-20" }),
+            segments: z
+              .array(z.string().max(100))
+              .max(10)
+              .optional()
+              .openapi({ example: ["health", "retail"] }),
+            size: z.string().max(100).optional().openapi({ example: "11-50" }),
+            /** The "send me news about the program" box: kept as the answer `consent` ("yes" or "no"). */
+            consent: z.boolean().optional(),
           }),
         },
       },
@@ -168,7 +182,18 @@ export function registerWaitlist(api: OpenAPIHono, deps: AppDeps) {
     if (refused) return apiError(c, 403, refused.code, refused.message);
     if (!(await rateLimiter.consume("partner-waitlist:all", JOIN_TOTAL)).allowed)
       return apiError(c, 429, "rate_limited", "Too many requests. Try again later.");
-    await joinPartnerWaitlist(deps.db, c.req.valid("json"));
+    const { email, name, whatsapp, locale, answers, consent, ...asked } = c.req.valid("json");
+    await joinPartnerWaitlist(deps.db, {
+      email,
+      name,
+      whatsapp,
+      locale,
+      answers: {
+        ...answers,
+        ...Object.fromEntries(Object.entries(asked).filter(([, value]) => value !== undefined)),
+        ...(consent === undefined ? {} : { consent: consent ? "yes" : "no" }),
+      },
+    });
     return c.json({ ok: true as const }, 202);
   });
 }

@@ -2,11 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 // The config plugin is plain CommonJS (expo prebuild loads it); only its pure parts are tested here.
 const { signManually, profilesFrom } = require("../plugins/with-ios-manual-signing") as {
-  signManually: (
-    configurations: Record<string, unknown>,
-    profiles: Record<string, string>,
-    team: string,
-  ) => string[];
+  signManually: (configurations: Record<string, unknown>, profiles: Record<string, string>, team: string) => string[];
   profilesFrom: (text: string | undefined) => Record<string, string>;
 };
 

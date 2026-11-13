@@ -21,10 +21,10 @@
 #                             every stored key unreadable.
 #   SERVICE_PASSWORD_POSTGRES the database password, used only by the URL below.
 #
-# Most of what the app reads is not here: every setting it knows is listed, annotated, in
-# .env.example. Coolify writes the resource's variables into .env and passes that file to
-# every container of the resource, so a variable added under Environment Variables reaches the
-# app without editing this file.
+# Most of what the app reads is not here: every setting it knows is listed, annotated, in the
+# repository's .env.example. Coolify writes the resource's variables into .env and passes that
+# file to every container of the resource, so a variable added under Environment Variables
+# reaches the app without editing this file.
 #
 # By hand, without Coolify: SELF_HOSTING.md ("This machine only, and by hand").
 services:

@@ -5,8 +5,10 @@ every secret; nothing in this folder names a host or holds a value.
 
 ```
 docker-compose.yaml   the stack: agentes + postgres, and the metadata a Coolify template needs
-.env.example          every setting the app reads, annotated (153 keys, every one of them commented)
 ```
+
+Settings are not duplicated here: every one the app reads is listed, annotated, in the
+repository's [`.env.example`](../../.env.example).
 
 Everything the app does, and everything else about self-hosting it, is in
 [`SELF_HOSTING.md`](../../SELF_HOSTING.md).
@@ -116,9 +118,14 @@ Model keys are not here: each organization adds its own under **Settings → AI 
 
 ## 7. Configure
 
-`deploy/coolify/.env.example` is the complete list: every setting the app reads, what it does,
-and its default. Uncomment what you need, paste the line into **Environment Variables**, save,
-redeploy.
+Every setting the app reads is in the repository's
+[`.env.example`](../../.env.example): what it does, its default, and how to turn it on. Coolify
+writes the resource's variables into `.env` and passes that file to every container, so a setting
+reaches the app without editing `docker-compose.yaml` — paste `KEY=value` under **Environment
+Variables** (the bulk editor takes plain lines), save, redeploy.
+
+Four settings in that file belong to Coolify, and pasting them empty breaks the instance:
+`PUBLIC_URL`, `DATABASE_URL`, `AGENTES_SECRET` and `FILES_DIR` (all four are in §2).
 
 The ones most instances change: `SMTP_URL` or `MILLIONSEND_API_KEY` (invitations, password
 resets and budget alerts; without them those emails go to the container log instead),
@@ -144,8 +151,8 @@ Coolify's **Rollback** page deploys older images of applications it built itself
 this resource. To go back, set `AGENTES_IMAGE` to the previous tag and redeploy — and note that
 migrations do not reverse. Keep the previous tag next to your backups.
 
-After an upgrade, `bun run docs:env` in the repository and copy `.env.example` again: new
-versions add settings, and the copy here only knows the ones it was made with.
+After an upgrade, `bun run docs:env` regenerates `.env.example`: read it again for the settings a
+new version adds.
 
 A redeploy imports the branch at the new commit and parses `docker-compose.yaml` again, so a
 change to the stack itself — a new `image`, `command`, `healthcheck`, or service in the file —

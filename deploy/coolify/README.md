@@ -5,7 +5,7 @@ every secret; nothing in this folder names a host or holds a value.
 
 ```
 docker-compose.yaml   the stack: agentes + postgres, and the metadata a Coolify template needs
-.env.example          every setting the app reads, annotated (153 keys, 151 of them commented)
+.env.example          every setting the app reads, annotated (153 keys, every one of them commented)
 ```
 
 Everything the app does, and everything else about self-hosting it, is in
@@ -147,6 +147,19 @@ migrations do not reverse. Keep the previous tag next to your backups.
 After an upgrade, `bun run docs:env` in the repository and copy `.env.example` again: new
 versions add settings, and the copy here only knows the ones it was made with.
 
+A redeploy imports the branch at the new commit and parses `docker-compose.yaml` again, so a
+change to the stack itself — a new `image`, `command`, `healthcheck`, or service in the file —
+takes effect without any step here. Two things it cannot do for you:
+
+- **A new setting with no default** (`${SOME_VAR:?}` in the file) fails the deploy until you add
+  it in **Environment Variables**. Migrations running on boot also never touch values stored in
+  Coolify, such as `POSTGRES_PASSWORD`.
+- **A Postgres major-version bump** (pg18 to pg19) does not start on the existing data volume.
+  Dump the database, deploy, restore into the empty volume — §9.
+
+Point the application at the upstream repository once this file is merged there; until then it is
+the fork's branch.
+
 ## 9. Backup and restore
 
 Everything lives in three places, and a backup of one alone is not a backup:
@@ -200,10 +213,21 @@ outside and do not work otherwise: routines started by GitHub, Sentry or their o
 servers (claude.ai, ChatGPT). Claude Code, Cursor and VS Code call from your computer, so they
 also work on a private instance.
 
-## 13. One-click template
+## 13. One-click template (a suggestion, not this flow)
 
 The metadata at the top of `docker-compose.yaml` (`documentation`, `slogan`, `category`, `tags`,
-`logo`, `port`) is what Coolify's catalog needs. The file is made to be copied into
-`coollabsio/coolify` as `templates/compose/agenteschat.yaml`, with the logo and a page in
-`coollabsio/coolify-docs`. Until that ships, the Git flow above is the way in; when it does,
-nothing in this folder changes.
+`logo`, `port`) is what Coolify's catalog reads, so this same file can also ship as a template:
+copy it into `coollabsio/coolify` as `templates/compose/agenteschat.yaml`, add the logo, and a
+page in `coollabsio/coolify-docs`. Whether to publish that is the Coolify maintainers' call.
+
+The two flows differ only in how the resource is created, not in what runs — the same compose,
+the same two containers:
+
+| | from this repository (above) | as a catalog template |
+| --- | --- | --- |
+| updates | git: the file is read again at each deploy | the compose is stored in the resource; change `AGENTES_IMAGE` or paste the file |
+| `postgres` | a container of this resource | the same container, plus a database page and scheduled backups |
+| backup | §9 commands on a schedule | the database page |
+
+A template is one compose, so it cannot create a second resource (a database of its own) or
+schedule a backup; those stay with whoever installs it.

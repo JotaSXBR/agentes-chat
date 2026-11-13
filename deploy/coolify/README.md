@@ -24,14 +24,15 @@ domain — certificate issued, `PUBLIC_URL` following the domain, both container
   files volume grow with use). 8 GB if agents will run commands and a browser on this machine.
   On a 4 GB host set `AGENTES_MEMORY=3g` (below) so the app's cap still protects Postgres.
 - A domain you can point at the server, for HTTPS. Coolify's generated `sslip.io` address is
-  `http://` only and cannot get a certificate.
+  `http://` only: Let's Encrypt rate-limits the shared `sslip.io` zone, so it cannot get a
+  certificate.
 - Outbound HTTPS to the model providers your organizations use.
 
 ## 1. Create the resource
 
 1. **New resource → Application → Public repository**, with this repository's URL.
-2. **Build Pack: `Docker Compose`**.
-3. **Base Directory: `/deploy/coolify`**, **Docker Compose Location: `/docker-compose.yaml`**.
+2. **Build pack: `Docker Compose`**.
+3. **Base Directory: `/deploy/coolify`**, **Docker compose location: `/docker-compose.yaml`**.
    Without the base directory Coolify finds the repository's own `docker-compose.yml`, which
    expects the interactive setup and its `.env`.
 4. Branch: the one you deploy from. Leave **Auto deploy** off unless you want a push to this

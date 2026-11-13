@@ -20,6 +20,7 @@ import {
   brainModelFor,
   brainSessionId,
   type ChannelEvent,
+  CODEX_IMAGE_NOTE,
   COMPUTER_BUSY_RETRY_MS,
   COMPUTER_QUEUE_NOTE_MS,
   COMPUTER_REACT_NOTE,
@@ -1182,12 +1183,16 @@ test("Fast: the turn of a conversation asks for it; refused, the reply says it c
 test("a file a computer brain's own tool made goes to the Drive and is a card on the reply", async () => {
   f = await setup({});
   const machineId = await computerAgent(f, { brain: "codex" });
-  const { brain } = scriptedComputerBrain(() => [
-    { type: "tool_call", id: "ig-1", name: "image_generation", input: {}, executed: { content: "Saved." } },
-    { type: "file", path: "generated-images/image-1.png" },
-    { type: "file", path: "generated-images/image-2.png" },
-    { type: "done", text: "Aqui está." },
-  ]);
+  const systems: string[] = [];
+  const { brain } = scriptedComputerBrain((_n, turn) => {
+    systems.push(turn.system);
+    return [
+      { type: "tool_call", id: "ig-1", name: "image_generation", input: {}, executed: { content: "Saved." } },
+      { type: "file", path: "generated-images/image-1.png" },
+      { type: "file", path: "generated-images/image-2.png" },
+      { type: "done", text: "Aqui está." },
+    ];
+  });
   const artifactId = crypto.randomUUID();
   const shared: { machineId: string; path: string; channelId: string }[] = [];
   const handlers = createJobHandlers({
@@ -1215,6 +1220,8 @@ test("a file a computer brain's own tool made goes to the Drive and is a card on
     { machineId, path: "generated-images/image-1.png", channelId: f.general.id },
     { machineId, path: "generated-images/image-2.png", channelId: f.general.id },
   ]);
+  // Codex is told its pictures go with its reply, under its words.
+  expect(systems[0]).toContain(CODEX_IMAGE_NOTE);
   const reply = (await timeline(f)).at(-1);
   expect(reply).toMatchObject({ body: "Aqui está." });
   expect(reply?.meta.artifacts).toEqual([{ id: artifactId, version: 1, title: "image-1.png" }]);

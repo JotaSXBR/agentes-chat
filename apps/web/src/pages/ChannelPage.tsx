@@ -154,7 +154,7 @@ import { usageWaitOf } from "@agenteschat/client/lib/usage-pause";
 import { appVia } from "@agenteschat/client/lib/via";
 import { voiceOf } from "@agenteschat/client/lib/voice";
 import { waitingAway, waitingNotification } from "@agenteschat/client/lib/waiting";
-import { barStep, showsActivity, splitCanceled } from "@agenteschat/client/lib/work";
+import { barStep, makingImage, showsActivity, splitCanceled } from "@agenteschat/client/lib/work";
 import {
   AffixInput,
   Avatar,
@@ -248,6 +248,7 @@ import { AgentSidebar } from "@/components/agents/AgentSidebar";
 import { ArtifactCard } from "@/components/artifacts/ArtifactCard";
 import { ImageSet } from "@/components/artifacts/ArtifactViewer";
 import { objectUrls } from "@/components/artifacts/FileView";
+import { ImageMaking } from "@/components/artifacts/ImageMaking";
 import { MessageWorkLine } from "@/components/BackgroundWork";
 import { HeldBrowserCard, RunBrowserCard, useHeldTakeover } from "@/components/browser/BrowserCard";
 import { BrowserHandoffCard } from "@/components/browser/BrowserHandoffCard";
@@ -4518,6 +4519,7 @@ export const TimelineMessage = memo(function TimelineMessage({
         {live && waiting ? (
           <Parts resetKey={m}>
             <LiveRunStatus run={live} />
+            {makingImage(live) && <ImageMaking />}
             <RunBrowserCard run={live} name={name} />
             <span className="ac-visually-hidden">{t("channel.writing")}</span>
           </Parts>

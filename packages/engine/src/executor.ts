@@ -5320,6 +5320,13 @@ function createBrain(
 export const COMPUTER_REACT_NOTE =
   "# Reacting\nWhen you call the agentes `react` tool, the reaction is your whole answer: end your turn right after it with an empty final reply (no text, no emoji, no confirmation that you reacted).";
 
+/**
+ * For Codex: a picture its own image tool makes goes with the reply, under the text (the runner's `file` event), not
+ * above it as in Codex's own apps, and the people never see the prompt.
+ */
+export const CODEX_IMAGE_NOTE =
+  "# Images\nA picture you make with your image tool is shown to the people with your reply, under your text. Don't say where it appears or that it should show up; a short line about it is enough, or nothing.";
+
 /** For computer brains: a GIF or a sticker through the bridge is posted at once (`tools`: the ones it has). */
 export const computerMediaNote = (tools: string[]) =>
   `# GIFs and stickers\nWhen you call the agentes ${tools.map((t) => `\`${t}\``).join(" or ")} tool, it is posted at once as a message of its own: unless you have something to add, end your turn right after it with an empty final reply (no confirmation that you sent it).`;
@@ -5379,6 +5386,7 @@ function brainTurnOf(
         computer,
         tools.some((d) => d.name === REACT_TOOL) ? COMPUTER_REACT_NOTE : "",
         media.length > 0 ? computerMediaNote(media) : "",
+        plan.kind === "codex" && !isRightHand(agent) ? CODEX_IMAGE_NOTE : "",
       ]
         .filter(Boolean)
         .join("\n\n");

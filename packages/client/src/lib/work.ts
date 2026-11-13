@@ -797,6 +797,15 @@ const QUIET_READS: ReadonlySet<ActivityKind> = new Set([
   "readingDashboards",
 ]);
 
+/** The computer brain's own image tool (Codex's), as the runner names its call. */
+export const IMAGE_TOOL = "image_generation";
+
+/**
+ * It is making a picture now (its own image tool's step, `agent.step`): the conversation shows where the picture will
+ * be until its reply, with the picture, takes its place.
+ */
+export const makingImage = (run: Pick<LiveRun, "step">) => run.step?.tool === IMAGE_TOOL;
+
 /** A step running this long is no quick read: its card stays. */
 const LONG_STEP_MS = 4000;
 
@@ -807,14 +816,16 @@ const LONG_STEP_MS = 4000;
 export const quietLine = (
   l: Pick<ToolLine, "tool" | "service" | "kind" | "state" | "count" | "ms" | "code" | "output">,
 ) =>
-  l.count === 1 &&
-  !l.service &&
-  (!/^mcp__/i.test(l.tool) || /^mcp__agentes__/i.test(l.tool)) &&
-  l.state === "done" &&
-  QUIET_READS.has(l.kind) &&
-  !l.code &&
-  !l.output?.length &&
-  (l.ms === null || l.ms < LONG_STEP_MS);
+  // A picture it made is in its reply: the picture says it.
+  (l.count === 1 && l.kind === "creatingImage" && l.state === "done") ||
+  (l.count === 1 &&
+    !l.service &&
+    (!/^mcp__/i.test(l.tool) || /^mcp__agentes__/i.test(l.tool)) &&
+    l.state === "done" &&
+    QUIET_READS.has(l.kind) &&
+    !l.code &&
+    !l.output?.length &&
+    (l.ms === null || l.ms < LONG_STEP_MS));
 
 /** The turn's only tool work is a quiet read (`quietLine`): no card, live, kept or saved. */
 export const quietWork = (items: ToolItem[]) => {

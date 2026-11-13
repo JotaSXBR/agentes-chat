@@ -3336,6 +3336,9 @@ export interface ArtifactFileContent {
   size: number;
   sha256: string;
   text?: string;
+  /** A picture's own size (pixels), when the server read it: its box has its proportions before it loads. */
+  width?: number;
+  height?: number;
 }
 
 export interface ArtifactAuthor {
@@ -3501,6 +3504,9 @@ export interface ArtifactRef {
   /** The file was deleted: the card shows "Arquivo removido". */
   deleted?: boolean;
   title?: string;
+  /** A picture's size (pixels), when the server knew it: its card has its box before the file's details load. */
+  width?: number;
+  height?: number;
 }
 
 export interface ArtifactFilters {

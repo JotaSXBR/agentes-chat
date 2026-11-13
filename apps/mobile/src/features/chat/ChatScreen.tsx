@@ -78,6 +78,7 @@ import { seenMessageId } from "@agenteschat/client/lib/seen";
 import { lastPostedId } from "@agenteschat/client/lib/timeline";
 import { voiceOf } from "@agenteschat/client/lib/voice";
 import { waitingAway, waitingNotification } from "@agenteschat/client/lib/waiting";
+import { makingImage } from "@agenteschat/client/lib/work";
 import { isIdHandle } from "@agenteschat/ui/names";
 import { KeyboardAwareLegendList, useKeyboardChatComposerInset } from "@legendapp/list/keyboard";
 import type { LegendListRef, OnViewableItemsChanged } from "@legendapp/list/react-native";
@@ -138,6 +139,7 @@ import { usePlanHold } from "../ai/parts";
 import { BrowserCard, BrowserRunCard } from "../browser/BrowserCard";
 import { OpenHandoffProvider } from "../browser/open";
 import { threadTitle } from "../chats/logic";
+import { ImageMaking } from "../files/ImageMaking";
 import { chatHref, notificationHref } from "../links/logic";
 import { MissionCardView } from "../missions/cards";
 import { isOpenMission } from "../missions/logic";
@@ -247,6 +249,8 @@ type Row =
   /** An agent's browser card: its live run in the browser, or (no run row) a take over held here. */
   | { kind: "browser"; key: string; run: LiveRun; handoff?: undefined }
   | { kind: "browser"; key: string; run: null; handoff: BrowserHandoff }
+  /** Where the picture an agent is making will show (`makingImage`), until its reply takes its place. */
+  | { kind: "image"; key: string; run: LiveRun }
   | { kind: "unseen"; key: string; fading: boolean };
 
 const rowKey = (r: Row) => r.key;
@@ -514,6 +518,8 @@ function Chat({
   // ── Agents' blocks ──
   // An agent at work in its browser: its card in the conversation, open on demand.
   const browsing = useMemo(() => browsingRuns(runs), [runs]);
+  // An agent making a picture: its place in the conversation, as the web's live row.
+  const making = useMemo(() => runs.filter((r) => r.status !== "failed" && makingImage(r)), [runs]);
   // A take over held here after its run's live row went (the run paused for the person, or ended): the
   // same card stays, at the end, until the browser is handed back. Its runs: recent ones of this
   // conversation, the ones taken over here (or heard of in its events), and the live ones.
@@ -626,6 +632,7 @@ function Chat({
         ...buildRows(replies, (m) => superseded.has(m.id), agentsAtWork),
         ...browsing.map((run) => ({ kind: "browser" as const, key: `browser-${run.agentId}`, run })),
         ...held.map((h) => ({ kind: "browser" as const, key: `browser-${h.agentId}`, run: null, handoff: h })),
+        ...making.map((run) => ({ kind: "image" as const, key: `image-${run.runId}`, run })),
         ...waitRows,
       ];
     }
@@ -635,9 +642,24 @@ function Chat({
       ...buildRows(list, hidden, agentsAtWork),
       ...browsing.map((run) => ({ kind: "browser" as const, key: `browser-${run.agentId}`, run })),
       ...held.map((h) => ({ kind: "browser" as const, key: `browser-${h.agentId}`, run: null, handoff: h })),
+      ...making.map((run) => ({ kind: "image" as const, key: `image-${run.runId}`, run })),
       ...waitRows,
     ];
-  }, [isThread, threadId, list, thread.data, channel?.name, dm, browsing, held, superseded, agentsAtWork, t, waits]);
+  }, [
+    isThread,
+    threadId,
+    list,
+    thread.data,
+    channel?.name,
+    dm,
+    browsing,
+    held,
+    making,
+    superseded,
+    agentsAtWork,
+    t,
+    waits,
+  ]);
   const shownMessages = useMemo(() => rows.flatMap((r) => (r.kind === "message" ? [r.message] : [])), [rows]);
   // Questions agents asked other agents, in the pair row before the replies that asked (`ConsultGroup`): how each
   // answer's notice draws (hidden under a reply close by, one line to one farther up, and while its asker still works
@@ -1848,6 +1870,15 @@ function Chat({
             </Animated.View>
           );
         }
+        case "image":
+          return (
+            <Animated.View
+              entering={isFresh(item.key) ? ENTER : undefined}
+              style={[styles.browserRow, { paddingLeft: quiet, marginTop: rhythm.turn }]}
+            >
+              <ImageMaking />
+            </Animated.View>
+          );
         case "message":
           // What reached an agent's conversation (a routine's report, another agent's answer) and a routine
           // that ran in the background: quiet lines, never a person's or the agent's own voice.

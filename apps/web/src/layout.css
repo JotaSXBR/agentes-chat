@@ -1957,6 +1957,74 @@ html:not([data-pointer]) .artifact-tile__open:focus-visible {
 .artifact-cards > .artifact-tile[data-media]:only-child .artifact-tile__picture img {
   object-fit: contain;
 }
+/* A picture alone whose size the server read (`data-ratio`, before its details load too): its own proportions, up to
+   400px wide and 440px high, from the first paint. Lengths only, as above. */
+.artifact-cards > .artifact-tile[data-ratio]:only-child {
+  --tile-w: min(400px, calc(440px * var(--ratio)));
+}
+.artifact-cards > .artifact-tile[data-ratio]:only-child .artifact-tile__cover {
+  height: auto;
+  aspect-ratio: var(--ratio);
+}
+/* A picture fetched after its tile showed (one just made or sent) comes into focus; one read again from the cache is
+   simply there. */
+@keyframes picture-in {
+  from {
+    opacity: 0;
+    filter: blur(16px);
+  }
+}
+/* Where a picture an agent is making will show (`ImageMaking`): a lone picture's box with a fine grain on it; where
+   motion is allowed, a band of it develops across, left to right, until the reply brings the picture. */
+.artifact-cards > .image-making {
+  flex: none;
+}
+.image-making {
+  position: relative;
+  width: 400px;
+  max-width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 16px 16px 16px 4px;
+  background-color: var(--sunken);
+  background-image: radial-gradient(color-mix(in srgb, var(--ink) 9%, transparent) 0.8px, transparent 1.2px);
+  background-size: 6px 6px;
+}
+.image-making__grain {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(color-mix(in srgb, var(--ink) 30%, transparent) 0.9px, transparent 1.3px);
+  background-size: 6px 6px;
+  opacity: 0.35;
+}
+@keyframes image-making {
+  from {
+    mask-position: 100% 0;
+  }
+  to {
+    mask-position: 0 0;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .artifact-tile__picture img[data-fresh] {
+    animation: picture-in 0.7s var(--out) both;
+  }
+  .image-making__grain {
+    opacity: 1;
+    mask-image: linear-gradient(105deg, transparent 38%, #000 50%, transparent 62%);
+    mask-size: 300% 100%;
+    mask-repeat: no-repeat;
+    animation: image-making 2.6s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+  }
+}
+.image-making__label {
+  position: absolute;
+  left: 14px;
+  bottom: 12px;
+  font-size: 13.5px;
+  line-height: 18px;
+  color: var(--muted);
+}
 /* A video is its player. */
 .artifact-tile[data-kind="video"] {
   width: fit-content;

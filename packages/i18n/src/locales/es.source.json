@@ -31636,6 +31636,9 @@
   "files.imageAlt": {
     "value": "Image: {{title}}"
   },
+  "files.imageMaking": {
+    "value": "Making the image…"
+  },
   "files.pdfFrame": {
     "value": "PDF: {{title}}"
   },
@@ -38069,6 +38072,9 @@
   "chat.work.step.pcFiles": {
     "value": "Worked on the PC files"
   },
+  "chat.work.step.creatingImage": {
+    "value": "Made an image"
+  },
   "chat.work.step.exportingFile": {
     "value": "Saved a file to the Drive"
   },
@@ -38401,6 +38407,9 @@
   },
   "chat.activity.pcFiles": {
     "value": "working with the PC's files"
+  },
+  "chat.activity.creatingImage": {
+    "value": "making an image"
   },
   "chat.activity.exportingFile": {
     "value": "saving a file to Drive"

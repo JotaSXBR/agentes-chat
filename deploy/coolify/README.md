@@ -11,6 +11,10 @@ docker-compose.yaml   the stack: agentes + postgres, and the metadata a Coolify 
 Everything the app does, and everything else about self-hosting it, is in
 [`SELF_HOSTING.md`](../../SELF_HOSTING.md).
 
+These steps were run once, end to end, on Coolify 4.7.5 with Traefik 3.7: a Docker Compose
+application from this repository, the `sslip.io` address it generates, then the move to a real
+domain — certificate issued, `PUBLIC_URL` following the domain, both containers healthy.
+
 ## Requirements
 
 - Coolify v4, current release, on a Linux server.
